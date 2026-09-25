@@ -13,10 +13,10 @@ This guide covers building and running the AI Engineering Workbench in Docker, i
 Build the Docker image with the following command:
 
 ```bash
-docker build -t testing-llm-automation-engine .
+docker build -t ai-py-playwright-workbench .
 ```
 
-This creates a Docker image named `testing-llm-automation-engine` using the `Dockerfile` in the project root.
+This creates a Docker image named `ai-py-playwright-workbench` using the `Dockerfile` in the project root.
 
 ## Running the Container
 
@@ -26,11 +26,11 @@ Run the container with port mapping to access the Gradio UI:
 
 ```bash
 docker run -p 7860:7860 \
-  --name testing-llm-automation-engine \
+  --name ai-py-playwright-workbench \
   --add-host=host.docker.internal:host-gateway \
   -e LM_STUDIO_URL="http://host.docker.internal:1234/v1" \
   -e PYTHONUNBUFFERED=1 \
-  testing-llm-automation-engine
+  ai-py-playwright-workbench
 ```
 
 Access the Gradio interface at `http://localhost:7860`.
@@ -46,12 +46,12 @@ If you have a `.env` file, mount it:
 
 ```bash
 docker run -p 7860:7860 \
-  --name testing-llm-automation-engine \
+  --name ai-py-playwright-workbench \
   --add-host=host.docker.internal:host-gateway \
   --env-file .env \
   -e LM_STUDIO_URL="http://host.docker.internal:1234/v1" \
   -e PYTHONUNBUFFERED=1 \
-  testing-llm-automation-engine
+  ai-py-playwright-workbench
 ```
 
 ### With Volume Mount (For Development)
@@ -60,13 +60,13 @@ Mount the `tests/generated` directory to edit files on your host and see changes
 
 ```bash
 docker run -p 7860:7860 \
-  --name testing-llm-automation-engine \
+  --name ai-py-playwright-workbench \
   --add-host=host.docker.internal:host-gateway \
   --env-file .env \
   -e LM_STUDIO_URL="http://host.docker.internal:1234/v1" \
   -e PYTHONUNBUFFERED=1 \
   -v "$(pwd)/tests/generated:/app/tests/generated" \
-  testing-llm-automation-engine
+  ai-py-playwright-workbench
 ```
 
 ### Run with Ollama
@@ -75,12 +75,12 @@ Run the container using Ollama as the provider (Ollama must be running on your h
 
 ```bash
 docker run -p 7860:7860 \
-  --name testing-llm-automation-engine \
+  --name ai-py-playwright-workbench \
   --add-host=host.docker.internal:host-gateway \
   -e LLM_PROVIDER="ollama" \
   -e OLLAMA_URL="http://host.docker.internal:11434/v1" \
   -e PYTHONUNBUFFERED=1 \
-  testing-llm-automation-engine
+  ai-py-playwright-workbench
 ```
 
 ## Manual Debugging & Healing Workflow
@@ -93,13 +93,13 @@ Run the Docker container with a volume mount to enable file editing from your ho
 
 ```bash
 docker run -d -p 7860:7860 \
-  --name testing-llm-automation-engine \
+  --name ai-py-playwright-workbench \
   --add-host=host.docker.internal:host-gateway \
   --env-file .env \
   -e LM_STUDIO_URL="http://host.docker.internal:1234/v1" \
   -e PYTHONUNBUFFERED=1 \
   -v "$(pwd)/tests/generated:/app/tests/generated" \
-  testing-llm-automation-engine
+  ai-py-playwright-workbench
 ```
 
 The `-d` flag runs the container in detached mode, and `--name` assigns a name for easier reference.
@@ -117,7 +117,7 @@ Get a command-line interface inside the container:
 2. **Open the Shell:**
 
    ```bash
-   docker exec -it testing-llm-automation-engine /bin/bash
+   docker exec -it ai-py-playwright-workbench /bin/bash
    ```
 
    Or use the container ID:
@@ -158,7 +158,7 @@ Copy the Playwright HTML report from the container to your host machine:
 
 ```bash
 # Syntax: docker cp <ContainerName>:<PathInside> <PathOnHost>
-docker cp testing-llm-automation-engine:/app/playwright-report ./playwright-report
+docker cp ai-py-playwright-workbench:/app/playwright-report ./playwright-report
 ```
 
 **View the Report:**
@@ -195,31 +195,31 @@ uv run python -m src.agents.healer tests/generated/my_broken_test.spec.ts --max-
 ### Stop the Container
 
 ```bash
-docker stop testing-llm-automation-engine
+docker stop ai-py-playwright-workbench
 ```
 
 ### Start a Stopped Container
 
 ```bash
-docker start testing-llm-automation-engine
+docker start ai-py-playwright-workbench
 ```
 
 ### Remove the Container
 
 ```bash
-docker rm testing-llm-automation-engine
+docker rm ai-py-playwright-workbench
 ```
 
 ### View Container Logs
 
 ```bash
-docker logs testing-llm-automation-engine
+docker logs ai-py-playwright-workbench
 ```
 
 ### Follow Logs in Real-Time
 
 ```bash
-docker logs -f testing-llm-automation-engine
+docker logs -f ai-py-playwright-workbench
 ```
 
 ## Troubleshooting
@@ -241,7 +241,7 @@ If you encounter permission errors with mounted volumes, adjust file permissions
 Check logs for errors:
 
 ```bash
-docker logs testing-llm-automation-engine
+docker logs ai-py-playwright-workbench
 ```
 
 ### Port Already in Use

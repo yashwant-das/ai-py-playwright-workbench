@@ -18,8 +18,8 @@
 ## Step 1: Clone and Install
 
 ```bash
-git clone https://github.com/yashwant-das/testing-llm-automation-engine
-cd testing-llm-automation-engine
+git clone https://github.com/yashwant-das/ai-py-playwright-workbench
+cd ai-py-playwright-workbench
 
 # Python dependencies (creates .venv automatically)
 uv sync
