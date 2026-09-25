@@ -627,6 +627,8 @@ class TestAttemptHealingTracerSession(unittest.TestCase):
 
         # Use tests/generated/ — the only allowed directory for validate_file_path.
         test_path = Path("tests/generated/_tracer_test.spec.ts")
+        # tests/generated/ holds only git-ignored output, so a fresh clone lacks it
+        test_path.parent.mkdir(parents=True, exist_ok=True)
         test_path.write_text("// tracer test fixture", encoding="utf-8")
         try:
             from src.healing import attempt_healing
