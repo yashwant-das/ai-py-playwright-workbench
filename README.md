@@ -388,8 +388,8 @@ uv run python -m pytest tests/unit_test_*.py -q
 npm run lint
 npm run format
 
-# Run the Playwright smoke suite
-npm run test
+# Run the Playwright tests the workbench generated into tests/generated/
+npm run test:generated
 
 # Run a specific unit test file
 uv run python -m pytest tests/unit_test_healing.py -v

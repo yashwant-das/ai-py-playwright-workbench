@@ -44,11 +44,11 @@ uv run python -m pytest tests/unit_test_healing.py::TestAnalyzeAndPlan -v
 # With test output (captured by default)
 uv run python -m pytest tests/unit_test_schemas.py -v -s
 
-# Run npm test suite (Playwright integration)
-npm run test
+# Run the Playwright tests the workbench generated into tests/generated/
+npm run test:generated
 
-# All checks (lint + unit tests + Playwright)
-npm run lint && uv run python -m pytest tests/unit_test_*.py -q && npm run test
+# All checks (lint + unit tests)
+npm run lint && npm test
 ```
 
 ---

@@ -61,9 +61,8 @@ Thumbs.db
 # Project Specific
 tests/screenshots/*.png
 tests/artifacts/
-# Ignore runtime-generated spec files; keep committed demo fixtures
+# Specs the workbench generates at runtime
 tests/generated/*.spec.ts
-!tests/generated/framework_smoke.spec.ts
 benchmarks/reports/*.json
 
 # Gradio

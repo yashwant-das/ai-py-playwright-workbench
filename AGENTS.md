@@ -124,8 +124,8 @@ uv run ruff format .
 uv run python src/app.py
 # Open http://127.0.0.1:7860
 
-# Run Playwright E2E tests
-npm run test
+# Run the Playwright tests the workbench generated into tests/generated/
+npm run test:generated
 ```
 
 ---
