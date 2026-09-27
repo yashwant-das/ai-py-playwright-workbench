@@ -408,4 +408,8 @@ Start at the **[Documentation Hub (`docs/README.md`)](docs/README.md)**, which i
 - **"I want to contribute or extend it"** (Adding models, repair strategies)
 - **"I want to understand the evaluation methodology"** (Benchmarks & scoring)
 
+## License
+
+MIT. See [LICENSE](LICENSE).
+
 Last updated: 2026-06-25
