@@ -53,8 +53,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests use temp paths, subprocess fixtures and nested mock contexts freely.
-"tests/**" = ["S", "SIM117"]
+# Tests use temp paths, subprocess fixtures and nested mock contexts freely,
+# and may carry noqa comments for linters this project does not run.
+"tests/**" = ["S", "SIM117", "RUF100"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
