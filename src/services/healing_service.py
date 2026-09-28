@@ -24,6 +24,13 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 _EXPLANATION_PENDING = "### 🧠 AI Healing Explanation\n*No healer run active.*"
 
 
+def _gradio_upload_dir() -> str:
+    """Directory Gradio stores uploaded files in."""
+    from gradio.utils import get_upload_folder
+
+    return get_upload_folder()
+
+
 def heal_test_streaming(
     file_obj, max_retries: int
 ) -> Iterator[tuple[str, str, str, dict | None]]:
@@ -78,9 +85,14 @@ def heal_test_streaming(
     # --- Resolve and copy file to workspace ---
     try:
         file_path = file_obj if isinstance(file_obj, str) else file_obj.name
-        local_path = os.path.join("tests", "generated", os.path.basename(file_path))
+        # Only read uploads from Gradio's cache or files already in the workspace.
+        source_path = validate_file_path(
+            file_path, allowed_dirs=[_gradio_upload_dir(), "tests/generated"]
+        )
+        local_path = os.path.join("tests", "generated", os.path.basename(source_path))
         validated_path = validate_file_path(local_path)
-        shutil.copy(file_path, validated_path)
+        if source_path != validated_path:
+            shutil.copy(source_path, validated_path)
 
         timeline_md += f"→ File: `{os.path.basename(validated_path)}`\n\n"
         yield ("Initializing healing...", _EXPLANATION_PENDING, timeline_md, None)
