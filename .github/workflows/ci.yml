@@ -47,3 +47,51 @@ jobs:
 
       - name: Markdown lint
         run: npm run lint:md
+
+  e2e:
+    name: End-to-end (generate + heal, stubbed LLM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: 'latest'
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate and heal specs against a real browser
+        run: uv run python -m pytest tests/e2e/e2e_test_pipeline.py -v --junitxml=reports/e2e-pytest.xml
+
+      - name: Re-run generated and healed specs for the report
+        run: npm run test:e2e:report
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            reports/
+            playwright-report/
+            test-results/
+            tests/generated/
+            tests/artifacts/
+            logs/traces.jsonl
+          if-no-files-found: warn
+          retention-days: 14
