@@ -19,6 +19,8 @@ module.exports = tseslint.config(
       '.venv/',
       'tests/artifacts/',
       'test-results/',
+      'playwright-report/',
+      'reports/',
       'eslint.config.cjs',
     ],
   },

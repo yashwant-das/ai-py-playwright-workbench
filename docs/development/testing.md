@@ -53,6 +53,22 @@ npm run lint && npm test
 
 ---
 
+## End-to-End Suite
+
+`tests/e2e/` proves the pipeline works against a real browser. Only the LLM is faked: `fake_llm.py` is an OpenAI-compatible HTTP server with scripted answers, so the real `LLMRouter` and OpenAI client are exercised. Everything else is real.
+
+1. **Generate:** `generate_test_script()` collects context from a local fixture site (`tests/e2e/site/`) in Chromium, the fake model returns a spec, and the spec must pass under `npx playwright test`.
+2. **Heal:** a spec with a drifted selector (`#submit-btn`) fails, `attempt_healing()` gathers live DOM evidence, applies the `selector_replace` repair through `scripts/ast_repair.js`, and verification must pass.
+3. **Report:** `playwright.e2e.config.ts` re-runs both specs with the HTML report, JUnit XML and traces on.
+
+```bash
+npm run test:e2e          # needs Chromium: npx playwright install chromium
+```
+
+Outputs land in `reports/` (pytest and Playwright JUnit XML), `playwright-report/` and `test-results/` (traces). CI runs this as the `e2e` job and uploads them as the `e2e-report` artifact.
+
+---
+
 ## Mocking Pattern — LLM Router
 
 Every test that calls into the healing pipeline mocks the LLM router:

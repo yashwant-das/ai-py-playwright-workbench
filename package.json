@@ -6,6 +6,8 @@
     "test": "npm run test:unit",
     "test:generated": "npx playwright test --pass-with-no-tests",
     "test:unit": "uv run python -m pytest",
+    "test:e2e": "uv run python -m pytest tests/e2e/e2e_test_pipeline.py --junitxml=reports/e2e-pytest.xml && npm run test:e2e:report",
+    "test:e2e:report": "npx playwright test --config playwright.e2e.config.ts",
     "type-check": "tsc --noEmit",
     "prepare": "husky",
     "husky": "husky",
