@@ -1,5 +1,5 @@
 """
-Workbench service — read-only data access for the AI Engineering Workbench UI.
+Workbench service — read-only data access for the AI Playwright Workbench UI.
 
 Surfaces data already produced by the healing pipeline: artifacts, traces,
 and benchmark results.  No AI calls are made from this module.
@@ -127,7 +127,7 @@ _RUN_HISTORY_LIMIT = 20  # max runs shown in the unified history table
 _SYSTEM_OVERVIEW_MD = """\
 ## What is this?
 
-The **AI Engineering Workbench** is a reference implementation for production-grade
+The **AI Playwright Workbench** is a reference implementation for production-grade
 AI-assisted test automation. It demonstrates how to build LLM-powered pipelines that
 are observable, evaluable, and self-healing — using local models (LM Studio / Ollama)
 with no cloud dependency.
