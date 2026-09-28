@@ -9,7 +9,7 @@ Public API:
 
 import logging
 import re
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
-def parse_llm_response(raw_content: str, model_class: Type[T]) -> T:
+def parse_llm_response(raw_content: str, model_class: type[T]) -> T:
     """Parse and validate an LLM response string into a Pydantic model.
 
     Attempts two strategies in order:
@@ -88,8 +88,7 @@ def extract_json_block(llm_response: str) -> str:
             json_str = llm_response
 
     # Strip invalid control characters (0x00–0x08, 0x0b, 0x0c, 0x0e–0x1f, 0x7f)
-    json_str = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", json_str)
-    return json_str
+    return re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", json_str)
 
 
 def extract_code_block(llm_response: str) -> str:

@@ -82,8 +82,8 @@ def _apply_ast_fix(current_code: str, decision: HealingDecision) -> str:
     }
 
     try:
-        result = subprocess.run(
-            ["node", str(_AST_SCRIPT)],
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            ["node", str(_AST_SCRIPT)],  # noqa: S607 - node/npx resolved from PATH
             input=json.dumps(payload),
             capture_output=True,
             text=True,
@@ -114,7 +114,7 @@ def _apply_ast_fix(current_code: str, decision: HealingDecision) -> str:
             decision.action_taken.repair_strategy.value,
             output["changes"],
         )
-        return output["source"]
+        return str(output["source"])
 
     except subprocess.TimeoutExpired:
         logger.warning("ast_repair.js timed out after 30s")

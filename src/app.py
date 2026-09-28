@@ -150,22 +150,21 @@ with gr.Blocks(title="AI Engineering Workbench") as demo:
                 with gr.Column(scale=4):
                     gen_timeline = gr.Markdown("### Generation Timeline\n*Ready.*")
 
-                with gr.Column(scale=5):
-                    with gr.Tabs():
-                        with gr.Tab("Generated Code"):
-                            code_out = gr.Code(
-                                label="TypeScript",
-                                language="typescript",
-                                lines=20,
-                                elem_classes=["tall-code"],
-                            )
-                        with gr.Tab("Execution Logs"):
-                            result_out = gr.Textbox(
-                                label="Execution Log",
-                                interactive=False,
-                                lines=20,
-                                elem_classes=["tall-textbox"],
-                            )
+                with gr.Column(scale=5), gr.Tabs():
+                    with gr.Tab("Generated Code"):
+                        code_out = gr.Code(
+                            label="TypeScript",
+                            language="typescript",
+                            lines=20,
+                            elem_classes=["tall-code"],
+                        )
+                    with gr.Tab("Execution Logs"):
+                        result_out = gr.Textbox(
+                            label="Execution Log",
+                            interactive=False,
+                            lines=20,
+                            elem_classes=["tall-textbox"],
+                        )
 
             gen_meta_state = gr.State(None)
 
@@ -181,47 +180,47 @@ with gr.Blocks(title="AI Engineering Workbench") as demo:
             )
 
         # ── Tab 3: Healing Pipeline ─────────────────────────────────────────
-        with gr.Tab("Healing Pipeline"):
-            with gr.Row():
-                with gr.Column(scale=3):
-                    h_file_in = gr.File(
-                        label="Test File (.ts)",
-                        file_types=[".ts"],
-                        file_count="single",
-                    )
-                    h_max_retries_in = gr.Slider(
-                        minimum=1,
-                        maximum=5,
-                        value=3,
-                        step=1,
-                        label="Max Repair Attempts",
-                    )
-                    h_btn = gr.Button("Run Healing Pipeline", variant="primary")
+        with gr.Tab("Healing Pipeline"), gr.Row():
+            with gr.Column(scale=3):
+                h_file_in = gr.File(
+                    label="Test File (.ts)",
+                    file_types=[".ts"],
+                    file_count="single",
+                )
+                h_max_retries_in = gr.Slider(
+                    minimum=1,
+                    maximum=5,
+                    value=3,
+                    step=1,
+                    label="Max Repair Attempts",
+                )
+                h_btn = gr.Button("Run Healing Pipeline", variant="primary")
 
-                with gr.Column(scale=4):
-                    h_timeline_out = gr.Markdown(
-                        "### Healing Timeline\n*Upload a test file and run.*"
-                    )
+            with gr.Column(scale=4):
+                h_timeline_out = gr.Markdown(
+                    "### Healing Timeline\n*Upload a test file and run.*"
+                )
 
-                with gr.Column(scale=5):
-                    with gr.Tabs():
-                        with gr.Tab("Decision Report"):
-                            h_explanation_out = gr.Markdown(
-                                "### Healing Decision\n*No run active.*\n\n"
-                                "*After a run, this report is also available in the "
-                                "**Artifact Inspector** tab with the same content.*",
-                                elem_classes=["tall-md"],
-                            )
-                        with gr.Tab("Execution Logs"):
-                            h_result_out = gr.Textbox(
-                                label="Execution Log",
-                                interactive=False,
-                                lines=20,
-                                elem_classes=["tall-textbox"],
-                            )
-                        with gr.Tab("Raw JSON"):
-                            with gr.Accordion("HealingDecision JSON", open=False):
-                                h_decision_out = gr.JSON(label="Raw artifact")
+            with gr.Column(scale=5), gr.Tabs():
+                with gr.Tab("Decision Report"):
+                    h_explanation_out = gr.Markdown(
+                        "### Healing Decision\n*No run active.*\n\n"
+                        "*After a run, this report is also available in the "
+                        "**Artifact Inspector** tab with the same content.*",
+                        elem_classes=["tall-md"],
+                    )
+                with gr.Tab("Execution Logs"):
+                    h_result_out = gr.Textbox(
+                        label="Execution Log",
+                        interactive=False,
+                        lines=20,
+                        elem_classes=["tall-textbox"],
+                    )
+                with (
+                    gr.Tab("Raw JSON"),
+                    gr.Accordion("HealingDecision JSON", open=False),
+                ):
+                    h_decision_out = gr.JSON(label="Raw artifact")
 
         # ── Tab 4: Vision Pipeline ──────────────────────────────────────────
         with gr.Tab("Vision Pipeline"):

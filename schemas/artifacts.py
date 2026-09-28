@@ -6,7 +6,6 @@ TraceMetadata   — per-LLM-call observability record linked to a parent trace s
 """
 
 from datetime import datetime
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -36,7 +35,7 @@ class TraceMetadata(BaseModel):
     output_tokens: int = Field(default=0, ge=0)
     latency_ms: int = Field(default=0, ge=0)
     retry_count: int = Field(default=0, ge=0)
-    failure_reason: Optional[str] = None
+    failure_reason: str | None = None
     timestamp: str = Field(
         default_factory=lambda: datetime.now().isoformat(),
     )
@@ -52,12 +51,12 @@ class ContextSnapshot(BaseModel):
     """
 
     url: str
-    html: Optional[str] = None
-    accessibility_tree: Optional[str] = None
-    console_errors: List[str] = Field(default_factory=list)
-    network_errors: List[str] = Field(default_factory=list)
-    locator_candidates: List[str] = Field(default_factory=list)
-    screenshot_path: Optional[str] = None
+    html: str | None = None
+    accessibility_tree: str | None = None
+    console_errors: list[str] = Field(default_factory=list)
+    network_errors: list[str] = Field(default_factory=list)
+    locator_candidates: list[str] = Field(default_factory=list)
+    screenshot_path: str | None = None
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
 
     @property

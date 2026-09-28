@@ -7,7 +7,6 @@ ProvenanceRecord base model consumed by healing, generation, and evaluation sche
 
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -67,12 +66,12 @@ class LLMConfig(BaseModel):
     """
 
     provider: str  # "lm_studio" | "ollama" | "openai"
-    base_url: Optional[str] = None
-    api_key: Optional[str] = None
+    base_url: str | None = None
+    api_key: str | None = None
     model: str
-    vision_model: Optional[str] = None
+    vision_model: str | None = None
     temperature: float = 0.1
-    seed: Optional[int] = None
+    seed: int | None = None
 
 
 class ProvenanceRecord(BaseModel):

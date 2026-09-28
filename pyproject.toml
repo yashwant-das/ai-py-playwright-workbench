@@ -18,6 +18,7 @@ dependencies = [
 dev = [
     "ruff>=0.9.0",
     "pytest>=8.0.0",
+    "mypy>=2.3.1",
 ]
 
 [tool.ruff]
@@ -38,9 +39,22 @@ exclude = [
 ]
 
 [tool.ruff.lint]
-# Enable Pyflakes (F) and pycodestyle (E, W) codes, plus Isort (I).
-select = ["E", "F", "W", "I"]
-ignore = ["E501", "E402"]
+# pycodestyle (E, W), Pyflakes (F), isort (I), bugbear (B), pyupgrade (UP),
+# flake8-bandit (S), simplify (SIM), comprehensions (C4), pie (PIE),
+# return (RET) and Ruff's own rules (RUF).
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "C4", "PIE", "RET", "RUF"]
+ignore = [
+    "E501",   # line length is left to the formatter
+    "E402",   # some modules set up sys.path before importing
+    "RUF001", # en dashes in UI strings, docstrings and comments are intentional
+    "RUF002",
+    "RUF003",
+    "UP042",  # StrEnum changes str() output that artifacts and prompts rely on
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use temp paths, subprocess fixtures and nested mock contexts freely.
+"tests/**" = ["S", "SIM117"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -54,3 +68,13 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src", "schemas", "benchmarks"]
+plugins = ["pydantic.mypy"]
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+strict_equality = true

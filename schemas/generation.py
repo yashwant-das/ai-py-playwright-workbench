@@ -6,8 +6,6 @@ GenerationDecision — full provenance artifact for a generation run (to tests/a
 VisionDecision     — full provenance artifact for a vision run (to tests/artifacts/).
 """
 
-from typing import Optional
-
 from pydantic import BaseModel, Field, field_validator
 
 from .artifacts import ContextSnapshot
@@ -62,7 +60,7 @@ class GenerationDecision(ProvenanceRecord):
     story: str
     code: str
     line_count: int = Field(default=0, ge=0)
-    context_snapshot: Optional[ContextSnapshot] = None
+    context_snapshot: ContextSnapshot | None = None
 
     def to_dict(self) -> dict:
         """Return a JSON-serializable dict."""
@@ -156,7 +154,7 @@ class VisionDecision(ProvenanceRecord):
     instruction: str
     code: str
     line_count: int = Field(default=0, ge=0)
-    screenshot_path: Optional[str] = None
+    screenshot_path: str | None = None
 
     def to_dict(self) -> dict:
         """Return a JSON-serializable dict."""

@@ -9,8 +9,8 @@ import base64
 import logging
 import os
 import re
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ SCREENSHOT_DIR = PROJECT_ROOT / "tests" / "screenshots"
 
 def analyze_visual_streaming(
     url: str, instruction: str
-) -> Iterator[tuple[str, Optional[str], str, Optional[dict]]]:
+) -> Iterator[tuple[str, str | None, str, dict | None]]:
     """Capture a screenshot and analyze it with the vision LLM, yielding progress.
 
     The screenshot path is yielded as the second element of the tuple as soon as
@@ -93,6 +93,7 @@ def analyze_visual_streaming(
             timeline + f"❌ Screenshot error: {exc}",
             None,
             f"Error capturing screenshot: {exc}",
+            None,
         )
         return
 
@@ -223,7 +224,7 @@ def run_vision_test_streaming(
     url: str,
     code: str,
     instruction: str,
-    metadata: Optional[dict] = None,
+    metadata: dict | None = None,
 ) -> Iterator[tuple[str, str]]:
     """Run a vision-generated test, relabelling the timeline for the visual tab.
 

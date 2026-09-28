@@ -13,7 +13,6 @@ verification results).
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -82,19 +81,19 @@ class HealingAction(BaseModel):
         """Accept None or missing field from older LLM responses."""
         if v is None:
             return RepairStrategy.STRING_REPLACE
-        return v
+        return RepairStrategy(v)
 
 
 class Evidence(BaseModel):
     """Artifacts collected from a failed test run to support diagnosis."""
 
     error_log: str
-    screenshot_path: Optional[str] = None
-    dom_snippet: Optional[str] = None
-    console_errors: List[str] = Field(default_factory=list)
-    network_errors: List[str] = Field(default_factory=list)
-    accessibility_tree: Optional[str] = None
-    locator_candidates: List[str] = Field(default_factory=list)
+    screenshot_path: str | None = None
+    dom_snippet: str | None = None
+    console_errors: list[str] = Field(default_factory=list)
+    network_errors: list[str] = Field(default_factory=list)
+    accessibility_tree: str | None = None
+    locator_candidates: list[str] = Field(default_factory=list)
 
     @classmethod
     def from_context_snapshot(
@@ -102,7 +101,7 @@ class Evidence(BaseModel):
         error_log: str,
         snapshot: ContextSnapshot,
         *,
-        screenshot_path: Optional[str] = None,
+        screenshot_path: str | None = None,
     ) -> "Evidence":
         """Create Evidence from a ContextSnapshot plus error logs.
 
@@ -160,8 +159,8 @@ class HealingAnalysis(BaseModel):
         default="",
         description="The LLM's explanation of why this confidence level was assigned.",
     )
-    reasoning_steps: List[str]
-    root_cause_evidence: List[str] = Field(
+    reasoning_steps: list[str]
+    root_cause_evidence: list[str] = Field(
         default_factory=list,
         description="Specific evidence items from logs / DOM that support the diagnosis.",
     )
@@ -173,15 +172,15 @@ class HealingAnalysis(BaseModel):
     @classmethod
     def clamp_confidence(cls, v: object) -> float:
         """Clamp to [0, 1] — LLMs occasionally return 1.05 etc."""
-        return max(0.0, min(1.0, float(v)))
+        return max(0.0, min(1.0, float(v)))  # type: ignore[arg-type]
 
     @field_validator("reasoning_steps", mode="before")
     @classmethod
-    def coerce_single_step(cls, v: object) -> List[str]:
+    def coerce_single_step(cls, v: object) -> list[str]:
         """Accept a bare string when LLM returns one step instead of a list."""
         if isinstance(v, str):
             return [v]
-        return list(v) if v else []
+        return list(v) if isinstance(v, (list, tuple)) else []
 
 
 class HealingDecision(ProvenanceRecord):
@@ -199,15 +198,15 @@ class HealingDecision(ProvenanceRecord):
     evidence: Evidence
     hypothesis: str
     confidence_score: float = Field(ge=0.0, le=1.0)
-    reasoning_steps: List[str]
+    reasoning_steps: list[str]
     action_taken: HealingAction
     verification_passed: bool = False
-    verification_log: Optional[str] = None
+    verification_log: str | None = None
     confidence_rationale: str = Field(
         default="",
         description="LLM's explanation of why this confidence level was assigned.",
     )
-    root_cause_evidence: List[str] = Field(
+    root_cause_evidence: list[str] = Field(
         default_factory=list,
         description="Specific evidence items from logs/DOM that support the diagnosis.",
     )
@@ -437,7 +436,7 @@ class TimelineStep(BaseModel):
 class ExecutionTimeline(BaseModel):
     """Ordered audit trail of steps executed during a healing session."""
 
-    steps: List[TimelineStep] = Field(default_factory=list)
+    steps: list[TimelineStep] = Field(default_factory=list)
 
     def add_step(self, step: str, details: str) -> None:
         """Append a new timestamped step."""

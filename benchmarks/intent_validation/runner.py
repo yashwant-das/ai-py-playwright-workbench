@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import List
 
 from pydantic import BaseModel
 
@@ -96,7 +95,7 @@ def evaluate_test_intent(
     Returns:
         :class:`~schemas.evaluation.EvaluationResult` with pass/fail and score.
     """
-    if not code or code.startswith("Error") or code.startswith("LLM Error"):
+    if not code or code.startswith(("Error", "LLM Error")):
         return EvaluationResult(
             example_id=example_id,
             passed=False,
@@ -195,7 +194,7 @@ class IntentCase(BaseModel):
 
 
 def run_intent_validation(
-    cases: List[IntentCase],
+    cases: list[IntentCase],
     config: BenchmarkRunConfig,
 ) -> BenchmarkRun:
     """Run intent validation over a list of cases.

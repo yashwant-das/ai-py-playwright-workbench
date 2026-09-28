@@ -36,6 +36,9 @@ jobs:
       - name: Python format check (ruff)
         run: uv run ruff format --check .
 
+      - name: Python type check (mypy)
+        run: uv run mypy
+
       - name: Python unit tests
         run: uv run python -m pytest tests/unit_test_*.py -q
 

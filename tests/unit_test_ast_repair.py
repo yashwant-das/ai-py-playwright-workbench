@@ -282,8 +282,7 @@ class TestAstRepairIntegration(unittest.TestCase):
             fixed_code=fixed_code,
             strategy=strategy,
         )
-        result = _apply_ast_fix(source, decision)
-        return result
+        return _apply_ast_fix(source, decision)
 
     # selector_replace ────────────────────────────────────────────────────────
 

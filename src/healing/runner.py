@@ -32,8 +32,8 @@ def run_test(test_file) -> RunResult:
     command = f"npx playwright test {test_file}"
     t0 = time.monotonic()
     try:
-        proc = subprocess.run(
-            ["npx", "playwright", "test", str(test_file)],
+        proc = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            ["npx", "playwright", "test", str(test_file)],  # noqa: S607 - node/npx resolved from PATH
             capture_output=True,
             text=True,
             timeout=60,
@@ -65,6 +65,7 @@ def run_test(test_file) -> RunResult:
             latency_ms=latency_ms,
         )
     except Exception:
-        pass  # Observability must never break the main path.
+        # Observability must never break the main path.
+        logger.debug("Could not record subprocess span", exc_info=True)
 
     return run_result

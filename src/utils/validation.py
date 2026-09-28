@@ -10,8 +10,6 @@ from urllib.parse import urlparse
 class ValidationError(Exception):
     """Custom exception for validation errors."""
 
-    pass
-
 
 def validate_url(url: str) -> bool:
     """Validate that a URL is properly formatted and uses http/https.
@@ -61,7 +59,7 @@ def validate_and_sanitize_url(url: str) -> str:
     return url
 
 
-def validate_file_path(file_path: str, allowed_dirs: list = None) -> str:
+def validate_file_path(file_path: str, allowed_dirs: list | None = None) -> str:
     """Validate and sanitize a file path to prevent directory traversal.
 
     Args:

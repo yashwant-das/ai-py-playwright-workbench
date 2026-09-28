@@ -468,7 +468,7 @@ class TestCaptureScreenshot(unittest.TestCase):
         self.capture = capture_screenshot
 
     def test_delegates_to_playwright(self):
-        mock_ctx_mgr, mock_p, mock_browser, mock_ctx, mock_page = _make_pw_mocks()
+        mock_ctx_mgr, _mock_p, _mock_browser, _mock_ctx, mock_page = _make_pw_mocks()
         with patch("src.context.screenshot.sync_playwright", return_value=mock_ctx_mgr):
             with TemporaryDirectory() as tmp:
                 result = self.capture(
@@ -488,7 +488,7 @@ class TestCaptureScreenshot(unittest.TestCase):
                 self.assertTrue(new_dir.exists())
 
     def test_closes_browser(self):
-        mock_ctx_mgr, mock_p, mock_browser, *_ = _make_pw_mocks()
+        mock_ctx_mgr, _mock_p, mock_browser, *_ = _make_pw_mocks()
         with patch("src.context.screenshot.sync_playwright", return_value=mock_ctx_mgr):
             with TemporaryDirectory() as tmp:
                 self.capture("https://example.com", Path(tmp), wait_ms=0)

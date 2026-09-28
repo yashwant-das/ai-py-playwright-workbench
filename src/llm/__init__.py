@@ -32,8 +32,6 @@ Example
 
 from __future__ import annotations
 
-from typing import Optional
-
 from src.llm.client import LLMClientFactory, ProviderConfig
 from src.llm.policies import RetryPolicy, TimeoutPolicy
 from src.llm.registry import ModelCapabilities, ModelRegistry
@@ -43,7 +41,7 @@ from src.llm.router import LLMRequest, LLMResponse, LLMRouter
 # Module-level lazy singleton — no OpenAI() call at import time.
 # ---------------------------------------------------------------------------
 
-_default_router: Optional[LLMRouter] = None
+_default_router: LLMRouter | None = None
 
 
 def get_default_router() -> LLMRouter:

@@ -11,8 +11,8 @@ Yield shape: (result_text, explanation_md, timeline_md, decision_dict_or_None)
 import logging
 import os
 import shutil
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Iterator, Optional
 
 from src.utils.formatting import format_healing_result
 
@@ -26,7 +26,7 @@ _EXPLANATION_PENDING = "### 🧠 AI Healing Explanation\n*No healer run active.*
 
 def heal_test_streaming(
     file_obj, max_retries: int
-) -> Iterator[tuple[str, str, str, Optional[dict]]]:
+) -> Iterator[tuple[str, str, str, dict | None]]:
     """Run the full self-healing pipeline for an uploaded test file.
 
     Handles Gradio file object resolution, workspace copy, and the multi-attempt
@@ -150,7 +150,7 @@ def heal_test_streaming(
     yield ("Analyzing failure...", _EXPLANATION_PENDING, timeline_md, None)
 
     current_code = Path(validated_path).read_text(encoding="utf-8")
-    latest_decision: Optional[HealingDecision] = None
+    latest_decision: HealingDecision | None = None
 
     # --- Repair loop ---
     for attempt in range(int(max_retries)):
@@ -192,7 +192,7 @@ def heal_test_streaming(
 
             _tracer.set_prompt_context("healer", get_prompt_hash("healer"))
         except Exception:
-            pass
+            logger.debug("Could not attach the healer prompt hash", exc_info=True)
 
         decision = analyze_and_plan(validated_path, current_code, evidence)
         latest_decision = decision

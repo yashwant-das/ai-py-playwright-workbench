@@ -10,7 +10,7 @@ These schemas are shared by generation, healing, and intent-validation runners.
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, computed_field
 
@@ -24,13 +24,13 @@ class BenchmarkRunConfig(BaseModel):
     """
 
     model: str
-    model_version: Optional[str] = None
+    model_version: str | None = None
     provider: str = "unknown"
     prompt_name: str
     prompt_version: str
     prompt_hash: str
     temperature: float = 0.0
-    seed: Optional[int] = None
+    seed: int | None = None
     dataset_version: str
     benchmark_type: str = "unknown"  # "generation" | "healing" | "intent_validation"
     timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
@@ -43,35 +43,35 @@ class EvaluationResult(BaseModel):
     passed: bool
     score: float = Field(ge=0.0, le=1.0)
     duration_ms: int = 0
-    details: Dict[str, Any] = Field(default_factory=dict)
-    error: Optional[str] = None
+    details: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None
 
 
 class BenchmarkRun(BaseModel):
     """Aggregated results from a complete benchmark run."""
 
     config: BenchmarkRunConfig
-    results: List[EvaluationResult] = Field(default_factory=list)
+    results: list[EvaluationResult] = Field(default_factory=list)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def total(self) -> int:
         """Total number of examples evaluated."""
         return len(self.results)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def passed(self) -> int:
         """Number of examples that passed."""
         return sum(1 for r in self.results if r.passed)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def failed(self) -> int:
         """Number of examples that failed."""
         return sum(1 for r in self.results if not r.passed)
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def pass_rate(self) -> float:
         """Fraction of examples that passed (0.0–1.0)."""
@@ -79,7 +79,7 @@ class BenchmarkRun(BaseModel):
             return 0.0
         return self.passed / self.total
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def mean_score(self) -> float:
         """Mean score across all examples (0.0–1.0)."""
@@ -87,7 +87,7 @@ class BenchmarkRun(BaseModel):
             return 0.0
         return sum(r.score for r in self.results) / self.total
 
-    @computed_field  # type: ignore[misc]
+    @computed_field  # type: ignore[prop-decorator]
     @property
     def mean_duration_ms(self) -> float:
         """Mean per-example duration in milliseconds."""
@@ -102,7 +102,7 @@ class BenchmarkRun(BaseModel):
     def save_report(
         self,
         output_dir: Path,
-        filename: Optional[str] = None,
+        filename: str | None = None,
     ) -> Path:
         """Write the report JSON to output_dir and return the path.
 

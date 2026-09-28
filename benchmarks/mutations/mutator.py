@@ -19,7 +19,6 @@ from __future__ import annotations
 import re
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -50,7 +49,7 @@ class MutationResult(BaseModel):
     mutated_code: str
     success: bool
     """True when the mutation produced a change (i.e. the pattern was found)."""
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -108,8 +107,7 @@ def apply_import_removal(code: str, symbol: str = "expect") -> str:
     code = re.sub(rf",\s*{re.escape(symbol)}", "", code)
     code = re.sub(rf"{re.escape(symbol)},\s*", "", code)
     # Handle lone symbol in braces (e.g. "import { expect } from ...")
-    code = re.sub(rf"\{{\s*{re.escape(symbol)}\s*\}}", "{}", code)
-    return code
+    return re.sub(rf"\{{\s*{re.escape(symbol)}\s*\}}", "{}", code)
 
 
 def apply_assertion_swap(

@@ -101,7 +101,7 @@ class TestRunTest(unittest.TestCase):
     def test_correct_command_constructed(self, mock_run):
         mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
         run_test("my_test.spec.ts")
-        args, kwargs = mock_run.call_args
+        args, _kwargs = mock_run.call_args
         cmd = args[0]
         self.assertEqual(cmd[0], "npx")
         self.assertEqual(cmd[1], "playwright")
@@ -177,29 +177,35 @@ class TestGatherEvidence(unittest.TestCase):
         result = RunResult(
             returncode=1, stdout="stdout content", stderr="stderr content"
         )
-        with patch(
-            "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+        with (
+            patch(
+                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+            ),
+            patch.object(Path, "exists", return_value=False),
         ):
-            with patch.object(Path, "exists", return_value=False):
-                evidence = gather_evidence("non_existent.spec.ts", result)
+            evidence = gather_evidence("non_existent.spec.ts", result)
         self.assertEqual(evidence.error_log, "stderr content")
 
     def test_stdout_used_when_no_stderr(self):
         result = RunResult(returncode=1, stdout="stdout content", stderr="")
-        with patch(
-            "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+        with (
+            patch(
+                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+            ),
+            patch.object(Path, "exists", return_value=False),
         ):
-            with patch.object(Path, "exists", return_value=False):
-                evidence = gather_evidence("non_existent.spec.ts", result)
+            evidence = gather_evidence("non_existent.spec.ts", result)
         self.assertEqual(evidence.error_log, "stdout content")
 
     def test_no_screenshot_when_results_dir_missing(self):
         result = RunResult(returncode=1, stdout="err", stderr="")
-        with patch(
-            "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+        with (
+            patch(
+                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+            ),
+            patch.object(Path, "exists", return_value=False),
         ):
-            with patch.object(Path, "exists", return_value=False):
-                evidence = gather_evidence("non_existent.spec.ts", result)
+            evidence = gather_evidence("non_existent.spec.ts", result)
         self.assertIsNone(evidence.screenshot_path)
 
     def test_dom_snippet_populated_from_live_page(self):
@@ -266,7 +272,7 @@ class TestClassifierSmoke(unittest.TestCase):
         self.assertEqual(conf, 0.0)
 
     def test_no_match_returns_unknown(self):
-        f_type, conf, _ = classify_failure_heuristic("some random log output")
+        f_type, _conf, _ = classify_failure_heuristic("some random log output")
         self.assertEqual(f_type, FailureType.UNKNOWN)
 
 

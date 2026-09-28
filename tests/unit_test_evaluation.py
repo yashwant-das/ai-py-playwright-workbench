@@ -81,14 +81,14 @@ HEAL_DATASET = (
 
 
 def _make_config(**overrides) -> BenchmarkRunConfig:
-    defaults = dict(
-        model="test-model",
-        prompt_name="test-prompt",
-        prompt_version="1",
-        prompt_hash="abc123",
-        dataset_version="1.0.0",
-        benchmark_type="test",
-    )
+    defaults = {
+        "model": "test-model",
+        "prompt_name": "test-prompt",
+        "prompt_version": "1",
+        "prompt_hash": "abc123",
+        "dataset_version": "1.0.0",
+        "benchmark_type": "test",
+    }
     defaults.update(overrides)
     return BenchmarkRunConfig(**defaults)
 

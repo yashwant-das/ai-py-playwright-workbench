@@ -10,7 +10,6 @@ failures, locator candidates) from the URL in the test file.
 import logging
 import re
 from pathlib import Path
-from typing import Optional
 
 from schemas.healing import Evidence
 from schemas.shared import RunResult
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
-def extract_url_from_code(code: str) -> Optional[str]:
+def extract_url_from_code(code: str) -> str | None:
     """Extract the target URL from a ``page.goto()`` call in Playwright test code.
 
     Args:
@@ -57,7 +56,7 @@ def gather_evidence(test_file, result: RunResult) -> Evidence:
     logs = result.stderr if result.stderr else result.stdout
 
     # Most recent screenshot written to test-results/ by Playwright on failure
-    screenshot_path: Optional[str] = None
+    screenshot_path: str | None = None
     results_dir = PROJECT_ROOT / "test-results"
     if results_dir.exists():
         screenshots = list(results_dir.glob("**/*.png"))
@@ -65,7 +64,7 @@ def gather_evidence(test_file, result: RunResult) -> Evidence:
             screenshot_path = str(max(screenshots, key=lambda p: p.stat().st_mtime))
 
     # Extract target URL from the test file source
-    url: Optional[str] = None
+    url: str | None = None
     try:
         test_file_path = Path(test_file)
         if test_file_path.exists():
