@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Workbench E2E fixture</title>
+  </head>
+  <body>
+    <main>
+      <h1>Contact form</h1>
+      <form id="contact">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" />
+        <button type="submit" data-testid="submit">Submit</button>
+      </form>
+      <p id="result" role="status"></p>
+    </main>
+    <script>
+      document.getElementById('contact').addEventListener('submit', (event) => {
+        event.preventDefault();
+        document.getElementById('result').textContent = 'Submitted';
+      });
+    </script>
+  </body>
+</html>
