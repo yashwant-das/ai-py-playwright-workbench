@@ -7,7 +7,7 @@
 
 ## Purpose
 
-The AI Engineering Workbench is a pipeline system. Raw inputs (URLs, test scenarios, broken specs) flow through a sequence of pipeline stages — each with a single responsibility — and produce structured outputs (TypeScript specs, decision artifacts, JSONL traces).
+The AI Playwright Workbench is a pipeline system. Raw inputs (URLs, test scenarios, broken specs) flow through a sequence of pipeline stages — each with a single responsibility — and produce structured outputs (TypeScript specs, decision artifacts, JSONL traces).
 
 The architecture is designed around three constraints:
 
