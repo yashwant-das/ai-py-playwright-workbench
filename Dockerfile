@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM mcr.microsoft.com/playwright/python:v1.57.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.63.0-noble
 
 LABEL org.opencontainers.image.title="ai-py-playwright-workbench" \
       org.opencontainers.image.description="Generates and repairs Playwright tests with local LLMs" \
