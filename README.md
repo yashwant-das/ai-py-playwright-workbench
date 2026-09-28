@@ -1,13 +1,19 @@
-# AI Engineering Workbench
+# AI Playwright Workbench
+
+**`ai-py-playwright-workbench`**: generate, run, and self-heal Playwright tests with local LLMs.
 
 > A reference implementation of AI Systems Engineering for Playwright test automation.
 > Structured outputs · AST repair · evaluation · observability · explainability · local LLM.
 
+[![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.57%2B-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![Gradio](https://img.shields.io/badge/Gradio-6.2%2B-FF6B6B)](https://gradio.app/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+![Workbench demo: the Generation, Healing and Vision tabs, then the offline classification benchmark passing 4/4](docs/assets/demo.gif)
 
 ---
 
@@ -311,6 +317,27 @@ The `benchmarks/` directory contains a reproducible evaluation framework with th
 **Intent validation** (`benchmarks/intent_validation/runner.py`):
 
 - Checks that generated tests encode the original user intent (6 lexical assertions).
+
+### Benchmark results
+
+Latest run of the offline heuristic classification benchmark (deterministic, no LLM or browser), reproducible with the command below:
+
+| Case       | Failure type        | Classified as       | Confidence | Result  |
+| ---------- | ------------------- | ------------------- | ---------- | ------- |
+| `heal-001` | `LOCATOR_NOT_FOUND` | `LOCATOR_NOT_FOUND` | 0.70       | ✅ pass |
+| `heal-002` | `TIMEOUT`           | `TIMEOUT`           | 1.00       | ✅ pass |
+| `heal-003` | `JAVASCRIPT_ERROR`  | `JAVASCRIPT_ERROR`  | 0.70       | ✅ pass |
+| `heal-004` | `ASSERTION_FAILED`  | `ASSERTION_FAILED`  | 1.00       | ✅ pass |
+
+| Benchmark                | Dataset                            | Needs     | Status                                  |
+| ------------------------ | ---------------------------------- | --------- | --------------------------------------- |
+| Heuristic classification | `repair_scenarios.json` (4 cases)  | Nothing   | 4/4 passed                              |
+| Generation               | `web_scenarios.json` (5 scenarios) | Local LLM | Run locally from the **Evaluation** tab |
+| Healing (full repair)    | `repair_scenarios.json` (4 cases)  | Local LLM | Run locally with a `healer_fn`          |
+
+LLM-backed scores depend on the model you run, so they are not published here. Each run writes a report to `benchmarks/reports/`, and the **Evaluation** tab compares runs over time.
+
+![Evaluation tab after running the heuristic classification benchmark](docs/assets/evaluation.png)
 
 Every benchmark run records: model, prompt version, prompt hash, temperature, seed, dataset version, and timestamp. Results are exportable to JSON for cross-run comparison.
 

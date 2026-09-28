@@ -1,5 +1,5 @@
 """
-Colored, compact logging for the AI Engineering Workbench.
+Colored, compact logging for the AI Playwright Workbench.
 
 Usage (call once at startup before any other imports):
     from src.utils.logger import init_logging

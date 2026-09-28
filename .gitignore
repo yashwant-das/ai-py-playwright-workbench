@@ -68,3 +68,4 @@ benchmarks/reports/*.json
 # Gradio
 flagged/
 gradio_queue.db
+coverage.xml

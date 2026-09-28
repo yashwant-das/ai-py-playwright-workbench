@@ -1,5 +1,5 @@
 """
-AI Engineering Workbench — Gradio interface.
+AI Playwright Workbench — Gradio interface.
 
 UI wiring only.  All pipeline logic lives in src/services/.
 All inspector/benchmark logic lives in src/services/workbench_service.py.
@@ -103,8 +103,8 @@ def on_artifact_select(name: str) -> tuple[str, dict]:
 # UI
 # ---------------------------------------------------------------------------
 
-with gr.Blocks(title="AI Engineering Workbench") as demo:
-    gr.Markdown("# AI Engineering Workbench")
+with gr.Blocks(title="AI Playwright Workbench") as demo:
+    gr.Markdown("# AI Playwright Workbench")
     gr.Markdown(
         "Reference implementation: structured LLM outputs · "
         "evaluation · observability · AST-based repair · explainability"
