@@ -20,6 +20,7 @@ Public API:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from datetime import datetime
@@ -435,10 +436,8 @@ def load_traces() -> tuple[str, str]:
         for line in _TRACES_PATH.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line:
-                try:
+                with contextlib.suppress(json.JSONDecodeError):
                     spans.append(json.loads(line))
-                except json.JSONDecodeError:
-                    pass
     except Exception as exc:
         return f"*Could not read traces: {exc}*", "error"
 

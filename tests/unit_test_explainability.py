@@ -45,14 +45,14 @@ def _minimal_evidence() -> Evidence:
 
 
 def _minimal_analysis(**kwargs) -> HealingAnalysis:
-    defaults = dict(
-        failure_type=FailureType.LOCATOR_DRIFT,
-        failure_summary="Locator drifted",
-        hypothesis="Update selector",
-        confidence_score=0.9,
-        reasoning_steps=["step 1"],
-        action_taken=_minimal_action(),
-    )
+    defaults = {
+        "failure_type": FailureType.LOCATOR_DRIFT,
+        "failure_summary": "Locator drifted",
+        "hypothesis": "Update selector",
+        "confidence_score": 0.9,
+        "reasoning_steps": ["step 1"],
+        "action_taken": _minimal_action(),
+    }
     defaults.update(kwargs)
     return HealingAnalysis(**defaults)
 

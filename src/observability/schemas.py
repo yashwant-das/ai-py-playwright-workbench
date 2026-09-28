@@ -16,26 +16,26 @@ so that ``src/observability`` code only needs to import from this module.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from typing import List, Literal
+from datetime import UTC, datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
 # Re-export canonical TraceMetadata from schemas/artifacts (plan requirement)
 # ---------------------------------------------------------------------------
-from schemas.artifacts import TraceMetadata  # noqa: F401 — re-export
+from schemas.artifacts import TraceMetadata  # re-exported via __all__
 
 __all__ = [
-    "TraceMetadata",
-    "SubprocessSpan",
     "SessionSpan",
+    "SubprocessSpan",
+    "TraceMetadata",
     "TraceSession",
 ]
 
 
 def _now_iso() -> str:
-    return datetime.now(tz=timezone.utc).isoformat()
+    return datetime.now(tz=UTC).isoformat()
 
 
 # ---------------------------------------------------------------------------
@@ -95,8 +95,8 @@ class TraceSession(BaseModel):
 
     trace_id: str
     session_type: str
-    llm_spans: List[TraceMetadata] = Field(default_factory=list)
-    subprocess_spans: List[SubprocessSpan] = Field(default_factory=list)
+    llm_spans: list[TraceMetadata] = Field(default_factory=list)
+    subprocess_spans: list[SubprocessSpan] = Field(default_factory=list)
     start_monotonic: float = Field(description="time.monotonic() at session start.")
 
     def to_session_span(

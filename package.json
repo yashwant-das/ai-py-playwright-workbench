@@ -11,10 +11,11 @@
     "type-check": "tsc --noEmit",
     "prepare": "husky",
     "husky": "husky",
-    "lint": "npm run lint:js && npm run lint:py && npm run lint:md",
+    "lint": "npm run lint:js && npm run lint:py && npm run lint:types && npm run lint:md",
     "format": "npm run format:js && npm run format:py",
     "lint:js": "eslint .",
     "lint:py": "uv run ruff check .",
+    "lint:types": "uv run mypy",
     "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
     "format:js": "prettier --write .",
     "format:py": "uv run ruff format . && uv run ruff check --select I --fix ."

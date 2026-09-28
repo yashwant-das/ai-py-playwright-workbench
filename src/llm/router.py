@@ -15,10 +15,11 @@ LLMRouter   — orchestrator; use LLMRouter.from_env() for the standard setup.
 import logging
 import os
 import time
-from typing import Optional
+from typing import Any, cast
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, Field
 
 from src.llm.client import LLMClientFactory, ProviderConfig
@@ -50,7 +51,7 @@ class LLMRequest(BaseModel):
         le=2.0,
         description="Sampling temperature.",
     )
-    max_tokens: Optional[int] = Field(
+    max_tokens: int | None = Field(
         default=None,
         gt=0,
         description="Maximum tokens in the response. None means provider default.",
@@ -88,6 +89,11 @@ class LLMResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _max_tokens_kwargs(request: LLMRequest) -> dict[str, Any]:
+    """Pass max_tokens only when set, so providers apply their own default."""
+    return {"max_tokens": request.max_tokens} if request.max_tokens else {}
+
+
 class LLMRouter:
     """Routes LLM requests to the correct provider with retry and fallback.
 
@@ -111,11 +117,11 @@ class LLMRouter:
         self,
         primary_config: ProviderConfig,
         primary_model: str,
-        vision_model: Optional[str] = None,
-        fallback_config: Optional[ProviderConfig] = None,
-        fallback_model: Optional[str] = None,
-        retry_policy: Optional[RetryPolicy] = None,
-        timeout_policy: Optional[TimeoutPolicy] = None,
+        vision_model: str | None = None,
+        fallback_config: ProviderConfig | None = None,
+        fallback_model: str | None = None,
+        retry_policy: RetryPolicy | None = None,
+        timeout_policy: TimeoutPolicy | None = None,
     ) -> None:
         self._primary_config = primary_config
         self._primary_model = primary_model
@@ -126,8 +132,8 @@ class LLMRouter:
         self._timeout_policy = timeout_policy or TimeoutPolicy()
 
         # Lazy client creation — OpenAI() is not called at __init__ time.
-        self.__primary_client: Optional[OpenAI] = None
-        self.__fallback_client: Optional[OpenAI] = None
+        self.__primary_client: OpenAI | None = None
+        self.__fallback_client: OpenAI | None = None
 
     # ------------------------------------------------------------------
     # Properties
@@ -139,7 +145,7 @@ class LLMRouter:
         return self._primary_model
 
     @property
-    def vision_model(self) -> Optional[str]:
+    def vision_model(self) -> str | None:
         """Vision model identifier for the primary provider, or None if not configured."""
         return self._vision_model
 
@@ -151,7 +157,7 @@ class LLMRouter:
         return self.__primary_client
 
     @property
-    def _fallback_client(self) -> Optional[OpenAI]:
+    def _fallback_client(self) -> OpenAI | None:
         """Lazily instantiated fallback OpenAI client (None if not configured)."""
         if self._fallback_config and self.__fallback_client is None:
             self.__fallback_client = LLMClientFactory.create(self._fallback_config)
@@ -177,7 +183,7 @@ class LLMRouter:
             RuntimeError: If all attempts (primary + fallback) fail.
         """
         retry_count = 0
-        last_exc: Optional[Exception] = None
+        last_exc: Exception | None = None
         delay = self._retry_policy.initial_delay_seconds
 
         # --- Primary provider with retry ---
@@ -186,11 +192,9 @@ class LLMRouter:
                 start = time.monotonic()
                 completion = self._primary_client.chat.completions.create(
                     model=request.model,
-                    messages=request.messages,
+                    messages=cast(list[ChatCompletionMessageParam], request.messages),
                     temperature=request.temperature,
-                    **(
-                        {"max_tokens": request.max_tokens} if request.max_tokens else {}
-                    ),
+                    **_max_tokens_kwargs(request),
                     timeout=self._timeout_policy.timeout_seconds,
                 )
                 latency_ms = int((time.monotonic() - start) * 1000)
@@ -238,11 +242,9 @@ class LLMRouter:
                 start = time.monotonic()
                 completion = self._fallback_client.chat.completions.create(
                     model=self._fallback_model,
-                    messages=request.messages,
+                    messages=cast(list[ChatCompletionMessageParam], request.messages),
                     temperature=request.temperature,
-                    **(
-                        {"max_tokens": request.max_tokens} if request.max_tokens else {}
-                    ),
+                    **_max_tokens_kwargs(request),
                     timeout=self._timeout_policy.timeout_seconds,
                 )
                 latency_ms = int((time.monotonic() - start) * 1000)
@@ -268,7 +270,7 @@ class LLMRouter:
         self,
         messages: list[dict],
         temperature: float = 0.1,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         """Convenience wrapper — calls complete() with the primary text model.
 
@@ -293,7 +295,7 @@ class LLMRouter:
         self,
         messages: list[dict],
         temperature: float = 0.1,
-        max_tokens: Optional[int] = None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
         """Convenience wrapper — calls complete() with the vision model.
 
@@ -387,7 +389,8 @@ class LLMRouter:
 
             get_tracer().record_llm_response(response)
         except Exception:
-            pass  # Observability must never break the main path.
+            # Observability must never break the main path.
+            logger.debug("Could not record LLM response span", exc_info=True)
 
         return response
 

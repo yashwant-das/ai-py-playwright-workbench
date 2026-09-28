@@ -30,24 +30,23 @@ Public API:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Union
 
 from src.observability.tracer import NullTracer, Tracer
 from src.observability.writer import TraceWriter
 
 __all__ = [
-    "configure_tracer",
-    "get_tracer",
     "NullTracer",
     "Tracer",
+    "configure_tracer",
+    "get_tracer",
 ]
 
 # Global singleton — NullTracer by default so all instrumentation points
 # are safe to call before configure_tracer() has been invoked.
-_tracer: Union[Tracer, NullTracer] = NullTracer()
+_tracer: Tracer | NullTracer = NullTracer()
 
 
-def get_tracer() -> Union[Tracer, NullTracer]:
+def get_tracer() -> Tracer | NullTracer:
     """Return the current global tracer.
 
     Returns a :class:`NullTracer` until :func:`configure_tracer` is called.

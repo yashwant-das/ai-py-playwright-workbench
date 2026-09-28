@@ -3,7 +3,6 @@ Formatting utilities for the application.
 """
 
 import re
-from typing import Optional
 
 
 def clean_ansi_codes(text: str) -> str:
@@ -25,7 +24,7 @@ def format_test_result(
     filepath: str,
     output: str,
     success: bool,
-    metadata: Optional[dict] = None,
+    metadata: dict | None = None,
 ) -> str:
     """Format the test execution result for display.
 
@@ -80,7 +79,7 @@ def format_healing_result(
     confidence: float,
     strategy: str,
     hypothesis: str,
-    metadata: Optional[dict] = None,
+    metadata: dict | None = None,
 ) -> str:
     """Format the healing pipeline result for the execution log panel.
 

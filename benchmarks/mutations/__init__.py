@@ -11,11 +11,11 @@ from benchmarks.mutations.mutator import (
 )
 
 __all__ = [
-    "MutationType",
     "MutationResult",
-    "mutate",
+    "MutationType",
+    "apply_assertion_swap",
+    "apply_import_removal",
     "apply_selector_drift",
     "apply_timeout_reduction",
-    "apply_import_removal",
-    "apply_assertion_swap",
+    "mutate",
 ]

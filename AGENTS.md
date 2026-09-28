@@ -114,7 +114,7 @@ run = run_healing_benchmark(Path('benchmarks/healing/fixtures/repair_scenarios.j
 print(f'{run.passed}/{run.total} passed')
 "
 
-# Lint (JS + Python + Markdown)
+# Lint (JS + Python + mypy + Markdown)
 npm run lint
 
 # Format Python
@@ -143,7 +143,7 @@ npm run test:generated
 
 ## Coding Style
 
-- Python: Ruff (88-char lines, double quotes). Run `uv run ruff format .` before committing.
+- Python: Ruff (88-char lines, double quotes; rule set in `pyproject.toml`) and mypy. Run `uv run ruff format .` and `uv run mypy` before committing.
 - TypeScript: Prettier with 2-space indentation. Run `npm run format` before committing.
 - Markdown: must pass `markdownlint-cli2`. Run `npm run lint:md` to check.
 - All LLM responses must be parsed via `parse_llm_response(raw, ModelClass)` — never `json.loads()` directly.

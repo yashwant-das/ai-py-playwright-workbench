@@ -14,10 +14,14 @@ Usage:
 
 from __future__ import annotations
 
+import contextlib
+import logging
 import threading
 from pathlib import Path
 
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class TraceWriter:
@@ -57,7 +61,7 @@ class TraceWriter:
                     fh.write(line)
         except Exception:
             # Observability must never break the main path.
-            pass
+            logger.debug("Could not write span to %s", self._path, exc_info=True)
 
     def read_all(self) -> list[dict]:
         """Read all spans from the JSONL file and return as a list of dicts.
@@ -74,8 +78,6 @@ class TraceWriter:
             for line in fh:
                 line = line.strip()
                 if line:
-                    try:
+                    with contextlib.suppress(json.JSONDecodeError):
                         spans.append(json.loads(line))
-                    except json.JSONDecodeError:
-                        pass
         return spans

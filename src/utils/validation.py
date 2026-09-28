@@ -10,8 +10,6 @@ from urllib.parse import urlparse
 class ValidationError(Exception):
     """Custom exception for validation errors."""
 
-    pass
-
 
 def validate_url(url: str) -> bool:
     """Validate that a URL is properly formatted and uses http/https.
@@ -61,7 +59,7 @@ def validate_and_sanitize_url(url: str) -> str:
     return url
 
 
-def validate_file_path(file_path: str, allowed_dirs: list = None) -> str:
+def validate_file_path(file_path: str, allowed_dirs: list | None = None) -> str:
     """Validate and sanitize a file path to prevent directory traversal.
 
     Args:
@@ -80,29 +78,19 @@ def validate_file_path(file_path: str, allowed_dirs: list = None) -> str:
     if allowed_dirs is None:
         allowed_dirs = ["tests/generated"]
 
-    # Resolve to absolute path
-    abs_path = os.path.abspath(file_path)
+    # Resolve symlinks and ".." so the prefix check sees the real location.
+    abs_path = os.path.realpath(file_path)
 
-    # Check if path is within any allowed directory
-    is_allowed = False
     for allowed_dir in allowed_dirs:
-        allowed_abs = os.path.abspath(allowed_dir)
-        try:
-            # Check if the path is within the allowed directory
-            os.path.commonpath([abs_path, allowed_abs])
-            if abs_path.startswith(allowed_abs):
-                is_allowed = True
-                break
-        except ValueError:
-            # Paths don't share a common base
-            continue
+        allowed_abs = os.path.realpath(allowed_dir)
+        # Compare against "<dir>/" so a sibling like "tests/generated_evil"
+        # does not pass as being inside "tests/generated".
+        if abs_path.startswith(allowed_abs + os.sep):
+            return abs_path
 
-    if not is_allowed:
-        raise ValidationError(
-            f"File path must be within allowed directories: {allowed_dirs}"
-        )
-
-    return abs_path
+    raise ValidationError(
+        f"File path must be within allowed directories: {allowed_dirs}"
+    )
 
 
 def validate_description(description: str, max_length: int = 500) -> str:

@@ -15,7 +15,7 @@ from src.context.collector import collect_context
 from src.context.screenshot import capture_from_page, capture_screenshot
 
 __all__ = [
-    "collect_context",
     "capture_from_page",
     "capture_screenshot",
+    "collect_context",
 ]

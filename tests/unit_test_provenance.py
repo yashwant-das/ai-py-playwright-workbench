@@ -28,43 +28,43 @@ from schemas.generation import GenerationDecision, VisionDecision
 
 
 def _make_generation_decision(**kwargs) -> GenerationDecision:
-    defaults = dict(
-        url="https://example.com",
-        story="Log in and verify welcome message",
-        code="import { test } from '@playwright/test';\ntest('login', async ({ page }) => {});",
-        line_count=2,
-        model_used="qwen3-30b",
-        provider="lm_studio",
-        prompt_version="3",
-        prompt_hash="abcdef123456",
-        input_tokens=500,
-        output_tokens=120,
-        latency_ms=1234,
-        retry_count=1,
-        trace_id="trace-abc-001",
-        context_snapshot_id="deadbeef1234",
-    )
+    defaults = {
+        "url": "https://example.com",
+        "story": "Log in and verify welcome message",
+        "code": "import { test } from '@playwright/test';\ntest('login', async ({ page }) => {});",
+        "line_count": 2,
+        "model_used": "qwen3-30b",
+        "provider": "lm_studio",
+        "prompt_version": "3",
+        "prompt_hash": "abcdef123456",
+        "input_tokens": 500,
+        "output_tokens": 120,
+        "latency_ms": 1234,
+        "retry_count": 1,
+        "trace_id": "trace-abc-001",
+        "context_snapshot_id": "deadbeef1234",
+    }
     defaults.update(kwargs)
     return GenerationDecision(**defaults)
 
 
 def _make_vision_decision(**kwargs) -> VisionDecision:
-    defaults = dict(
-        url="https://saucedemo.com",
-        instruction="Login with standard_user / secret_sauce",
-        code="import { test } from '@playwright/test';\ntest('vision', async ({ page }) => {});",
-        line_count=2,
-        screenshot_path="/tmp/screenshot.png",
-        model_used="llava-v1.5",
-        provider="ollama",
-        prompt_version="1",
-        prompt_hash="feedface9999",
-        input_tokens=300,
-        output_tokens=80,
-        latency_ms=2500,
-        retry_count=0,
-        trace_id="trace-vision-002",
-    )
+    defaults = {
+        "url": "https://saucedemo.com",
+        "instruction": "Login with standard_user / secret_sauce",
+        "code": "import { test } from '@playwright/test';\ntest('vision', async ({ page }) => {});",
+        "line_count": 2,
+        "screenshot_path": "/tmp/screenshot.png",
+        "model_used": "llava-v1.5",
+        "provider": "ollama",
+        "prompt_version": "1",
+        "prompt_hash": "feedface9999",
+        "input_tokens": 300,
+        "output_tokens": 80,
+        "latency_ms": 2500,
+        "retry_count": 0,
+        "trace_id": "trace-vision-002",
+    }
     defaults.update(kwargs)
     return VisionDecision(**defaults)
 

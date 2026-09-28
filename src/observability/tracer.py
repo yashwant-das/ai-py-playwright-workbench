@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Optional
 from uuid import uuid4
 
 from src.observability.schemas import (
@@ -75,7 +74,7 @@ class Tracer:
         _thread_local.prompt_hash = ""
         return trace_id
 
-    def end_session(self, trace_id: str, *, success: bool) -> Optional[SessionSpan]:
+    def end_session(self, trace_id: str, *, success: bool) -> SessionSpan | None:
         """Finalise the session and write a :class:`SessionSpan` to JSONL.
 
         Args:
@@ -86,7 +85,7 @@ class Tracer:
         Returns:
             The written :class:`SessionSpan`, or ``None`` if no session was active.
         """
-        session: Optional[TraceSession] = getattr(_thread_local, "session", None)
+        session: TraceSession | None = getattr(_thread_local, "session", None)
         if session is None or session.trace_id != trace_id:
             return None
 
@@ -119,7 +118,7 @@ class Tracer:
     # Span recording
     # ------------------------------------------------------------------
 
-    def record_llm_response(self, response) -> Optional[TraceMetadata]:
+    def record_llm_response(self, response) -> TraceMetadata | None:
         """Record an LLM call span from an :class:`~src.llm.router.LLMResponse`.
 
         This is a no-op when no session is active on the current thread.
@@ -133,7 +132,7 @@ class Tracer:
             The recorded :class:`TraceMetadata` span, or ``None`` if no session
             is active.
         """
-        session: Optional[TraceSession] = getattr(_thread_local, "session", None)
+        session: TraceSession | None = getattr(_thread_local, "session", None)
         if session is None:
             return None
 
@@ -160,7 +159,7 @@ class Tracer:
         command: str,
         exit_code: int,
         latency_ms: int,
-    ) -> Optional[SubprocessSpan]:
+    ) -> SubprocessSpan | None:
         """Record a subprocess call span.
 
         This is a no-op when no session is active on the current thread.
@@ -174,7 +173,7 @@ class Tracer:
             The recorded :class:`SubprocessSpan`, or ``None`` if no session
             is active.
         """
-        session: Optional[TraceSession] = getattr(_thread_local, "session", None)
+        session: TraceSession | None = getattr(_thread_local, "session", None)
         if session is None:
             return None
 
@@ -194,13 +193,13 @@ class Tracer:
     # Session inspection
     # ------------------------------------------------------------------
 
-    def get_session(self, trace_id: str) -> Optional[TraceSession]:
+    def get_session(self, trace_id: str) -> TraceSession | None:
         """Return the active :class:`TraceSession` for this thread if ``trace_id`` matches.
 
         Returns ``None`` if no session is active or the IDs do not match.
         Useful for assertions in tests.
         """
-        session: Optional[TraceSession] = getattr(_thread_local, "session", None)
+        session: TraceSession | None = getattr(_thread_local, "session", None)
         if session is not None and session.trace_id == trace_id:
             return session
         return None

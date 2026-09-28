@@ -40,6 +40,8 @@ Access the Gradio interface at `http://localhost:7860`.
 >
 > Also, if you want to preserve your execution logs and decision artifacts after the container stops, consider mounting the `logs/` and `tests/artifacts/` directories as well (e.g., `-v "$(pwd)/logs:/app/logs" -v "$(pwd)/tests/artifacts:/app/tests/artifacts"`).
 
+The container runs as the unprivileged `pwuser` (UID 1000), not root. If a mounted host directory is owned by a different UID, add `--user "$(id -u):$(id -g)"` to `docker run` so the workbench can write to it.
+
 ### With Environment File
 
 If you have a `.env` file, mount it:

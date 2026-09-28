@@ -46,7 +46,7 @@ def get_prompt_version(agent_name: str) -> str:
     """
     manifest = _load_manifest()
     prompts = manifest.get("prompts", {})
-    return prompts.get(agent_name, {}).get("version", "1")
+    return str(prompts.get(agent_name, {}).get("version", "1"))
 
 
 def load_prompt(agent_name: str) -> str:
@@ -65,7 +65,7 @@ def load_prompt(agent_name: str) -> str:
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")
 
-    with open(prompt_path, "r", encoding="utf-8") as f:
+    with open(prompt_path, encoding="utf-8") as f:
         return f.read().strip()
 
 

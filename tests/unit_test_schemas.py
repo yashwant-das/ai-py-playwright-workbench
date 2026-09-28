@@ -151,18 +151,18 @@ class TestHealingAnalysis(unittest.TestCase):
 
 class TestHealingDecision(unittest.TestCase):
     def _make_decision(self, **overrides) -> HealingDecision:
-        defaults = dict(
-            test_file="tests/generated/example.spec.ts",
-            failure_type=FailureType.LOCATOR_DRIFT,
-            failure_summary="Selector drifted",
-            evidence=Evidence(error_log="locator resolved to 0 elements"),
-            hypothesis="Selector attribute changed",
-            confidence_score=0.9,
-            reasoning_steps=["step 1"],
-            action_taken=HealingAction(
+        defaults = {
+            "test_file": "tests/generated/example.spec.ts",
+            "failure_type": FailureType.LOCATOR_DRIFT,
+            "failure_summary": "Selector drifted",
+            "evidence": Evidence(error_log="locator resolved to 0 elements"),
+            "hypothesis": "Selector attribute changed",
+            "confidence_score": 0.9,
+            "reasoning_steps": ["step 1"],
+            "action_taken": HealingAction(
                 original_code="old", fixed_code="new", description="fix"
             ),
-        )
+        }
         defaults.update(overrides)
         return HealingDecision(**defaults)
 

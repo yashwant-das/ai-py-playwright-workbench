@@ -13,7 +13,6 @@ Public API:
 import logging
 import time
 from pathlib import Path
-from typing import Optional
 
 from playwright.sync_api import sync_playwright
 
@@ -41,7 +40,7 @@ def collect_context(
     capture_network: bool = True,
     max_html_chars: int = 30000,
     max_locator_candidates: int = 20,
-    screenshot_dir: Optional[Path] = None,
+    screenshot_dir: Path | None = None,
     screenshot_tag: str = "",
     wait_ms: int = 2000,
 ) -> ContextSnapshot:

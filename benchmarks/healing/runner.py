@@ -21,8 +21,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -40,13 +40,13 @@ logger = logging.getLogger(__name__)
 class HealingCheck(BaseModel):
     """Quality checks for a healed test file."""
 
-    expected_failure_type: Optional[str] = None
+    expected_failure_type: str | None = None
     """The FailureType string the heuristic should classify this as."""
 
-    must_fix_pattern: Optional[str] = None
+    must_fix_pattern: str | None = None
     """String that must NOT appear in the repaired code (i.e. the bug was fixed)."""
 
-    fixed_code_must_contain: List[str] = Field(default_factory=list)
+    fixed_code_must_contain: list[str] = Field(default_factory=list)
     """Strings that MUST appear in the repaired code."""
 
     code_must_change: bool = True
@@ -75,7 +75,7 @@ class HealingDataset(BaseModel):
 
     version: str
     description: str
-    cases: List[HealingCase]
+    cases: list[HealingCase]
 
 
 # ---------------------------------------------------------------------------
@@ -186,8 +186,8 @@ def run_healing_benchmark(
     project_root: Path,
     config: BenchmarkRunConfig,
     *,
-    healer_fn: Optional[Callable[[str, str], str]] = None,
-    case_ids: Optional[List[str]] = None,
+    healer_fn: Callable[[str, str], str] | None = None,
+    case_ids: list[str] | None = None,
 ) -> BenchmarkRun:
     """Run the healing benchmark.
 

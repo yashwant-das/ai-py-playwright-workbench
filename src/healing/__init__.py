@@ -25,15 +25,15 @@ from src.healing.runner import run_test
 from src.healing.verifier import verify_repair
 
 __all__ = [
-    "run_test",
-    "extract_url_from_code",
-    "gather_evidence",
-    "classify_failure_heuristic",
     "analyze_and_plan",
     "apply_fix",
-    "verify_repair",
-    "emit_artifacts",
     "attempt_healing",
+    "classify_failure_heuristic",
+    "emit_artifacts",
+    "extract_url_from_code",
+    "gather_evidence",
+    "run_test",
+    "verify_repair",
 ]
 
 

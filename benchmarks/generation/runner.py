@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -34,19 +34,19 @@ logger = logging.getLogger(__name__)
 class GenerationCheck(BaseModel):
     """Quality checks applied to a generated test file."""
 
-    must_import: List[str] = Field(default_factory=list)
+    must_import: list[str] = Field(default_factory=list)
     """Strings that must appear anywhere in the generated code (e.g. ``"@playwright/test"``)."""
 
-    must_use_assertions: List[str] = Field(default_factory=list)
+    must_use_assertions: list[str] = Field(default_factory=list)
     """Assertion helpers that must appear (e.g. ``"expect"``)."""
 
-    must_not_use_deprecated: List[str] = Field(default_factory=list)
+    must_not_use_deprecated: list[str] = Field(default_factory=list)
     """Deprecated APIs that must NOT appear (e.g. ``"waitForSelector"``)."""
 
     must_contain_url: bool = True
     """Whether the scenario URL must appear verbatim in the code."""
 
-    preferred_locators: List[str] = Field(default_factory=list)
+    preferred_locators: list[str] = Field(default_factory=list)
     """Modern Playwright locators whose presence boosts the score (not a hard gate)."""
 
 
@@ -65,7 +65,7 @@ class GenerationDataset(BaseModel):
 
     version: str
     description: str
-    scenarios: List[GenerationScenario]
+    scenarios: list[GenerationScenario]
 
 
 # ---------------------------------------------------------------------------
@@ -95,7 +95,7 @@ def evaluate_generated_code(
     Returns:
         :class:`~schemas.evaluation.EvaluationResult` with pass/fail and score.
     """
-    if not code or code.startswith("Error") or code.startswith("LLM Error"):
+    if not code or code.startswith(("Error", "LLM Error")):
         return EvaluationResult(
             example_id=scenario.id,
             passed=False,
@@ -190,7 +190,7 @@ def run_generation_benchmark(
     generator_fn: Callable[[str, str], str],
     config: BenchmarkRunConfig,
     *,
-    scenario_ids: Optional[List[str]] = None,
+    scenario_ids: list[str] | None = None,
 ) -> BenchmarkRun:
     """Run the generation benchmark against a dataset.
 
@@ -268,7 +268,11 @@ if __name__ == "__main__":
     )
 
     _dataset_path = Path(__file__).parent / "fixtures" / "web_scenarios.json"
-    _run = run_generation_benchmark(_dataset_path, generate_test_script, _config)
+    _run = run_generation_benchmark(
+        _dataset_path,
+        lambda url, story: generate_test_script(url, story).code,
+        _config,
+    )
 
     print(_run.to_json())
     sys.exit(0 if _run.pass_rate >= 0.8 else 1)

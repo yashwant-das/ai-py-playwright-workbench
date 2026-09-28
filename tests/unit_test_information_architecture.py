@@ -301,7 +301,7 @@ class TestLoadMostRecentArtifact(unittest.TestCase):
             with patch("src.services.workbench_service._ARTIFACTS_DIR", td):
                 from src.services.workbench_service import load_most_recent_artifact
 
-                md, raw = load_most_recent_artifact()
+                _md, raw = load_most_recent_artifact()
         # newest artifact has verification_passed=True
         self.assertTrue(raw.get("verification_passed"))
 

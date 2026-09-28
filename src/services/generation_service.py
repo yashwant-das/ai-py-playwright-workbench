@@ -12,9 +12,9 @@ calls live here, not in app.py.
 import logging
 import re
 import subprocess
+from collections.abc import Iterator
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ TEST_DIR = PROJECT_ROOT / "tests" / "generated"
 
 def generate_test_streaming(
     url: str, story: str
-) -> Iterator[tuple[str, str, Optional[dict]]]:
+) -> Iterator[tuple[str, str, dict | None]]:
     """Generate a Playwright test from a URL and user story, yielding progress.
 
     Args:
@@ -98,7 +98,7 @@ def run_test_streaming(
     url: str,
     code: str,
     story: str,
-    metadata: Optional[dict] = None,
+    metadata: dict | None = None,
 ) -> Iterator[tuple[str, str]]:
     """Write a generated test to disk and run it, yielding progress updates.
 
@@ -165,8 +165,8 @@ def run_test_streaming(
     yield timeline, "Running tests..."
 
     try:
-        result = subprocess.run(
-            ["npx", "playwright", "test", str(filepath)],
+        result = subprocess.run(  # noqa: S603 - fixed argv, no shell
+            ["npx", "playwright", "test", str(filepath)],  # noqa: S607 - node/npx resolved from PATH
             capture_output=True,
             text=True,
             timeout=60,
