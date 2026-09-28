@@ -6,6 +6,7 @@
 > Structured outputs · AST repair · evaluation · observability · explainability · local LLM.
 
 [![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.57%2B-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
