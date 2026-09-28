@@ -11,6 +11,7 @@ Choose the path that matches your goal.
 ### "I want to understand what this project is and why it exists"
 
 1. [`/README.md`](../README.md) — what the project does, quick start, repo structure
+1. [`workbench-ui.md`](workbench-ui.md) — the eight UI tabs, and calling the pipelines from Python
 1. [`ai-systems-engineering.md`](ai-systems-engineering.md) — the engineering philosophy: why structured outputs, evaluation, observability, and AST repair matter in AI pipelines
 1. [`architecture/overview.md`](architecture/overview.md) — how the core subsystems fit together
 

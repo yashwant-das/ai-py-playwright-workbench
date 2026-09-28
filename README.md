@@ -1,442 +1,119 @@
-# AI Playwright Workbench
+# ai-py-playwright-workbench
 
-**`ai-py-playwright-workbench`**: generate, run, and self-heal Playwright tests with local LLMs.
+Generates, runs and self-heals Playwright tests with local LLMs, using structured outputs, AST-based code repair, benchmarks and JSONL traces.
 
-> A reference implementation of AI Systems Engineering for Playwright test automation.
-> Structured outputs · AST repair · evaluation · observability · explainability · local LLM.
-
-[![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
+[![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9%2B-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.57%2B-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
-[![Gradio](https://img.shields.io/badge/Gradio-6.2%2B-FF6B6B)](https://gradio.app/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Test report](https://img.shields.io/badge/report-latest%20CI%20run-blue)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Playwright](https://img.shields.io/badge/Playwright-1.57-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Gradio](https://img.shields.io/badge/Gradio-6-FF6B6B)](https://gradio.app/)
 
 ![Workbench demo: the Generation, Healing and Vision tabs, then the offline classification benchmark passing 4/4](docs/assets/demo.gif)
 
----
+## Why it exists
 
-## Why This Exists
+Playwright tests break as UIs change, usually because a selector drifted, a timeout expired or an import moved, not because the product is broken. Fixing those failures is mechanical work. This workbench generates specs from a URL or a screenshot, and when a spec fails it classifies the failure, asks a local model for a fix, applies it to the TypeScript AST and re-runs the test. It also shows the plumbing an LLM pipeline needs to be trusted: Pydantic-validated outputs, benchmarks, traces and a decision record for every run.
 
-Writing and maintaining Playwright tests by hand is expensive. As UIs evolve, tests break — not because the product is broken, but because selectors drift, timeouts expire, or imports change. Fixing these failures manually is mechanical work that an AI system can do instead.
+## Architecture
 
-This project solves three problems:
-
-1. **Test generation**: Given a URL and a plain-English scenario, produce a runnable Playwright spec.
-2. **Visual generation**: Given a screenshot and an instruction, produce a test using only what is visible on screen.
-3. **Self-healing**: When a spec breaks, diagnose why, propose a code fix, apply it, re-run the test, and repeat — bounded by a configurable retry limit.
-
-The secondary goal is equally important: **demonstrate how to build reliable AI pipelines.** The system uses structured outputs (Pydantic), an evaluation framework (benchmarks), a custom observability layer (JSONL traces), AST-based code repair (ts-morph), and full provenance on every decision artifact. These are the engineering primitives any LLM application needs to be trustworthy in production.
-
----
-
-## Core Capabilities
-
-| Capability                                    | Implementation                                                                               |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Test generation from DOM + accessibility tree | `src/services/generation_service.py` → `src/agents/generator.py`                             |
-| Test generation from screenshot               | `src/services/vision_service.py`                                                             |
-| Self-healing pipeline                         | `src/services/healing_service.py` → `src/healing/`                                           |
-| Structured LLM outputs                        | `schemas/` + `src/utils/llm.parse_llm_response()`                                            |
-| AST-based code repair                         | `src/healing/repair.py` + `scripts/ast_repair.js` (ts-morph)                                 |
-| Heuristic failure classification              | `src/healing/classifier.py`                                                                  |
-| Rich context collection                       | `src/context/` (DOM, accessibility tree, console errors, network errors, locator candidates) |
-| LLM routing with retry and fallback           | `src/llm/router.py`                                                                          |
-| JSONL observability traces                    | `src/observability/`                                                                         |
-| Evaluation benchmarks                         | `benchmarks/`                                                                                |
-| Full decision provenance                      | `HealingDecision.to_markdown()` (Phase 9 explainability fields)                              |
-
----
-
-## Architecture Overview
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                   Gradio UI (src/app.py)                    │
-│  Overview │ Generation │ Healing │ Vision │ Artifacts │     │
-│  Evaluation │ Traces │ Models                               │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ UI logic calls src/services/
-┌──────────────────────────────▼──────────────────────────────┐
-│                      src/services/                          │
-│  generation_service  healing_service    vision_service      │
-│  workbench_service   (streaming generators)                 │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-┌──────────────────────────────▼──────────────────────────────┐
-│                Pipeline Layer & Utilities                   │
-│  src/healing/   src/context/   src/agents/                  │
-│  src/observability/            src/utils/                   │
-└──────────────────────────────┬──────────────────────────────┘
-                               │
-                    ┌──────────▼──────────┐
-                    │     src/llm/        │  LLMRouter → LM Studio / Ollama
-                    │     schemas/        │  Pydantic validation
-                    └─────────────────────┘
+```mermaid
+flowchart LR
+    UI[Gradio UI<br/>src/app.py] --> SVC[Services<br/>src/services/]
+    SVC --> GEN[Generation and vision<br/>src/agents/]
+    SVC --> HEAL[Healing pipeline<br/>src/healing/]
+    GEN --> CTX[Context collector<br/>DOM, a11y tree, console, network]
+    HEAL --> CTX
+    CTX --> PW[Playwright browser]
+    HEAL -->|AST fix| AST[ts-morph<br/>scripts/ast_repair.js]
+    GEN --> LLM[LLM router<br/>LM Studio or Ollama]
+    HEAL --> LLM
+    LLM --> OBS[(logs/traces.jsonl<br/>tests/artifacts/)]
 ```
 
-The UI layer calls `src/services/` for business logic (and uses `src/observability/` / `src/utils/` for initialization). Services call pipeline modules. Pipeline modules call `src/llm/` for LLM access and `schemas/` for data contracts. Every LLM call is recorded in `logs/traces.jsonl`. Every pipeline session produces a decision artifact (Healing, Generation, or Vision) in `tests/artifacts/`.
+The UI only calls the service layer; services run the generation and healing pipelines, which collect browser context in one Playwright session and call the local model through a router with retries and fallback. Every LLM call is traced, and every run writes a decision artifact.
 
----
+## Quickstart
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+ (for Playwright and ts-morph AST repair)
-- A running local LLM via [LM Studio](https://lmstudio.ai/) or [Ollama](https://ollama.com/)
-
-### Install
+Prerequisites: Python 3.11, [uv](https://docs.astral.sh/uv/), Node.js 20, and a local model served by [LM Studio](https://lmstudio.ai/) (default) or [Ollama](https://ollama.com/).
 
 ```bash
-# Python dependencies
+git clone https://github.com/yashwant-das/ai-py-playwright-workbench.git && cd ai-py-playwright-workbench
 uv sync
-
-# Node.js dependencies + Playwright browsers
 npm install
-npx playwright install
-```
-
-### Configure LLM
-
-Copy `.env.example` to `.env` and activate **one** provider:
-
-```bash
-cp .env.example .env
-```
-
-**LM Studio** (default):
-
-```env
-LLM_PROVIDER=lm_studio
-LM_STUDIO_URL=http://localhost:1234/v1
-LM_STUDIO_TEXT_MODEL=qwen/qwen3.6-35b-a3b
-LM_STUDIO_VISION_MODEL=google/gemma-4-26b-a4b
-```
-
-**Ollama** — set `LLM_PROVIDER=ollama` and uncomment the Ollama lines in `.env`:
-
-```env
-LLM_PROVIDER=ollama
-OLLAMA_URL=http://localhost:11434/v1
-OLLAMA_TEXT_MODEL=qwen3.6:latest
-OLLAMA_VISION_MODEL=gemma4:26b
-```
-
-> [!IMPORTANT]  
-> **100% Test Correctness Verified**  
-> This reference implementation has been verified to achieve 100% test correctness when using the `gemma4:26b` model. Performance and reliability may vary when substituting smaller or differently-tuned models.
-
-Only one provider is active at a time. Full variable reference: [docs/env-variables.md](docs/env-variables.md)
-
-### Run
-
-```bash
+npx playwright install chromium
+cp .env.example .env     # set LLM_PROVIDER and the model names for LM Studio or Ollama
 uv run python src/app.py
 ```
 
-Open `http://127.0.0.1:7860`.
+The workbench opens at <http://127.0.0.1:7860>. Only one provider is active at a time; the variables are listed in [docs/env-variables.md](docs/env-variables.md), and a Docker setup is in [docs/docker.md](docs/docker.md).
 
----
+The UI has eight tabs: Overview, Generation, Healing, Vision, Artifacts, Evaluation, Traces and Models. [docs/workbench-ui.md](docs/workbench-ui.md) walks through each one.
 
-## The Workbench
+## Test reports and results
 
-The UI has eight tabs:
+- CI runs ruff, mypy, the unit tests with coverage (uploaded to Codecov), tsc, ESLint and markdownlint on every push and pull request.
+- A second CI job generates and heals specs against a real Chromium with a stubbed LLM, then re-runs them. The Playwright HTML report, generated specs, decision artifacts and traces are attached to the run as the `e2e-report` artifact: open the [latest CI run](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml) and download it.
+- Locally, `uv run python -m pytest tests/unit_test_*.py -q` runs the unit tests with no model or browser, and `npm run test:generated` runs the specs the workbench generated.
 
-### Overview
+### Benchmark results (2026-09-28, heuristic classifier, no LLM)
 
-Shows the system status summary and a unified run history table — one row per decision artifact across all three pipelines (generation, healing, vision). Click **Refresh Recent Runs** to reload.
+| Case       | Failure type        | Classified as       | Confidence | Result |
+| ---------- | ------------------- | ------------------- | ---------- | ------ |
+| `heal-001` | `LOCATOR_NOT_FOUND` | `LOCATOR_NOT_FOUND` | 0.70       | pass   |
+| `heal-002` | `TIMEOUT`           | `TIMEOUT`           | 1.00       | pass   |
+| `heal-003` | `JAVASCRIPT_ERROR`  | `JAVASCRIPT_ERROR`  | 0.70       | pass   |
+| `heal-004` | `ASSERTION_FAILED`  | `ASSERTION_FAILED`  | 1.00       | pass   |
 
-### Generation Pipeline
-
-Enter a target URL and a plain-English test scenario. Click **Generate Test** to produce a TypeScript spec using the page's DOM structure, accessibility tree, and console signals. Click **Run Test** to execute it immediately.
-
-### Healing Pipeline
-
-Upload a broken `.spec.ts` file. Set **Max Repair Attempts** (1–5). Click **Run Healing Pipeline**. The pipeline:
-
-1. Runs the test — captures the failure
-2. Gathers evidence (error log, DOM, accessibility tree, console errors, network errors, screenshot)
-3. Heuristic classifier pre-diagnoses the failure type (fast, deterministic, no LLM)
-4. LLM plans the repair — reasons step-by-step, proposes a code fix
-5. AST-based repair applies the fix (structural strategies: selector replace, import add, timeout adjust, role argument, assertion swap)
-6. Verifies by re-running the test
-7. Repeats up to the configured limit
-
-The **Decision Report** tab shows the full `HealingDecision.to_markdown()` output — failure type, hypothesis, confidence score, confidence rationale, root cause evidence, code change, and provenance (model, prompt version, execution time).
-
-### Vision Pipeline
-
-Enter a URL and instruction. The pipeline captures a screenshot, sends it to a vision-capable LLM, and generates a test using visual signals. Useful when the DOM alone is not enough.
-
-### Artifact Inspector
-
-Browse decision artifacts written to `tests/artifacts/` after every pipeline run (healing, generation, and vision). Selecting an artifact renders the full markdown report alongside the raw JSON. The report includes Phase 9 provenance fields: which model, which prompt version and hash, how long the planning took, and which evidence snapshot was used.
-
-### Evaluation
-
-Two sub-tabs:
-
-- **Heuristic Classification** — runs the heuristic failure-classification benchmark against `benchmarks/healing/fixtures/repair_scenarios.json`. No LLM or browser required, completes in milliseconds. Shows pass/fail per case with expected vs. classified failure type and confidence scores.
-- **Generation (LLM)** — runs the generation benchmark against `benchmarks/generation/fixtures/web_scenarios.json`. Requires a live LLM.
-
-### Trace Inspector
-
-Load and inspect `logs/traces.jsonl`. Displays three tables — session spans, LLM call spans, and subprocess spans — all linked by `trace_id`. Useful for understanding token usage, latency distribution, and retry patterns without leaving the UI.
-
-### Models
-
-Displays active model configuration from environment variables (`LM_STUDIO_TEXT_MODEL`, `LM_STUDIO_VISION_MODEL`, `OLLAMA_TEXT_MODEL`, `OLLAMA_VISION_MODEL`) alongside capability metadata from the `ModelRegistry`. Click **Refresh** to reload.
-
----
-
-## Running the Healing Pipeline Programmatically
-
-```bash
-# Via the service layer (correct entry point)
-uv run python -c "
-from src.services.healing_service import heal_test_streaming
-for step in heal_test_streaming('tests/generated/my_broken_test.spec.ts', 3):
-    print(step[0])
-"
-```
-
----
-
-## Repository Structure
-
-```text
-.
-├── src/
-│   ├── app.py                    # Gradio UI — 8-tab workbench, wiring only
-│   ├── agents/                   # Pipeline entry points
-│   │   ├── generator.py          # Context collection + LLM → GenerationDecision
-│   │   └── healer.py             # CLI entrypoint + re-exports src/healing/ public API
-│   ├── services/                 # Service layer (UI → pipelines boundary)
-│   │   ├── generation_service.py
-│   │   ├── healing_service.py
-│   │   ├── vision_service.py
-│   │   └── workbench_service.py  # Overview, Artifact Inspector, Evaluation, Trace Inspector, Models
-│   ├── healing/                  # Healing pipeline — 7 single-responsibility modules
-│   │   ├── classifier.py         # Heuristic failure classification
-│   │   ├── planner.py            # LLM reasoning → HealingDecision
-│   │   ├── repair.py             # AST-first code repair
-│   │   ├── runner.py             # Playwright subprocess management
-│   │   ├── evidence.py           # Evidence gathering
-│   │   ├── verifier.py           # Post-repair verification
-│   │   └── artifact_store.py     # JSON artifact persistence
-│   ├── context/                  # Rich browser context collection
-│   │   ├── collector.py          # Unified ContextSnapshot builder
-│   │   ├── dom.py                # HTML (BeautifulSoup-cleaned)
-│   │   ├── accessibility.py      # Playwright accessibility tree → ARIA text
-│   │   ├── locator_candidates.py # getByRole() strings from a11y tree
-│   │   ├── console.py            # Browser console errors
-│   │   ├── network.py            # Failed network requests
-│   │   └── screenshot.py         # Screenshot capture
-│   ├── llm/                      # LLM routing layer
-│   │   ├── router.py             # LLMRouter with retry and fallback
-│   │   ├── client.py             # LLMClientFactory (no module-level side effects)
-│   │   ├── registry.py           # Model capability metadata
-│   │   └── policies.py           # RetryPolicy, TimeoutPolicy
-│   ├── observability/            # JSONL trace writer
-│   │   ├── tracer.py             # Tracer (thread-local sessions) + NullTracer
-│   │   ├── writer.py             # Thread-safe JSONL appender
-│   │   └── schemas.py            # SubprocessSpan, SessionSpan, TraceSession
-│   └── utils/
-│       ├── llm.py                # parse_llm_response() + extract_json_block(), extract_code_block()
-│       ├── prompt_loader.py      # load_prompt(), get_prompt_hash(), get_prompt_version()
-│       ├── browser.py            # extract_domain() — URL → clean domain name for filenames
-│       ├── formatting.py         # clean_ansi_codes(), format_test_result()
-│       └── validation.py         # Input validation
-├── schemas/                      # Pydantic data contracts
-│   ├── healing.py                # HealingAnalysis, HealingDecision, Evidence, HealingAction
-│   ├── generation.py             # GenerationResult, GenerationDecision, VisionDecision
-│   ├── evaluation.py             # BenchmarkRun, BenchmarkRunConfig, EvaluationResult
-│   ├── artifacts.py              # ContextSnapshot, TraceMetadata
-│   └── shared.py                 # FailureType, RunResult, ProvenanceRecord, LLMConfig
-├── benchmarks/                   # Evaluation framework
-│   ├── healing/
-│   │   ├── runner.py             # Healing benchmark runner
-│   │   └── fixtures/
-│   │       └── repair_scenarios.json
-│   ├── generation/
-│   │   ├── runner.py
-│   │   └── fixtures/
-│   │       └── web_scenarios.json
-│   ├── intent_validation/
-│   │   └── runner.py
-│   └── mutations/
-│       └── mutator.py            # Mutation engine (introduces known failure types)
-├── scripts/
-│   └── ast_repair.js             # ts-morph AST repair script (Node.js subprocess)
-├── prompts/                      # LLM system prompts (external markdown files)
-│   ├── generator.md
-│   ├── healer.md
-│   ├── vision.md
-│   └── manifest.json             # Version registry (human-set version + dynamic hash)
-├── docs/                         # Project documentation
-│   ├── architecture/             # Per-subsystem architecture documents
-│   ├── evaluation/               # Benchmark and evaluation documentation
-│   ├── prompts/                  # Prompt design and versioning documentation
-│   ├── development/              # Developer onboarding and contribution guides
-│   ├── decisions.md              # Architecture Decision Records
-│   ├── governance.md             # Documentation governance rules
-│   ├── docker.md                 # Docker setup and deployment
-│   └── env-variables.md          # Environment variable reference
-├── tests/
-│   ├── unit_test_*.py            # 556 unit tests (zero live LLM or browser calls)
-│   ├── fixtures/                 # Broken .spec.ts files for benchmark/repair testing
-│   ├── generated/                # Generated specs (runtime output)
-│   └── artifacts/                # HealingDecision JSON artifacts (runtime output)
-├── logs/
-│   └── traces.jsonl              # JSONL observability traces (runtime output)
-├── playwright.config.ts
-├── pyproject.toml
-└── package.json
-```
-
----
-
-## Evaluation System
-
-The `benchmarks/` directory contains a reproducible evaluation framework with three runners:
-
-**Healing benchmark** (`benchmarks/healing/runner.py`):
-
-- Classification-only mode: runs `classify_failure_heuristic()` against synthetic error logs. No LLM needed. Deterministic.
-- Full repair mode: optionally calls a `healer_fn(code, error_log)` and evaluates the repaired code against lexical checks.
-- Dataset: `benchmarks/healing/fixtures/repair_scenarios.json` — 4 cases covering LOCATOR_NOT_FOUND, TIMEOUT, JAVASCRIPT_ERROR, ASSERTION_FAILED.
-
-**Generation benchmark** (`benchmarks/generation/runner.py`):
-
-- Evaluates generated code quality with lexical checks (imports, assertions, selector preferences).
-- Requires a live LLM but no browser.
-
-**Intent validation** (`benchmarks/intent_validation/runner.py`):
-
-- Checks that generated tests encode the original user intent (6 lexical assertions).
-
-### Benchmark results
-
-Latest run of the offline heuristic classification benchmark (deterministic, no LLM or browser), reproducible with the command below:
-
-| Case       | Failure type        | Classified as       | Confidence | Result  |
-| ---------- | ------------------- | ------------------- | ---------- | ------- |
-| `heal-001` | `LOCATOR_NOT_FOUND` | `LOCATOR_NOT_FOUND` | 0.70       | ✅ pass |
-| `heal-002` | `TIMEOUT`           | `TIMEOUT`           | 1.00       | ✅ pass |
-| `heal-003` | `JAVASCRIPT_ERROR`  | `JAVASCRIPT_ERROR`  | 0.70       | ✅ pass |
-| `heal-004` | `ASSERTION_FAILED`  | `ASSERTION_FAILED`  | 1.00       | ✅ pass |
-
-| Benchmark                | Dataset                            | Needs     | Status                                  |
-| ------------------------ | ---------------------------------- | --------- | --------------------------------------- |
-| Heuristic classification | `repair_scenarios.json` (4 cases)  | Nothing   | 4/4 passed                              |
-| Generation               | `web_scenarios.json` (5 scenarios) | Local LLM | Run locally from the **Evaluation** tab |
-| Healing (full repair)    | `repair_scenarios.json` (4 cases)  | Local LLM | Run locally with a `healer_fn`          |
-
-LLM-backed scores depend on the model you run, so they are not published here. Each run writes a report to `benchmarks/reports/`, and the **Evaluation** tab compares runs over time.
+The generation benchmark (5 scenarios) and the full-repair healing benchmark need a local model, and their scores depend on which one you run, so they are not published here. Run them from the **Evaluation** tab or from Python ([docs/evaluation/benchmarks.md](docs/evaluation/benchmarks.md)); each run records model, prompt version and hash, temperature, seed and dataset version.
 
 ![Evaluation tab after running the heuristic classification benchmark](docs/assets/evaluation.png)
 
-Every benchmark run records: model, prompt version, prompt hash, temperature, seed, dataset version, and timestamp. Results are exportable to JSON for cross-run comparison.
+## Tech stack
 
-```bash
-# Run the classification benchmark from Python
-uv run python -c "
-from benchmarks.healing.runner import run_healing_benchmark
-from schemas.evaluation import BenchmarkRunConfig
-from pathlib import Path
+| Layer              | Tool                                              | Version | Why                                                                                    |
+| ------------------ | ------------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
+| UI                 | Gradio                                            | 6.28    | Streaming generators map onto Gradio's `yield`-based progress                          |
+| Browser automation | Playwright (Python and Test)                      | 1.57    | Context collection, and the runner for generated specs                                 |
+| LLM client         | OpenAI SDK                                        | 2.14    | LM Studio and Ollama both expose OpenAI-compatible APIs ([ADR-007](docs/decisions.md)) |
+| Structured outputs | Pydantic                                          | 2       | Validates every model response against a schema ([ADR-001](docs/decisions.md))         |
+| Code repair        | ts-morph, TypeScript                              | 28, 5.9 | Edits the spec's AST and keeps formatting ([ADR-003](docs/decisions.md))               |
+| Observability      | Custom JSONL tracer                               | n/a     | No extra dependencies; queryable with `jq` ([ADR-004](docs/decisions.md))              |
+| Quality gates      | ruff, mypy, pytest, ESLint, markdownlint, Codecov | current | Same checks locally (`npm run lint`) and in CI                                         |
 
-config = BenchmarkRunConfig(
-    model='heuristic-classifier', provider='local',
-    prompt_name='classify_failure_heuristic', prompt_version='1', prompt_hash='n/a',
-    temperature=0.0, dataset_version='1.0.0', benchmark_type='healing-classification',
-)
-run = run_healing_benchmark(
-    Path('benchmarks/healing/fixtures/repair_scenarios.json'),
-    Path('.'), config,
-)
-print(f'{run.passed}/{run.total} passed ({run.pass_rate*100:.0f}%)')
-"
+## Project structure
+
+```text
+├── src/
+│   ├── app.py            # Gradio UI, wiring only
+│   ├── services/         # UI-to-pipeline boundary
+│   ├── agents/           # Generation entry points
+│   ├── healing/          # Classifier, planner, AST repair, runner, verifier
+│   ├── context/          # DOM, accessibility tree, console, network, screenshot
+│   ├── llm/              # Router, client factory, model registry, retry policies
+│   ├── observability/    # JSONL tracer
+│   └── utils/            # Response parsing, prompt loading, validation
+├── schemas/              # Pydantic data contracts
+├── prompts/              # System prompts and manifest.json (versions)
+├── benchmarks/           # Healing, generation and intent benchmarks, mutation engine
+├── scripts/ast_repair.js # ts-morph repair script, run as a subprocess
+├── tests/                # Unit tests, E2E pipeline test, fixtures
+└── docs/                 # Architecture, ADRs, evaluation, development guides
 ```
 
----
+The full module map is in [AGENTS.md](AGENTS.md).
 
-## Observability
+## Documentation
 
-Every healing session writes spans to `logs/traces.jsonl`:
-
-```jsonl
-{"span_type":"llm","trace_id":"a1b2...","model":"qwen3.6-35b-a3b","input_tokens":4821,"output_tokens":312,"latency_ms":3400,"retry_count":0}
-{"span_type":"subprocess","trace_id":"a1b2...","command":"npx playwright test ...","exit_code":0,"latency_ms":7100}
-{"span_type":"session","trace_id":"a1b2...","session_type":"healing","llm_call_count":1,"total_input_tokens":4821,"total_latency_ms":12600,"success":true}
-```
-
-Query with `jq`:
-
-```bash
-# Token usage per session
-jq 'select(.span_type=="session") | {trace_id, total_input_tokens, total_output_tokens, success}' logs/traces.jsonl
-
-# LLM calls with retries
-jq 'select(.span_type=="llm" and .retry_count > 0)' logs/traces.jsonl
-
-# Slowest Playwright runs
-jq 'select(.span_type=="subprocess") | {command, latency_ms}' logs/traces.jsonl | sort
-```
-
-The Trace Inspector tab in the workbench renders these tables without needing `jq`.
-
----
-
-## Technology Choices
-
-| Decision                | Choice                                    | Why                                                                                                                  |
-| ----------------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Schema validation       | Pydantic v2                               | Runtime validation, JSON schema export, field coercion, IDE completions. See ADR-001.                                |
-| LLM client              | OpenAI SDK (thin wrapper)                 | Both LM Studio and Ollama expose OpenAI-compatible APIs. LiteLLM adds 40 MB for no benefit here. See ADR-007.        |
-| TypeScript AST repair   | ts-morph (Node.js subprocess)             | TypeScript-native, read/write AST, formatting-preserving. Babel strips types; tree-sitter is read-only. See ADR-003. |
-| Observability           | Custom JSONL tracer                       | Zero new dependencies. LLMRouter already captures all required signals. `jq` satisfies all query needs. See ADR-004. |
-| Prompt storage          | External markdown files + `manifest.json` | Diffable, human-editable, independently versioned. See ADR-005.                                                      |
-| UI framework            | Gradio                                    | Streaming generators map directly to Gradio's `yield`-based progress model.                                          |
-| UI-to-pipeline boundary | Service layer                             | `app.py` imports only from `src/services/`. Services import from pipeline modules. See ADR-006.                      |
-| Browser context         | Single Playwright session                 | Context collector opens one browser, collects DOM + a11y tree + console + network + screenshot, closes.              |
-
----
-
-## Development Commands
-
-```bash
-# Run all unit tests (556 tests, no live LLM or browser required)
-uv run python -m pytest tests/unit_test_*.py -q
-
-# Lint and format (Python + TypeScript + Markdown)
-npm run lint
-npm run format
-
-# Run the Playwright tests the workbench generated into tests/generated/
-npm run test:generated
-
-# Run a specific unit test file
-uv run python -m pytest tests/unit_test_healing.py -v
-```
-
----
-
-## Documentation Hub
-
-The full documentation suite lives in the [`docs/`](docs/) directory.
-
-Start at the **[Documentation Hub (`docs/README.md`)](docs/README.md)**, which is organized by goal:
-
-- **"I want to understand how it works technically"** (Architecture deep-dives)
-- **"I want to understand why decisions were made"** (ADRs)
-- **"I want to contribute or extend it"** (Adding models, repair strategies)
-- **"I want to understand the evaluation methodology"** (Benchmarks & scoring)
+- [docs/README.md](docs/README.md): reading paths through all the docs
+- [docs/workbench-ui.md](docs/workbench-ui.md): the eight tabs, and calling the pipelines from Python
+- [docs/architecture/overview.md](docs/architecture/overview.md): how the subsystems fit together
+- [docs/decisions.md](docs/decisions.md): architecture decision records
+- [docs/evaluation/benchmarks.md](docs/evaluation/benchmarks.md): benchmarks and how to run them
+- [CONTRIBUTING.md](CONTRIBUTING.md): development setup and pull request checks
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-Last updated: 2026-06-25

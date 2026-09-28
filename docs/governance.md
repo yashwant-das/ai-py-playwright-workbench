@@ -29,13 +29,13 @@
 
 | Event                               | Required action                                                                              |
 | ----------------------------------- | -------------------------------------------------------------------------------------------- |
-| New module added to `src/`          | Update `README.md` repo structure; update `AGENTS.md` module map                             |
+| New module added to `src/`          | Update `AGENTS.md` module map; update `README.md` structure if a top-level folder changes    |
 | New environment variable            | Update `docs/env-variables.md`; update `docs/development/setup.md`                           |
 | New LLM provider supported          | Update `docs/development/adding-models.md` and `docs/env-variables.md`                       |
 | New repair strategy added           | Update `docs/development/adding-healing-strategies.md`                                       |
 | Architecture boundary changes       | Update relevant `docs/architecture/*.md`                                                     |
 | Significant technical decision made | Add an ADR to `docs/decisions.md`                                                            |
-| UI tab renamed or added             | Update `README.md`, `AGENTS.md`, `docs/docker.md`                                            |
+| UI tab renamed or added             | Update `docs/workbench-ui.md`, `README.md`, `AGENTS.md`, `docs/docker.md`                    |
 | New benchmark added                 | Update `docs/evaluation/benchmarks.md`                                                       |
 | Prompt file changed significantly   | Update `docs/prompts/healing.md` or `generation.md`; bump version in `prompts/manifest.json` |
 
