@@ -3,7 +3,6 @@
 Generates, runs and self-heals Playwright tests with local LLMs, using structured outputs, AST-based code repair, benchmarks and JSONL traces.
 
 [![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench/branch/main/graph/badge.svg)](https://codecov.io/gh/yashwant-das/ai-py-playwright-workbench)
 [![Test report](https://img.shields.io/badge/report-latest%20CI%20run-blue)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -54,7 +53,7 @@ The UI has eight tabs: Overview, Generation, Healing, Vision, Artifacts, Evaluat
 
 ## Test reports and results
 
-- CI runs ruff, mypy, the unit tests with coverage (uploaded to Codecov), tsc, ESLint and markdownlint on every push and pull request.
+- CI runs ruff, mypy, the unit tests with coverage (reported in the job summary), tsc, ESLint and markdownlint on every push and pull request.
 - A second CI job generates and heals specs against a real Chromium with a stubbed LLM, then re-runs them. The Playwright HTML report, generated specs, decision artifacts and traces are attached to the run as the `e2e-report` artifact: open the [latest CI run](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml) and download it.
 - Locally, `uv run python -m pytest tests/unit_test_*.py -q` runs the unit tests with no model or browser, and `npm run test:generated` runs the specs the workbench generated.
 
@@ -73,15 +72,15 @@ The generation benchmark (5 scenarios) and the full-repair healing benchmark nee
 
 ## Tech stack
 
-| Layer              | Tool                                              | Version | Why                                                                                    |
-| ------------------ | ------------------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
-| UI                 | Gradio                                            | 6.28    | Streaming generators map onto Gradio's `yield`-based progress                          |
-| Browser automation | Playwright (Python and Test)                      | 1.57    | Context collection, and the runner for generated specs                                 |
-| LLM client         | OpenAI SDK                                        | 2.14    | LM Studio and Ollama both expose OpenAI-compatible APIs ([ADR-007](docs/decisions.md)) |
-| Structured outputs | Pydantic                                          | 2       | Validates every model response against a schema ([ADR-001](docs/decisions.md))         |
-| Code repair        | ts-morph, TypeScript                              | 28, 5.9 | Edits the spec's AST and keeps formatting ([ADR-003](docs/decisions.md))               |
-| Observability      | Custom JSONL tracer                               | n/a     | No extra dependencies; queryable with `jq` ([ADR-004](docs/decisions.md))              |
-| Quality gates      | ruff, mypy, pytest, ESLint, markdownlint, Codecov | current | Same checks locally (`npm run lint`) and in CI                                         |
+| Layer              | Tool                                     | Version | Why                                                                                    |
+| ------------------ | ---------------------------------------- | ------- | -------------------------------------------------------------------------------------- |
+| UI                 | Gradio                                   | 6.28    | Streaming generators map onto Gradio's `yield`-based progress                          |
+| Browser automation | Playwright (Python and Test)             | 1.57    | Context collection, and the runner for generated specs                                 |
+| LLM client         | OpenAI SDK                               | 2.14    | LM Studio and Ollama both expose OpenAI-compatible APIs ([ADR-007](docs/decisions.md)) |
+| Structured outputs | Pydantic                                 | 2       | Validates every model response against a schema ([ADR-001](docs/decisions.md))         |
+| Code repair        | ts-morph, TypeScript                     | 28, 5.9 | Edits the spec's AST and keeps formatting ([ADR-003](docs/decisions.md))               |
+| Observability      | Custom JSONL tracer                      | n/a     | No extra dependencies; queryable with `jq` ([ADR-004](docs/decisions.md))              |
+| Quality gates      | ruff, mypy, pytest, ESLint, markdownlint | current | Same checks locally (`npm run lint`) and in CI                                         |
 
 ## Project structure
 
