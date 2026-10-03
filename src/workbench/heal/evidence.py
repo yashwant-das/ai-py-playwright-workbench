@@ -17,8 +17,6 @@ from workbench.models.shared import RunResult
 
 logger = logging.getLogger(__name__)
 
-from workbench.config import PROJECT_ROOT
-
 
 def extract_url_from_code(code: str) -> str | None:
     """Extract the target URL from a ``page.goto()`` call in Playwright test code.
@@ -53,15 +51,9 @@ def gather_evidence(test_file, result: RunResult) -> Evidence:
         Evidence populated with all available context; degrades gracefully when
         the URL cannot be extracted or the page is unreachable.
     """
-    logs = result.stderr if result.stderr else result.stdout
+    logs = result.output
 
-    # Most recent screenshot written to test-results/ by Playwright on failure
-    screenshot_path: str | None = None
-    results_dir = PROJECT_ROOT / "test-results"
-    if results_dir.exists():
-        screenshots = list(results_dir.glob("**/*.png"))
-        if screenshots:
-            screenshot_path = str(max(screenshots, key=lambda p: p.stat().st_mtime))
+    screenshot_path = result.screenshot_path
 
     # Extract target URL from the test file source
     url: str | None = None

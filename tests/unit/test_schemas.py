@@ -27,31 +27,17 @@ from workbench.models.shared import FailureType, RunResult
 
 
 class TestRunResult(unittest.TestCase):
-    def test_passed_property(self):
-        r = RunResult(returncode=0, stdout="ok", stderr="")
-        self.assertTrue(r.passed)
+    def test_passed_only_for_status_passed(self):
+        self.assertTrue(RunResult(status="passed").passed)
+        for status in ("failed", "timed_out", "cancelled", "error"):
+            self.assertFalse(RunResult(status=status).passed, status)
 
-    def test_failed_property(self):
-        r = RunResult(returncode=1, stdout="", stderr="err")
-        self.assertFalse(r.passed)
+    def test_output_joins_error_and_streams(self):
+        r = RunResult(status="failed", error_message="E", stdout="O", stderr="S")
+        self.assertEqual(r.output, "E\nO\nS")
 
-    def test_output_prefers_stdout(self):
-        r = RunResult(returncode=0, stdout="out", stderr="err")
-        self.assertEqual(r.output, "out")
-
-    def test_output_falls_back_to_stderr(self):
-        r = RunResult(returncode=1, stdout="", stderr="fail")
-        self.assertEqual(r.output, "fail")
-
-    def test_from_timeout(self):
-        r = RunResult.from_timeout()
-        self.assertEqual(r.returncode, 1)
-        self.assertIn("timed out", r.stderr)
-
-    def test_from_error(self):
-        r = RunResult.from_error("playwright not found")
-        self.assertEqual(r.returncode, 1)
-        self.assertEqual(r.stderr, "playwright not found")
+    def test_output_skips_empty_parts(self):
+        self.assertEqual(RunResult(status="failed", stderr="S").output, "S")
 
 
 # ---------------------------------------------------------------------------

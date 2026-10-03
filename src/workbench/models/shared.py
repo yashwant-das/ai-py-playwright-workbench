@@ -7,6 +7,7 @@ ProvenanceRecord base model consumed by healing, generation, and evaluation sche
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -24,39 +25,37 @@ class FailureType(str, Enum):
     UNKNOWN = "UNKNOWN"
 
 
+RunStatus = Literal["passed", "failed", "timed_out", "cancelled", "error"]
+
+
 class RunResult(BaseModel):
-    """
-    Result of a subprocess Playwright test run.
+    """Outcome of one ``npx playwright test`` run, read from its JSON report."""
 
-    Replaces the ad-hoc TestRunResult mock class in healer.py.
-    Compatible with subprocess.CompletedProcess interface.
-    """
-
-    returncode: int
-    stdout: str
-    stderr: str
-
-    @classmethod
-    def from_timeout(
-        cls, message: str = "Test execution timed out after 60 seconds"
-    ) -> "RunResult":
-        """Construct a failed RunResult representing a timeout."""
-        return cls(returncode=1, stdout="", stderr=message)
-
-    @classmethod
-    def from_error(cls, message: str) -> "RunResult":
-        """Construct a failed RunResult from an error message."""
-        return cls(returncode=1, stdout="", stderr=message)
+    status: RunStatus
+    duration_ms: int = Field(default=0, ge=0)
+    error_message: str = ""
+    error_location: str = ""
+    screenshot_path: str | None = None
+    error_context_path: str | None = None
+    video_path: str | None = None
+    stdout: str = ""
+    stderr: str = ""
 
     @property
     def passed(self) -> bool:
-        """True if the test run succeeded."""
-        return self.returncode == 0
+        """True if the test passed."""
+        return self.status == "passed"
 
     @property
     def output(self) -> str:
-        """Best available output string (stdout preferred over stderr)."""
-        return self.stdout if self.stdout else self.stderr
+        """Error message and process output, for logs and the failure classifier."""
+        parts = (self.error_message, self.stdout, self.stderr)
+        return "\n".join(part for part in parts if part)
+
+    @property
+    def returncode(self) -> int:
+        """Exit-code view for the 1.0 heal loop; removed with it in Task 7."""
+        return 0 if self.passed else 1
 
 
 class LLMConfig(BaseModel):

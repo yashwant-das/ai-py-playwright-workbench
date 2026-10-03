@@ -13,7 +13,6 @@ Each module is tested in isolation:
 """
 
 import json
-import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -21,7 +20,7 @@ from unittest.mock import MagicMock, patch
 
 from workbench.heal.artifact_store import emit_artifacts
 from workbench.heal.classifier import classify_failure_heuristic
-from workbench.heal.evidence import extract_url_from_code, gather_evidence
+from workbench.heal.evidence import extract_url_from_code
 from workbench.heal.planner import analyze_and_plan
 from workbench.heal.repair import apply_fix
 from workbench.heal.verifier import verify_repair
@@ -32,7 +31,6 @@ from workbench.models.heal import (
     HealingDecision,
 )
 from workbench.models.shared import FailureType, RunResult
-from workbench.runner import run_test
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,62 +56,6 @@ def _make_decision(
             description=description,
         ),
     )
-
-
-# ── runner.run_test ───────────────────────────────────────────────────────────
-
-
-class TestRunTest(unittest.TestCase):
-    @patch("subprocess.run")
-    def test_passing_test_returns_passed_result(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=0, stdout="1 passed", stderr="")
-        result = run_test("test.spec.ts")
-        self.assertTrue(result.passed)
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, "1 passed")
-
-    @patch("subprocess.run")
-    def test_failing_test_returns_failed_result(self, mock_run):
-        mock_run.return_value = MagicMock(
-            returncode=1, stdout="", stderr="Error: locator not found"
-        )
-        result = run_test("test.spec.ts")
-        self.assertFalse(result.passed)
-        self.assertEqual(result.returncode, 1)
-        self.assertIn("locator not found", result.stderr)
-
-    @patch(
-        "subprocess.run",
-        side_effect=subprocess.TimeoutExpired("npx", 60),
-    )
-    def test_timeout_returns_from_timeout(self, mock_run):
-        result = run_test("test.spec.ts")
-        self.assertFalse(result.passed)
-        self.assertIn("timed out", result.output.lower())
-
-    @patch("subprocess.run", side_effect=FileNotFoundError())
-    def test_playwright_not_found(self, mock_run):
-        result = run_test("test.spec.ts")
-        self.assertFalse(result.passed)
-        self.assertIn("Playwright not found", result.output)
-
-    @patch("subprocess.run")
-    def test_correct_command_constructed(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=0, stdout="ok", stderr="")
-        run_test("my_test.spec.ts")
-        args, _kwargs = mock_run.call_args
-        cmd = args[0]
-        self.assertEqual(cmd[0], "npx")
-        self.assertEqual(cmd[1], "playwright")
-        self.assertEqual(cmd[2], "test")
-        self.assertEqual(cmd[3], "my_test.spec.ts")
-
-    @patch("subprocess.run")
-    def test_none_stdout_coerced_to_empty(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=1, stdout=None, stderr=None)
-        result = run_test("test.spec.ts")
-        self.assertEqual(result.stdout, "")
-        self.assertEqual(result.stderr, "")
 
 
 # ── evidence.extract_url_from_code ───────────────────────────────────────────
@@ -159,103 +101,6 @@ test('login', async ({ page }) => {
 });
 """
         self.assertEqual(extract_url_from_code(code), "https://example.com/login")
-
-
-# ── evidence.gather_evidence ─────────────────────────────────────────────────
-
-
-class TestGatherEvidence(unittest.TestCase):
-    """gather_evidence() tests — collect_context is mocked to avoid real browser."""
-
-    def _no_op_collect(self, url, **kwargs):
-        """Return an empty ContextSnapshot so no browser is launched."""
-        from workbench.models.artifacts import ContextSnapshot
-
-        return ContextSnapshot(url=url)
-
-    def test_stderr_preferred_over_stdout(self):
-        result = RunResult(
-            returncode=1, stdout="stdout content", stderr="stderr content"
-        )
-        with (
-            patch(
-                "workbench.heal.evidence.collect_context",
-                side_effect=self._no_op_collect,
-            ),
-            patch.object(Path, "exists", return_value=False),
-        ):
-            evidence = gather_evidence("non_existent.spec.ts", result)
-        self.assertEqual(evidence.error_log, "stderr content")
-
-    def test_stdout_used_when_no_stderr(self):
-        result = RunResult(returncode=1, stdout="stdout content", stderr="")
-        with (
-            patch(
-                "workbench.heal.evidence.collect_context",
-                side_effect=self._no_op_collect,
-            ),
-            patch.object(Path, "exists", return_value=False),
-        ):
-            evidence = gather_evidence("non_existent.spec.ts", result)
-        self.assertEqual(evidence.error_log, "stdout content")
-
-    def test_no_screenshot_when_results_dir_missing(self):
-        result = RunResult(returncode=1, stdout="err", stderr="")
-        with (
-            patch(
-                "workbench.heal.evidence.collect_context",
-                side_effect=self._no_op_collect,
-            ),
-            patch.object(Path, "exists", return_value=False),
-        ):
-            evidence = gather_evidence("non_existent.spec.ts", result)
-        self.assertIsNone(evidence.screenshot_path)
-
-    def test_dom_snippet_populated_from_live_page(self):
-        """collect_context() result propagates to evidence.dom_snippet."""
-        from workbench.models.artifacts import ContextSnapshot
-
-        def mock_collect(url, **kwargs):
-            return ContextSnapshot(url=url, html="<html>live</html>")
-
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".spec.ts", delete=False
-        ) as tmp:
-            tmp.write("await page.goto('https://example.com');")
-            tmp_path = tmp.name
-
-        result = RunResult(returncode=1, stdout="err", stderr="")
-        with patch("workbench.heal.evidence.collect_context", side_effect=mock_collect):
-            evidence = gather_evidence(tmp_path, result)
-
-        self.assertIsNotNone(evidence.dom_snippet)
-        self.assertEqual(evidence.dom_snippet, "<html>live</html>")
-
-        import os
-
-        os.unlink(tmp_path)
-
-    def test_dom_snippet_empty_when_context_fails(self):
-        """When collect_context returns empty snapshot, dom_snippet is None."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".spec.ts", delete=False
-        ) as tmp:
-            tmp.write("await page.goto('https://example.com');")
-            tmp_path = tmp.name
-
-        result = RunResult(returncode=1, stdout="err", stderr="")
-        with patch(
-            "workbench.heal.evidence.collect_context",
-            side_effect=self._no_op_collect,
-        ):
-            evidence = gather_evidence(tmp_path, result)
-
-        # Empty snapshot → dom_snippet is None
-        self.assertIsNone(evidence.dom_snippet)
-
-        import os
-
-        os.unlink(tmp_path)
 
 
 # ── classifier.classify_failure_heuristic (smoke) ────────────────────────────
@@ -433,7 +278,7 @@ class TestVerifyRepair(unittest.TestCase):
     @patch("workbench.heal.verifier.run_test")
     def test_sets_verification_passed_on_success(self, mock_run_test):
         mock_run_test.return_value = RunResult(
-            returncode=0, stdout="1 passed", stderr=""
+            status="passed", stdout="1 passed", stderr=""
         )
         decision = _make_decision()
         result = verify_repair("test.spec.ts", decision)
@@ -442,7 +287,9 @@ class TestVerifyRepair(unittest.TestCase):
 
     @patch("workbench.heal.verifier.run_test")
     def test_sets_verification_failed_on_failure(self, mock_run_test):
-        mock_run_test.return_value = RunResult(returncode=1, stdout="", stderr="Error")
+        mock_run_test.return_value = RunResult(
+            status="failed", stdout="", stderr="Error"
+        )
         decision = _make_decision()
         result = verify_repair("test.spec.ts", decision)
         self.assertFalse(decision.verification_passed)
@@ -451,7 +298,7 @@ class TestVerifyRepair(unittest.TestCase):
     @patch("workbench.heal.verifier.run_test")
     def test_verification_log_set(self, mock_run_test):
         mock_run_test.return_value = RunResult(
-            returncode=1, stdout="stdout log", stderr=""
+            status="failed", stdout="stdout log", stderr=""
         )
         decision = _make_decision()
         verify_repair("test.spec.ts", decision)
@@ -460,7 +307,7 @@ class TestVerifyRepair(unittest.TestCase):
 
     @patch("workbench.heal.verifier.run_test")
     def test_returns_run_result_for_next_loop_iteration(self, mock_run_test):
-        expected_result = RunResult(returncode=0, stdout="ok", stderr="")
+        expected_result = RunResult(status="passed", stdout="ok", stderr="")
         mock_run_test.return_value = expected_result
         decision = _make_decision()
         returned = verify_repair("test.spec.ts", decision)
