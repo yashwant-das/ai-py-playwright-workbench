@@ -11,9 +11,8 @@ Public API (import from here or from the individual modules):
     apply_fix                 repair.apply_fix
     verify_repair             verifier.verify_repair
     emit_artifacts            artifact_store.emit_artifacts
-    attempt_healing           non-streaming CLI orchestrator (defined here)
+    attempt_healing           heal loop used by the integration test (defined here)
 
-The streaming UI orchestrator lives in src.services.healing_service.
 """
 
 from src.healing.artifact_store import emit_artifacts
@@ -40,11 +39,8 @@ __all__ = [
 def attempt_healing(test_file, max_retries: int = 3) -> str:
     """Orchestrate the full healing pipeline for a failing test file.
 
-    Non-streaming version intended for CLI use (``python -m src.healing``).
-    The streaming Gradio version lives in src.services.healing_service.
-
-    Starts and ends a tracer session so CLI runs produce the same spans as
-    UI runs.  If no tracer has been configured, NullTracer no-ops all calls.
+    Used by the integration test. Phase 2 replaces it with the streaming
+    heal pipeline.
 
     Args:
         test_file:   Path to the failing .spec.ts file.
@@ -63,14 +59,9 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
         HealingDecision,
     )
     from schemas.shared import FailureType
-    from src.observability import get_tracer
     from src.utils.validation import validate_file_path
 
     logger = logging.getLogger(__name__)
-    tracer = get_tracer()
-    trace_id = tracer.start_session("healing")
-    _success = False
-
     try:
         timeline = ExecutionTimeline()
         timeline.add_step("Start", f"Healing session started for {test_file}")
@@ -103,7 +94,6 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
             )
             emit_artifacts(success_decision, timeline)
             logger.info("--- Healing Session Completed: Test passed initially ---")
-            _success = True
             return "Test passed (No healing needed)."
 
         timeline.add_step(
@@ -163,7 +153,6 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
 
             if decision.verification_passed:
                 logger.info("--- Healing Session Completed: SUCCESS ---")
-                _success = True
                 return f"\nSUCCESS: Test healed!\nReasoning: {decision.hypothesis}"
 
             current_code = new_code
@@ -179,4 +168,4 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
         return "Healing failed to make test pass."
 
     finally:
-        tracer.end_session(trace_id, success=_success)
+        logger.debug("Healing session finished for %s", test_file)

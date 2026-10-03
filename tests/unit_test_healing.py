@@ -607,59 +607,15 @@ class TestRepairStrategyLabels(unittest.TestCase):
         self.assertEqual(len(REPAIR_STRATEGY_LABELS), len(RepairStrategy))
 
 
-# ── attempt_healing tracer session ────────────────────────────────────────────
+class TestAttemptHealingMissingFile(unittest.TestCase):
+    """attempt_healing reports a missing spec instead of raising."""
 
-
-class TestAttemptHealingTracerSession(unittest.TestCase):
-    """Verifies that attempt_healing starts and ends a tracer session regardless
-    of outcome so CLI runs produce the same span structure as UI runs."""
-
-    def _make_mock_tracer(self):
-        tracer = MagicMock()
-        tracer.start_session.return_value = "trace-test-id"
-        return tracer
-
-    @patch("src.observability.get_tracer")
-    @patch("src.healing.run_test")
-    @patch("src.healing.gather_evidence")
-    @patch("src.healing.emit_artifacts")
-    def test_session_started_and_ended_on_initial_pass(
-        self, mock_emit, mock_evidence, mock_run_test, mock_get_tracer
-    ):
-        mock_tracer = self._make_mock_tracer()
-        mock_get_tracer.return_value = mock_tracer
-        mock_run_test.return_value = MagicMock(passed=True, returncode=0)
-        mock_evidence.return_value = Evidence(error_log="")
-
-        # Use tests/generated/ — the only allowed directory for validate_file_path.
-        test_path = Path("tests/generated/_tracer_test.spec.ts")
-        # tests/generated/ holds only git-ignored output, so a fresh clone lacks it
-        test_path.parent.mkdir(parents=True, exist_ok=True)
-        test_path.write_text("// tracer test fixture", encoding="utf-8")
-        try:
-            from src.healing import attempt_healing
-
-            attempt_healing(str(test_path), max_retries=1)
-        finally:
-            test_path.unlink(missing_ok=True)
-
-        mock_tracer.start_session.assert_called_once_with("healing")
-        mock_tracer.end_session.assert_called_once()
-        _, kwargs = mock_tracer.end_session.call_args
-        self.assertTrue(kwargs.get("success", False))
-
-    @patch("src.observability.get_tracer")
-    def test_session_ended_even_when_file_missing(self, mock_get_tracer):
-        mock_tracer = self._make_mock_tracer()
-        mock_get_tracer.return_value = mock_tracer
-
+    def test_missing_file_returns_error(self):
         from src.healing import attempt_healing
 
-        # Path in allowed directory but not on disk — triggers "File not found" branch.
+        # Path in the allowed directory but not on disk triggers "File not found".
         result = attempt_healing("tests/generated/_missing_test.spec.ts", max_retries=1)
 
-        mock_tracer.start_session.assert_called_once_with("healing")
-        mock_tracer.end_session.assert_called_once()
         self.assertIn("Error", result)
 
 

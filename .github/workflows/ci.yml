@@ -103,6 +103,5 @@ jobs:
             test-results/
             tests/generated/
             tests/artifacts/
-            logs/traces.jsonl
           if-no-files-found: warn
           retention-days: 14

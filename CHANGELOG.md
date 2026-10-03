@@ -12,6 +12,13 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 - `ROADMAP.md` and this changelog.
 
+### Removed
+
+- The Gradio UI, the services layer and the CLI healer.
+- The vision pipeline and its prompt.
+- The JSONL tracer, benchmarks, mutation engine and intent validation.
+- The Docker image and its workflow.
+
 ## [1.0.0] - 2026-09-28
 
 The Gradio workbench: generation, healing and vision pipelines, benchmarks

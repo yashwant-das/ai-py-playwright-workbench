@@ -47,3 +47,9 @@ Nothing yet.
 
 | Item | Reason | Phase |
 | --- | --- | --- |
+| Gradio UI (8 tabs) | Replaced by a two-page FastAPI + HTMX app in Phase 4 | 1 |
+| Services layer and CLI healer | Pipelines are called from the web app only | 1 |
+| Vision pipeline | Out of scope for v2 | 1 |
+| JSONL tracer and Trace Inspector | Duplicated the per-run reports | 1 |
+| Benchmarks, mutation engine, intent validation | The only published score was circular; the rest was unused | 1 |
+| Docker image and workflow | Needs a model and a browser on the host anyway | 1 |

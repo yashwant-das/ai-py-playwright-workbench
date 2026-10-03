@@ -3,9 +3,7 @@ Stage 2 — Provenance backbone unit tests.
 
 Covers:
   GenerationDecision.to_markdown()   — provenance fields render correctly
-  VisionDecision.to_markdown()       — provenance fields + screenshot rendered
   emit_decision()                    — writes correct prefix; content is valid JSON
-  list_artifacts()                   — returns healing + generation + vision files
 
 All tests are isolated: they use temporary directories and do not touch
 tests/artifacts/ on disk.
@@ -20,7 +18,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schemas.generation import GenerationDecision, VisionDecision
+from schemas.generation import GenerationDecision
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -46,27 +44,6 @@ def _make_generation_decision(**kwargs) -> GenerationDecision:
     }
     defaults.update(kwargs)
     return GenerationDecision(**defaults)
-
-
-def _make_vision_decision(**kwargs) -> VisionDecision:
-    defaults = {
-        "url": "https://saucedemo.com",
-        "instruction": "Login with standard_user / secret_sauce",
-        "code": "import { test } from '@playwright/test';\ntest('vision', async ({ page }) => {});",
-        "line_count": 2,
-        "screenshot_path": "/tmp/screenshot.png",
-        "model_used": "llava-v1.5",
-        "provider": "ollama",
-        "prompt_version": "1",
-        "prompt_hash": "feedface9999",
-        "input_tokens": 300,
-        "output_tokens": 80,
-        "latency_ms": 2500,
-        "retry_count": 0,
-        "trace_id": "trace-vision-002",
-    }
-    defaults.update(kwargs)
-    return VisionDecision(**defaults)
 
 
 # ---------------------------------------------------------------------------
@@ -145,66 +122,6 @@ class TestGenerationDecisionToMarkdown(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# VisionDecision.to_markdown()
-# ---------------------------------------------------------------------------
-
-
-class TestVisionDecisionToMarkdown(unittest.TestCase):
-    """VisionDecision.to_markdown() renders screenshot and provenance correctly."""
-
-    def setUp(self):
-        self.decision = _make_vision_decision()
-        self.md = self.decision.to_markdown()
-
-    def test_header_contains_vision_report(self):
-        self.assertIn("# Vision Report", self.md)
-
-    def test_url_rendered(self):
-        self.assertIn("https://saucedemo.com", self.md)
-
-    def test_instruction_rendered(self):
-        self.assertIn("Login with standard_user", self.md)
-
-    def test_screenshot_rendered(self):
-        self.assertIn("/tmp/screenshot.png", self.md)
-
-    def test_code_rendered(self):
-        self.assertIn("@playwright/test", self.md)
-
-    def test_provenance_section_present(self):
-        self.assertIn("## Provenance", self.md)
-
-    def test_model_and_provider_rendered(self):
-        self.assertIn("llava-v1.5", self.md)
-        self.assertIn("ollama", self.md)
-
-    def test_latency_rendered(self):
-        self.assertIn("2500 ms", self.md)
-
-    def test_trace_id_rendered(self):
-        self.assertIn("`trace-vision-002`", self.md)
-
-    def test_no_screenshot_shows_placeholder(self):
-        d = _make_vision_decision(screenshot_path=None)
-        md = d.to_markdown()
-        self.assertIn("*(not captured)*", md)
-
-    def test_no_latency_shows_placeholder(self):
-        d = _make_vision_decision(latency_ms=0)
-        md = d.to_markdown()
-        self.assertIn("*(not recorded)*", md)
-
-    def test_round_trip_preserves_fields(self):
-        json_str = self.decision.to_json()
-        restored = VisionDecision.model_validate_json(json_str)
-        self.assertEqual(restored.url, "https://saucedemo.com")
-        self.assertEqual(restored.model_used, "llava-v1.5")
-        self.assertEqual(restored.latency_ms, 2500)
-        self.assertEqual(restored.trace_id, "trace-vision-002")
-        self.assertEqual(restored.screenshot_path, "/tmp/screenshot.png")
-
-
-# ---------------------------------------------------------------------------
 # emit_decision()
 # ---------------------------------------------------------------------------
 
@@ -224,13 +141,6 @@ class TestEmitDecision(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = self._emit(decision, "generation_decision", Path(tmpdir))
             self.assertTrue(path.name.startswith("generation_decision_"))
-            self.assertTrue(path.name.endswith(".json"))
-
-    def test_vision_decision_file_has_correct_prefix(self):
-        decision = _make_vision_decision()
-        with tempfile.TemporaryDirectory() as tmpdir:
-            path = self._emit(decision, "vision_decision", Path(tmpdir))
-            self.assertTrue(path.name.startswith("vision_decision_"))
             self.assertTrue(path.name.endswith(".json"))
 
     def test_written_file_is_valid_json(self):
@@ -261,89 +171,3 @@ class TestEmitDecision(unittest.TestCase):
             path = self._emit(decision, "generation_decision", Path(tmpdir))
             self.assertIsInstance(path, Path)
             self.assertTrue(path.exists())
-
-
-# ---------------------------------------------------------------------------
-# list_artifacts()
-# ---------------------------------------------------------------------------
-
-
-class TestListArtifacts(unittest.TestCase):
-    """list_artifacts() surfaces healing, generation, and vision artifacts."""
-
-    def _list(self, tmp_dir: Path) -> list[str]:
-        from src.services.workbench_service import list_artifacts
-
-        with patch("src.services.workbench_service._ARTIFACTS_DIR", tmp_dir):
-            return list_artifacts()
-
-    def _touch(self, tmp_dir: Path, name: str) -> Path:
-        p = tmp_dir / name
-        p.write_text("{}", encoding="utf-8")
-        return p
-
-    def test_returns_healing_decision_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "healing_decision_20240101_120000.json")
-            paths = self._list(td)
-            self.assertEqual(len(paths), 1)
-            self.assertIn("healing_decision_", paths[0])
-
-    def test_returns_generation_decision_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "generation_decision_20240101_120000.json")
-            paths = self._list(td)
-            self.assertEqual(len(paths), 1)
-            self.assertIn("generation_decision_", paths[0])
-
-    def test_returns_vision_decision_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "vision_decision_20240101_120000.json")
-            paths = self._list(td)
-            self.assertEqual(len(paths), 1)
-            self.assertIn("vision_decision_", paths[0])
-
-    def test_returns_all_three_types_together(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "healing_decision_20240101_120000.json")
-            self._touch(td, "generation_decision_20240101_120001.json")
-            self._touch(td, "vision_decision_20240101_120002.json")
-            paths = self._list(td)
-            self.assertEqual(len(paths), 3)
-            names = [Path(p).name for p in paths]
-            self.assertTrue(any("healing_decision_" in n for n in names))
-            self.assertTrue(any("generation_decision_" in n for n in names))
-            self.assertTrue(any("vision_decision_" in n for n in names))
-
-    def test_excludes_execution_timeline_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "execution_timeline_20240101_120000.json")
-            self._touch(td, "healing_decision_20240101_120001.json")
-            paths = self._list(td)
-            self.assertEqual(len(paths), 1)
-            self.assertNotIn("execution_timeline_", paths[0])
-
-    def test_returns_empty_list_when_directory_absent(self):
-        absent = Path("/tmp/_nonexistent_artifacts_dir_stage2_test")
-        with patch("src.services.workbench_service._ARTIFACTS_DIR", absent):
-            from src.services.workbench_service import list_artifacts
-
-            paths = list_artifacts()
-        self.assertEqual(paths, [])
-
-    def test_returns_empty_list_when_no_matching_files(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            td = Path(tmpdir)
-            self._touch(td, "execution_timeline_20240101_120000.json")
-            self._touch(td, "some_other_file.json")
-            paths = self._list(td)
-            self.assertEqual(paths, [])
-
-
-if __name__ == "__main__":
-    unittest.main()

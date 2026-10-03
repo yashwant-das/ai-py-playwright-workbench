@@ -1,12 +1,7 @@
-"""
-Schemas package — Pydantic models for all LLM inputs, outputs, and artifacts.
-
-Import from here rather than from submodules directly.
-"""
+"""Pydantic data contracts for LLM inputs, outputs and artifacts."""
 
 from .artifacts import ContextSnapshot
-from .evaluation import BenchmarkRun, BenchmarkRunConfig, EvaluationResult
-from .generation import GenerationResult
+from .generation import GenerationDecision, GenerationResult
 from .healing import (
     Evidence,
     ExecutionTimeline,
@@ -16,26 +11,20 @@ from .healing import (
     RepairStrategy,
     TimelineStep,
 )
-from .shared import FailureType, LLMConfig, RunResult
+from .shared import FailureType, LLMConfig, ProvenanceRecord, RunResult
 
 __all__ = [
-    "BenchmarkRun",
-    # evaluation
-    "BenchmarkRunConfig",
-    # artifacts
     "ContextSnapshot",
-    "EvaluationResult",
     "Evidence",
     "ExecutionTimeline",
-    # shared
     "FailureType",
-    # generation
+    "GenerationDecision",
     "GenerationResult",
     "HealingAction",
     "HealingAnalysis",
     "HealingDecision",
     "LLMConfig",
-    # healing
+    "ProvenanceRecord",
     "RepairStrategy",
     "RunResult",
     "TimelineStep",

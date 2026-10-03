@@ -55,17 +55,5 @@ def run_test(test_file) -> RunResult:
         run_result = RunResult.from_error("Playwright not found")
         exit_code = -2
 
-    # Observability — record subprocess span; silently no-op when no session is active.
-    try:
-        from src.observability import get_tracer
-
-        get_tracer().record_subprocess(
-            command=command,
-            exit_code=exit_code,
-            latency_ms=latency_ms,
-        )
-    except Exception:
-        # Observability must never break the main path.
-        logger.debug("Could not record subprocess span", exc_info=True)
-
+    logger.debug("%s exited with %s after %d ms", command, exit_code, latency_ms)
     return run_result

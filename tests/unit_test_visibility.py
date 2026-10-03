@@ -5,7 +5,6 @@ Covers:
   HealingDecision.to_markdown()   — Evidence Context section rendered
   GenerationDecision.to_markdown() — Context Snapshot section expanded
   emit_artifacts()                 — one file written, no execution_timeline
-  get_model_info()                 — model registry markdown table
 """
 
 import sys
@@ -220,73 +219,6 @@ class TestEmitArtifactsSingleFile(unittest.TestCase):
             self._emit(Path(tmpdir))
             files = list(Path(tmpdir).glob("execution_timeline_*.json"))
             self.assertEqual(len(files), 0)
-
-
-# ---------------------------------------------------------------------------
-# get_model_info() — model registry panel (M4)
-# ---------------------------------------------------------------------------
-
-
-class TestGetModelInfo(unittest.TestCase):
-    """get_model_info() returns a markdown table of registered models."""
-
-    def _get(self, env: dict) -> str:
-        from src.services.workbench_service import get_model_info
-
-        with patch.dict("os.environ", env, clear=False):
-            return get_model_info()
-
-    def test_returns_markdown_table(self):
-        md = self._get({"LM_STUDIO_TEXT_MODEL": "some-model"})
-        self.assertIn("| Model ID |", md)
-        self.assertIn("| --- |", md)
-
-    def test_contains_model_registry_header(self):
-        md = self._get({})
-        self.assertIn("## Model Registry", md)
-
-    def test_lists_lm_studio_model(self):
-        md = self._get({"LM_STUDIO_TEXT_MODEL": "my-text-model"})
-        self.assertIn("my-text-model", md)
-
-    def test_lists_lm_studio_vision_model(self):
-        md = self._get({"LM_STUDIO_VISION_MODEL": "my-vision-model"})
-        self.assertIn("my-vision-model", md)
-
-    def test_lists_ollama_model(self):
-        md = self._get({"OLLAMA_TEXT_MODEL": "gemma4:26b"})
-        self.assertIn("gemma4:26b", md)
-
-    def test_vision_capable_shows_checkmark(self):
-        md = self._get({"LM_STUDIO_VISION_MODEL": "my-vision-model"})
-        self.assertIn("✅", md)
-
-    def test_non_vision_model_shows_dash(self):
-        # A text-only model must be distinct from the vision model so it gets
-        # its own row with is_vision_capable=False.
-        md = self._get(
-            {
-                "LM_STUDIO_TEXT_MODEL": "text-only-model",
-                "LM_STUDIO_VISION_MODEL": "vision-model",
-            }
-        )
-        self.assertIn(" — ", md)
-
-    def test_provider_column_present(self):
-        md = self._get({"LM_STUDIO_TEXT_MODEL": "some-model"})
-        self.assertIn("lm_studio", md)
-
-    def test_model_count_footer(self):
-        md = self._get({"LM_STUDIO_TEXT_MODEL": "some-model"})
-        self.assertIn("model(s) registered", md)
-
-    def test_refresh_re_reads_env(self):
-        """Calling get_model_info() twice with different env reflects changes."""
-        md1 = self._get({"LM_STUDIO_TEXT_MODEL": "model-alpha"})
-        md2 = self._get({"LM_STUDIO_TEXT_MODEL": "model-beta"})
-        self.assertIn("model-alpha", md1)
-        self.assertIn("model-beta", md2)
-        self.assertNotIn("model-alpha", md2)
 
 
 if __name__ == "__main__":

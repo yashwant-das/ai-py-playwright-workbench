@@ -9,10 +9,6 @@
     "healer": {
       "version": "2",
       "description": "Test failure healer and analyzer — diagnoses failure type, explains reasoning, proposes code fix"
-    },
-    "vision": {
-      "version": "2",
-      "description": "Visual Playwright test generator — generates tests from screenshots via vision model"
     }
   }
 }

@@ -11,7 +11,7 @@ Run from the repo root (validate_file_path resolves tests/generated from cwd):
     uv run python -m pytest tests/e2e/e2e_test_pipeline.py
 
 The specs are left in tests/generated/ so ``npm run test:e2e:report`` can
-re-run them for the HTML report, JUnit XML and traces.
+re-run them for the HTML report and JUnit XML.
 """
 
 import json
@@ -26,7 +26,6 @@ import pytest
 from src.agents.generator import generate_test_script
 from src.healing import attempt_healing, run_test
 from src.llm import _reset_default_router_for_testing
-from src.observability import configure_tracer
 from tests.e2e.fake_llm import FakeLLM
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -81,7 +80,6 @@ def fake_llm():
         saved = {key: os.environ.get(key) for key in overrides}
         os.environ.update(overrides)
         _reset_default_router_for_testing()
-        configure_tracer(PROJECT_ROOT / "logs")
         try:
             yield llm
         finally:
