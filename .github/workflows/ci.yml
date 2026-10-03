@@ -41,7 +41,7 @@ jobs:
 
       - name: Python unit tests (with coverage)
         run: |
-          uv run python -m pytest tests/unit_test_*.py -q --cov --cov-report=term --cov-report=xml --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
+          uv run python -m pytest -q --cov --cov-report=term --cov-report=xml --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -60,7 +60,7 @@ jobs:
         run: npm run lint:md
 
   e2e:
-    name: End-to-end (generate + heal, stubbed LLM)
+    name: Integration (generate + heal, fake LLM)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -87,7 +87,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Generate and heal specs against a real browser
-        run: uv run python -m pytest tests/e2e/e2e_test_pipeline.py -v --junitxml=reports/e2e-pytest.xml
+        run: uv run python -m pytest tests/integration -v --junitxml=reports/e2e-pytest.xml
 
       - name: Re-run generated and healed specs for the report
         run: npm run test:e2e:report

@@ -23,6 +23,10 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 - Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
   same version) and Node 24.
+- The code is now the installable `workbench` package under `src/`, with all
+  paths in `workbench.config`.
+- Tests are split into `tests/unit` (the default pytest run) and
+  `tests/integration`; the sample web app lives in `samples/site/`.
 
 ## [1.0.0] - 2026-09-28
 

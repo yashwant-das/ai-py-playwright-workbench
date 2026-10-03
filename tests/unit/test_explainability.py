@@ -21,7 +21,7 @@ from unittest.mock import patch
 # ---------------------------------------------------------------------------
 # Path setup so tests run from any working directory
 # ---------------------------------------------------------------------------
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from workbench.models.heal import (
     Evidence,

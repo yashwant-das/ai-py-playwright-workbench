@@ -1,14 +1,14 @@
 """
 End-to-end suite: generation and healing against a real browser.
 
-Only the LLM is faked (see tests/e2e/fake_llm.py); everything else is real —
-context collection opens Chromium on a local fixture site, specs are written to
+Only the LLM is faked (see tests/integration/fake_llm.py); everything else is real —
+context collection opens Chromium on a sample site in samples/site/, specs are written to
 tests/generated/ and executed with ``npx playwright test``, and the heal loop
 applies its repair through scripts/ast_repair.js.
 
 Run from the repo root (validate_file_path resolves tests/generated from cwd):
 
-    uv run python -m pytest tests/e2e/e2e_test_pipeline.py
+    uv run python -m pytest tests/integration
 
 The specs are left in tests/generated/ so ``npm run test:e2e:report`` can
 re-run them for the HTML report and JUnit XML.
@@ -23,13 +23,13 @@ from pathlib import Path
 
 import pytest
 
-from tests.e2e.fake_llm import FakeLLM
+from tests.integration.fake_llm import FakeLLM
 from workbench.generate.pipeline import generate_test_script
 from workbench.heal import attempt_healing, run_test
 from workbench.llm import _reset_default_router_for_testing
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-SITE_DIR = Path(__file__).resolve().parent / "site"
+SITE_DIR = PROJECT_ROOT / "samples" / "site"
 GENERATED_DIR = PROJECT_ROOT / "tests" / "generated"
 ARTIFACTS_DIR = PROJECT_ROOT / "tests" / "artifacts"
 

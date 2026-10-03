@@ -5,7 +5,7 @@ import sys
 from importlib.metadata import version
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_python_is_3_13_or_newer() -> None:

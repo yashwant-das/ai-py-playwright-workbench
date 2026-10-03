@@ -26,7 +26,7 @@ from workbench.models.heal import (
 )
 from workbench.models.shared import FailureType
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
 AST_SCRIPT = PROJECT_ROOT / "scripts" / "ast_repair.js"
 
