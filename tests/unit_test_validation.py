@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.validation import (
+from workbench.validation import (
     ValidationError,
     validate_description,
 )

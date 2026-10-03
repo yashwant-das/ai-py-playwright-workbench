@@ -9,7 +9,7 @@ Each module is tested in isolation:
   TestAnalyzeAndPlan    — planner.analyze_and_plan()  (mocked LLMRouter)
   TestVerifyRepair      — verifier.verify_repair()    (mocked run_test)
   TestEmitArtifacts     — artifact_store.emit_artifacts() (temp directory)
-  TestHealingInit       — src.healing __init__ re-exports
+  TestHealingInit       — workbench.heal __init__ re-exports
 """
 
 import json
@@ -19,20 +19,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from schemas.healing import (
+from workbench.heal.artifact_store import emit_artifacts
+from workbench.heal.classifier import classify_failure_heuristic
+from workbench.heal.evidence import extract_url_from_code, gather_evidence
+from workbench.heal.planner import analyze_and_plan
+from workbench.heal.repair import apply_fix
+from workbench.heal.verifier import verify_repair
+from workbench.models.heal import (
     Evidence,
     ExecutionTimeline,
     HealingAction,
     HealingDecision,
 )
-from schemas.shared import FailureType, RunResult
-from src.healing.artifact_store import emit_artifacts
-from src.healing.classifier import classify_failure_heuristic
-from src.healing.evidence import extract_url_from_code, gather_evidence
-from src.healing.planner import analyze_and_plan
-from src.healing.repair import apply_fix
-from src.healing.runner import run_test
-from src.healing.verifier import verify_repair
+from workbench.models.shared import FailureType, RunResult
+from workbench.runner import run_test
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -169,7 +169,7 @@ class TestGatherEvidence(unittest.TestCase):
 
     def _no_op_collect(self, url, **kwargs):
         """Return an empty ContextSnapshot so no browser is launched."""
-        from schemas.artifacts import ContextSnapshot
+        from workbench.models.artifacts import ContextSnapshot
 
         return ContextSnapshot(url=url)
 
@@ -179,7 +179,8 @@ class TestGatherEvidence(unittest.TestCase):
         )
         with (
             patch(
-                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+                "workbench.heal.evidence.collect_context",
+                side_effect=self._no_op_collect,
             ),
             patch.object(Path, "exists", return_value=False),
         ):
@@ -190,7 +191,8 @@ class TestGatherEvidence(unittest.TestCase):
         result = RunResult(returncode=1, stdout="stdout content", stderr="")
         with (
             patch(
-                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+                "workbench.heal.evidence.collect_context",
+                side_effect=self._no_op_collect,
             ),
             patch.object(Path, "exists", return_value=False),
         ):
@@ -201,7 +203,8 @@ class TestGatherEvidence(unittest.TestCase):
         result = RunResult(returncode=1, stdout="err", stderr="")
         with (
             patch(
-                "src.healing.evidence.collect_context", side_effect=self._no_op_collect
+                "workbench.heal.evidence.collect_context",
+                side_effect=self._no_op_collect,
             ),
             patch.object(Path, "exists", return_value=False),
         ):
@@ -210,7 +213,7 @@ class TestGatherEvidence(unittest.TestCase):
 
     def test_dom_snippet_populated_from_live_page(self):
         """collect_context() result propagates to evidence.dom_snippet."""
-        from schemas.artifacts import ContextSnapshot
+        from workbench.models.artifacts import ContextSnapshot
 
         def mock_collect(url, **kwargs):
             return ContextSnapshot(url=url, html="<html>live</html>")
@@ -222,7 +225,7 @@ class TestGatherEvidence(unittest.TestCase):
             tmp_path = tmp.name
 
         result = RunResult(returncode=1, stdout="err", stderr="")
-        with patch("src.healing.evidence.collect_context", side_effect=mock_collect):
+        with patch("workbench.heal.evidence.collect_context", side_effect=mock_collect):
             evidence = gather_evidence(tmp_path, result)
 
         self.assertIsNotNone(evidence.dom_snippet)
@@ -242,7 +245,7 @@ class TestGatherEvidence(unittest.TestCase):
 
         result = RunResult(returncode=1, stdout="err", stderr="")
         with patch(
-            "src.healing.evidence.collect_context",
+            "workbench.heal.evidence.collect_context",
             side_effect=self._no_op_collect,
         ):
             evidence = gather_evidence(tmp_path, result)
@@ -257,7 +260,7 @@ class TestGatherEvidence(unittest.TestCase):
 
 # ── classifier.classify_failure_heuristic (smoke) ────────────────────────────
 # Full coverage lives in unit_test_classification.py; this ensures the module
-# is importable independently from src.healing.classifier.
+# is importable independently from workbench.heal.classifier.
 
 
 class TestClassifierSmoke(unittest.TestCase):
@@ -314,9 +317,9 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         )
         return mock_router
 
-    @patch("src.healing.planner.get_default_router")
+    @patch("workbench.heal.planner.get_default_router")
     @patch(
-        "src.healing.planner.load_prompt",
+        "workbench.heal.planner.load_prompt",
         return_value="Heal {failure_type} {confidence} {reason}",
     )
     def test_returns_healing_decision_on_valid_response(
@@ -331,9 +334,9 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         self.assertEqual(decision.failure_type, FailureType.TIMEOUT)
         self.assertEqual(decision.hypothesis, "selector moved")
 
-    @patch("src.healing.planner.get_default_router")
+    @patch("workbench.heal.planner.get_default_router")
     @patch(
-        "src.healing.planner.load_prompt",
+        "workbench.heal.planner.load_prompt",
         return_value="Heal {failure_type} {confidence} {reason}",
     )
     def test_heuristic_overrides_llm_unknown(self, _mock_prompt, mock_get_router):
@@ -346,9 +349,9 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         # Heuristic override must apply
         self.assertEqual(decision.failure_type, FailureType.TIMEOUT)
 
-    @patch("src.healing.planner.get_default_router")
+    @patch("workbench.heal.planner.get_default_router")
     @patch(
-        "src.healing.planner.load_prompt",
+        "workbench.heal.planner.load_prompt",
         return_value="Heal {failure_type} {confidence} {reason}",
     )
     def test_fallback_decision_on_llm_error(self, _mock_prompt, mock_get_router):
@@ -361,9 +364,9 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         self.assertIn("failed to analyze", decision.failure_summary)
         self.assertEqual(decision.failure_type, FailureType.UNKNOWN)
 
-    @patch("src.healing.planner.get_default_router")
+    @patch("workbench.heal.planner.get_default_router")
     @patch(
-        "src.healing.planner.load_prompt",
+        "workbench.heal.planner.load_prompt",
         return_value="Heal {failure_type} {confidence} {reason}",
     )
     def test_llm_called_with_code_and_logs(self, _mock_prompt, mock_get_router):
@@ -376,9 +379,9 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         self.assertIn("my test code", user_msg)
         self.assertIn("error here", user_msg)
 
-    @patch("src.healing.planner.get_default_router")
+    @patch("workbench.heal.planner.get_default_router")
     @patch(
-        "src.healing.planner.load_prompt",
+        "workbench.heal.planner.load_prompt",
         return_value="Heal {failure_type} {confidence} {reason}",
     )
     def test_dom_snippet_included_when_present(self, _mock_prompt, mock_get_router):
@@ -393,7 +396,7 @@ class TestAnalyzeAndPlan(unittest.TestCase):
 
 # ── repair.apply_fix (smoke) ──────────────────────────────────────────────────
 # Full coverage lives in unit_test_fixer.py; this ensures the module is
-# importable independently from src.healing.repair.
+# importable independently from workbench.heal.repair.
 
 
 class TestRepairSmoke(unittest.TestCase):
@@ -427,7 +430,7 @@ class TestRepairSmoke(unittest.TestCase):
 
 
 class TestVerifyRepair(unittest.TestCase):
-    @patch("src.healing.verifier.run_test")
+    @patch("workbench.heal.verifier.run_test")
     def test_sets_verification_passed_on_success(self, mock_run_test):
         mock_run_test.return_value = RunResult(
             returncode=0, stdout="1 passed", stderr=""
@@ -437,7 +440,7 @@ class TestVerifyRepair(unittest.TestCase):
         self.assertTrue(decision.verification_passed)
         self.assertTrue(result.passed)
 
-    @patch("src.healing.verifier.run_test")
+    @patch("workbench.heal.verifier.run_test")
     def test_sets_verification_failed_on_failure(self, mock_run_test):
         mock_run_test.return_value = RunResult(returncode=1, stdout="", stderr="Error")
         decision = _make_decision()
@@ -445,7 +448,7 @@ class TestVerifyRepair(unittest.TestCase):
         self.assertFalse(decision.verification_passed)
         self.assertFalse(result.passed)
 
-    @patch("src.healing.verifier.run_test")
+    @patch("workbench.heal.verifier.run_test")
     def test_verification_log_set(self, mock_run_test):
         mock_run_test.return_value = RunResult(
             returncode=1, stdout="stdout log", stderr=""
@@ -455,7 +458,7 @@ class TestVerifyRepair(unittest.TestCase):
         # output is the combined log property from RunResult
         self.assertIsNotNone(decision.verification_log)
 
-    @patch("src.healing.verifier.run_test")
+    @patch("workbench.heal.verifier.run_test")
     def test_returns_run_result_for_next_loop_iteration(self, mock_run_test):
         expected_result = RunResult(returncode=0, stdout="ok", stderr="")
         mock_run_test.return_value = expected_result
@@ -491,7 +494,7 @@ class TestEmitArtifacts(unittest.TestCase):
             timeline.add_step("Start", "Session started")
             timeline.add_step("End", "Session ended")
 
-            with patch("src.healing.artifact_store.ARTIFACTS_DIR", artifacts_dir):
+            with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", artifacts_dir):
                 emit_artifacts(decision, timeline)
 
             json_files = sorted(artifacts_dir.glob("*.json"))
@@ -505,7 +508,7 @@ class TestEmitArtifacts(unittest.TestCase):
             timeline = ExecutionTimeline()
             timeline.add_step("Start", "Session started")
 
-            with patch("src.healing.artifact_store.ARTIFACTS_DIR", artifacts_dir):
+            with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", artifacts_dir):
                 emit_artifacts(decision, timeline)
 
             decision_files = list(artifacts_dir.glob("healing_decision_*.json"))
@@ -522,7 +525,7 @@ class TestEmitArtifacts(unittest.TestCase):
             timeline = ExecutionTimeline()
             timeline.add_step("Start", "Session started")
 
-            with patch("src.healing.artifact_store.ARTIFACTS_DIR", artifacts_dir):
+            with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", artifacts_dir):
                 emit_artifacts(decision, timeline)
 
             timeline_files = list(artifacts_dir.glob("execution_timeline_*.json"))
@@ -535,7 +538,7 @@ class TestEmitArtifacts(unittest.TestCase):
             timeline = ExecutionTimeline()
             timeline.add_step("Start", "Session started")
 
-            with patch("src.healing.artifact_store.ARTIFACTS_DIR", artifacts_dir):
+            with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", artifacts_dir):
                 emit_artifacts(decision, timeline)
 
             files = sorted(artifacts_dir.glob("*.json"))
@@ -547,12 +550,12 @@ class TestEmitArtifacts(unittest.TestCase):
                 self.assertEqual(len(parts[-2]), 8)  # YYYYMMDD
 
 
-# ── src.healing __init__ re-exports ──────────────────────────────────────────
+# ── workbench.heal __init__ re-exports ──────────────────────────────────────────
 
 
 class TestHealingInit(unittest.TestCase):
     def test_all_public_symbols_importable(self):
-        from src.healing import (  # noqa: F401
+        from workbench.heal import (  # noqa: F401
             analyze_and_plan,
             apply_fix,
             attempt_healing,
@@ -565,7 +568,7 @@ class TestHealingInit(unittest.TestCase):
         )
 
     def test_attempt_healing_callable(self):
-        from src.healing import attempt_healing
+        from workbench.heal import attempt_healing
 
         self.assertTrue(callable(attempt_healing))
 
@@ -574,13 +577,13 @@ class TestHealingInit(unittest.TestCase):
         import importlib
 
         modules = [
-            "src.healing.runner",
-            "src.healing.evidence",
-            "src.healing.classifier",
-            "src.healing.planner",
-            "src.healing.repair",
-            "src.healing.verifier",
-            "src.healing.artifact_store",
+            "workbench.runner",
+            "workbench.heal.evidence",
+            "workbench.heal.classifier",
+            "workbench.heal.planner",
+            "workbench.heal.repair",
+            "workbench.heal.verifier",
+            "workbench.heal.artifact_store",
         ]
         for mod in modules:
             with self.subTest(module=mod):
@@ -593,7 +596,7 @@ class TestHealingInit(unittest.TestCase):
 
 class TestRepairStrategyLabels(unittest.TestCase):
     def test_all_strategies_have_a_label(self):
-        from schemas.healing import REPAIR_STRATEGY_LABELS, RepairStrategy
+        from workbench.models.heal import REPAIR_STRATEGY_LABELS, RepairStrategy
 
         for strategy in RepairStrategy:
             with self.subTest(strategy=strategy):
@@ -602,7 +605,7 @@ class TestRepairStrategyLabels(unittest.TestCase):
                 self.assertTrue(REPAIR_STRATEGY_LABELS[strategy])
 
     def test_label_count_matches_enum_count(self):
-        from schemas.healing import REPAIR_STRATEGY_LABELS, RepairStrategy
+        from workbench.models.heal import REPAIR_STRATEGY_LABELS, RepairStrategy
 
         self.assertEqual(len(REPAIR_STRATEGY_LABELS), len(RepairStrategy))
 
@@ -611,7 +614,7 @@ class TestAttemptHealingMissingFile(unittest.TestCase):
     """attempt_healing reports a missing spec instead of raising."""
 
     def test_missing_file_returns_error(self):
-        from src.healing import attempt_healing
+        from workbench.heal import attempt_healing
 
         # Path in the allowed directory but not on disk triggers "File not found".
         result = attempt_healing("tests/generated/_missing_test.spec.ts", max_retries=1)

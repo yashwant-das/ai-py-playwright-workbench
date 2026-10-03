@@ -9,9 +9,9 @@ gather_evidence() call without running the test a second time.
 
 import logging
 
-from schemas.healing import HealingDecision
-from schemas.shared import RunResult
-from src.healing.runner import run_test
+from workbench.models.heal import HealingDecision
+from workbench.models.shared import RunResult
+from workbench.runner import run_test
 
 logger = logging.getLogger(__name__)
 

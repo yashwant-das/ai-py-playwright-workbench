@@ -14,13 +14,13 @@ its public signature so call-sites require no changes.
 import logging
 from pathlib import Path
 
-from schemas.healing import ExecutionTimeline, HealingDecision
-from schemas.shared import ProvenanceRecord
+from workbench.models.heal import ExecutionTimeline, HealingDecision
+from workbench.models.shared import ProvenanceRecord
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-ARTIFACTS_DIR = PROJECT_ROOT / "tests" / "artifacts"
+from workbench.config import ARTIFACTS_DIR, PROJECT_ROOT
+
 ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
 
 

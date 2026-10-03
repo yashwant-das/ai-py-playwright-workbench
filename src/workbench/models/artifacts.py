@@ -15,7 +15,7 @@ class ContextSnapshot(BaseModel):
 
     Captures DOM HTML, accessibility tree, console errors, network failures,
     locator candidates, and an optional screenshot path — all collected in a
-    single Playwright session via ``src.context.collect_context()``.
+    single Playwright session via ``workbench.context.collect_context()``.
     """
 
     url: str

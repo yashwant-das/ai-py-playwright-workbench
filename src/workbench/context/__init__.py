@@ -11,8 +11,8 @@ Public API:
     capture_from_page(page, output_dir, **kwargs) -> str
 """
 
-from src.context.collector import collect_context
-from src.context.screenshot import capture_from_page, capture_screenshot
+from workbench.context.collector import collect_context
+from workbench.context.screenshot import capture_from_page, capture_screenshot
 
 __all__ = [
     "capture_from_page",

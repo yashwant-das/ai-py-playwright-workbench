@@ -12,14 +12,12 @@ provenance record (model, tokens, latency, context snapshot used).
 import hashlib
 import logging
 
-from schemas.generation import GenerationDecision, GenerationResult
-from src.llm import get_default_router
-from src.utils.llm import extract_code_block
-from src.utils.prompt_loader import get_prompt_hash, get_prompt_version, load_prompt
+from workbench.llm import get_default_router
+from workbench.llm.parsing import extract_code_block
+from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt
+from workbench.models.generate import GenerationDecision, GenerationResult
 
 logger = logging.getLogger(__name__)
-
-TEST_DIR = "tests/generated"
 
 
 def generate_test_script(url: str, feature_description: str) -> GenerationDecision:
@@ -38,7 +36,7 @@ def generate_test_script(url: str, feature_description: str) -> GenerationDecisi
     """
     logger.info("Generating test for URL: %s", url)
 
-    from src.context import collect_context
+    from workbench.context import collect_context
 
     snapshot = collect_context(url, capture_html=True, capture_a11y=True)
 

@@ -11,13 +11,13 @@ import logging
 import re
 from pathlib import Path
 
-from schemas.healing import Evidence
-from schemas.shared import RunResult
-from src.context import collect_context
+from workbench.context import collect_context
+from workbench.models.heal import Evidence
+from workbench.models.shared import RunResult
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+from workbench.config import PROJECT_ROOT
 
 
 def extract_url_from_code(code: str) -> str | None:
@@ -41,7 +41,7 @@ def extract_url_from_code(code: str) -> str | None:
 def gather_evidence(test_file, result: RunResult) -> Evidence:
     """Collect evidence from a failed test run: logs, screenshot, and page context.
 
-    Uses ``src.context.collect_context()`` to open a single browser session and
+    Uses ``workbench.context.collect_context()`` to open a single browser session and
     collect HTML, accessibility tree, console errors, network failures, and
     locator candidates from the URL extracted from the test file.
 

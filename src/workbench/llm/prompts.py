@@ -12,10 +12,10 @@ from file content by get_prompt_hash().
 
 import hashlib
 import json
-from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-_MANIFEST_PATH = _PROJECT_ROOT / "prompts" / "manifest.json"
+from workbench.config import PROMPTS_DIR
+
+_MANIFEST_PATH = PROMPTS_DIR / "manifest.json"
 _manifest_cache: dict | None = None
 
 
@@ -58,9 +58,7 @@ def load_prompt(agent_name: str) -> str:
     Returns:
         str: Content of the prompt file
     """
-    # Resolve the project root dynamically
-    project_root = Path(__file__).resolve().parent.parent.parent
-    prompt_path = project_root / "prompts" / f"{agent_name}.md"
+    prompt_path = PROMPTS_DIR / f"{agent_name}.md"
 
     if not prompt_path.exists():
         raise FileNotFoundError(f"Prompt file not found: {prompt_path}")

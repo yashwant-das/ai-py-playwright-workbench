@@ -16,16 +16,16 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from schemas.artifacts import ContextSnapshot
-from src.context.accessibility import (
+from workbench.context.accessibility import (
     fetch_accessibility_tree_dict,
     format_accessibility_snapshot,
 )
-from src.context.console import attach_console_listener
-from src.context.dom import collect_dom
-from src.context.locator_candidates import extract_locator_candidates
-from src.context.network import attach_network_listener
-from src.context.screenshot import capture_from_page
+from workbench.context.console import attach_console_listener
+from workbench.context.dom import collect_dom
+from workbench.context.locator_candidates import extract_locator_candidates
+from workbench.context.network import attach_network_listener
+from workbench.context.screenshot import capture_from_page
+from workbench.models.artifacts import ContextSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ def collect_context(
                                 to settle before collecting context.
 
     Returns:
-        :class:`~schemas.artifacts.ContextSnapshot` populated with all
+        :class:`~workbench.models.artifacts.ContextSnapshot` populated with all
         successfully collected fields.  Unpopulated fields remain at their
         ``None`` / empty-list defaults.
     """

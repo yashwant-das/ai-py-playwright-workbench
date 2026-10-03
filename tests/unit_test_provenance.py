@@ -18,7 +18,7 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schemas.generation import GenerationDecision
+from workbench.models.generate import GenerationDecision
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -131,9 +131,9 @@ class TestEmitDecision(unittest.TestCase):
 
     def _emit(self, decision, prefix: str, tmp_dir: Path) -> Path:
         """Call emit_decision() redirected to a temp directory."""
-        from src.healing.artifact_store import emit_decision
+        from workbench.heal.artifact_store import emit_decision
 
-        with patch("src.healing.artifact_store.ARTIFACTS_DIR", tmp_dir):
+        with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", tmp_dir):
             return emit_decision(decision, prefix)
 
     def test_generation_decision_file_has_correct_prefix(self):

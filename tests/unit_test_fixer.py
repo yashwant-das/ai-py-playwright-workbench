@@ -1,8 +1,8 @@
 import unittest
 
-from schemas.healing import Evidence, HealingAction, HealingDecision
-from schemas.shared import FailureType
-from src.healing.repair import apply_fix
+from workbench.heal.repair import apply_fix
+from workbench.models.heal import Evidence, HealingAction, HealingDecision
+from workbench.models.shared import FailureType
 
 
 class TestFixApplication(unittest.TestCase):
@@ -119,7 +119,7 @@ if (success) {
         self.assertEqual(new_code.strip(), expected.strip())
 
     def test_extract_url_from_code(self):
-        from src.healing.evidence import extract_url_from_code
+        from workbench.heal.evidence import extract_url_from_code
 
         code_single = "await page.goto('https://example.com/foo');"
         code_double = 'await page.goto("https://example.com/bar");'

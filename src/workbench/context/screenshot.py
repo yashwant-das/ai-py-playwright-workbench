@@ -24,7 +24,7 @@ from playwright.sync_api import sync_playwright
 
 logger = logging.getLogger(__name__)
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+from workbench.config import PROJECT_ROOT as _PROJECT_ROOT
 
 
 def _build_filename(url: str, tag: str) -> str:

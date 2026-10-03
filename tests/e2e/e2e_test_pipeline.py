@@ -23,10 +23,10 @@ from pathlib import Path
 
 import pytest
 
-from src.agents.generator import generate_test_script
-from src.healing import attempt_healing, run_test
-from src.llm import _reset_default_router_for_testing
 from tests.e2e.fake_llm import FakeLLM
+from workbench.generate.pipeline import generate_test_script
+from workbench.heal import attempt_healing, run_test
+from workbench.llm import _reset_default_router_for_testing
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 SITE_DIR = Path(__file__).resolve().parent / "site"

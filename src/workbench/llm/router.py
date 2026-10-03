@@ -22,8 +22,9 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel, Field
 
-from src.llm.client import LLMClientFactory, ProviderConfig
-from src.llm.policies import RetryPolicy, TimeoutPolicy
+from workbench.config import PROJECT_ROOT
+from workbench.llm.client import LLMClientFactory, ProviderConfig
+from workbench.llm.policies import RetryPolicy, TimeoutPolicy
 
 logger = logging.getLogger(__name__)
 
@@ -400,9 +401,8 @@ class LLMRouter:
         Returns:
             Configured LLMRouter instance.
         """
-        from pathlib import Path
 
-        load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
+        load_dotenv(PROJECT_ROOT / ".env")
 
         provider = os.getenv("LLM_PROVIDER", "lm_studio").lower()
         primary_config = ProviderConfig.from_env(provider)

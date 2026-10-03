@@ -1,6 +1,6 @@
 import unittest
 
-from src.utils.llm import extract_json_block
+from workbench.llm.parsing import extract_json_block
 
 
 class TestJsonExtraction(unittest.TestCase):

@@ -15,13 +15,13 @@ Public API (import from here or from the individual modules):
 
 """
 
-from src.healing.artifact_store import emit_artifacts
-from src.healing.classifier import classify_failure_heuristic
-from src.healing.evidence import extract_url_from_code, gather_evidence
-from src.healing.planner import analyze_and_plan
-from src.healing.repair import apply_fix
-from src.healing.runner import run_test
-from src.healing.verifier import verify_repair
+from workbench.heal.artifact_store import emit_artifacts
+from workbench.heal.classifier import classify_failure_heuristic
+from workbench.heal.evidence import extract_url_from_code, gather_evidence
+from workbench.heal.planner import analyze_and_plan
+from workbench.heal.repair import apply_fix
+from workbench.heal.verifier import verify_repair
+from workbench.runner import run_test
 
 __all__ = [
     "analyze_and_plan",
@@ -52,14 +52,14 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
     import logging
     from pathlib import Path
 
-    from schemas.healing import (
+    from workbench.models.heal import (
         REPAIR_STRATEGY_LABELS,
         ExecutionTimeline,
         HealingAction,
         HealingDecision,
     )
-    from schemas.shared import FailureType
-    from src.utils.validation import validate_file_path
+    from workbench.models.shared import FailureType
+    from workbench.validation import validate_file_path
 
     logger = logging.getLogger(__name__)
     try:

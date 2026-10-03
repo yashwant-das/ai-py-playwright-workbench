@@ -10,16 +10,16 @@ import unittest
 
 from pydantic import ValidationError
 
-from schemas.generation import GenerationResult
-from schemas.healing import (
+from workbench.llm.parsing import parse_llm_response
+from workbench.models.generate import GenerationResult
+from workbench.models.heal import (
     Evidence,
     ExecutionTimeline,
     HealingAction,
     HealingAnalysis,
     HealingDecision,
 )
-from schemas.shared import FailureType, RunResult
-from src.utils.llm import parse_llm_response
+from workbench.models.shared import FailureType, RunResult
 
 # ---------------------------------------------------------------------------
 # RunResult

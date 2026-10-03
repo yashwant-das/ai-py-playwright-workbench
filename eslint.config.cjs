@@ -25,8 +25,8 @@ module.exports = tseslint.config(
     ],
   },
   {
-    // Node.js scripts — allow require(), process, __dirname, etc.
-    files: ['scripts/**/*.js'],
+    // Node.js scripts shipped in the package — allow require(), process, __dirname, etc.
+    files: ['src/workbench/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.node,

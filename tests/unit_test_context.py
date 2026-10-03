@@ -51,7 +51,7 @@ def _make_pw_mocks():
 
 class TestCollectDom(unittest.TestCase):
     def setUp(self):
-        from src.context.dom import collect_dom
+        from workbench.context.dom import collect_dom
 
         self.collect_dom = collect_dom
 
@@ -115,7 +115,7 @@ class TestCollectDom(unittest.TestCase):
 
 class TestFormatAccessibilitySnapshot(unittest.TestCase):
     def setUp(self):
-        from src.context.accessibility import format_accessibility_snapshot
+        from workbench.context.accessibility import format_accessibility_snapshot
 
         self.fmt = format_accessibility_snapshot
 
@@ -160,7 +160,7 @@ class TestFormatAccessibilitySnapshot(unittest.TestCase):
 
 class TestCollectAccessibilityTree(unittest.TestCase):
     def setUp(self):
-        from src.context.accessibility import collect_accessibility_tree
+        from workbench.context.accessibility import collect_accessibility_tree
 
         self.collect = collect_accessibility_tree
 
@@ -207,7 +207,7 @@ class TestCollectAccessibilityTree(unittest.TestCase):
 
 class TestExtractLocatorCandidates(unittest.TestCase):
     def setUp(self):
-        from src.context.locator_candidates import extract_locator_candidates
+        from workbench.context.locator_candidates import extract_locator_candidates
 
         self.extract = extract_locator_candidates
 
@@ -283,7 +283,7 @@ class TestExtractLocatorCandidates(unittest.TestCase):
 
 class TestAttachConsoleListener(unittest.TestCase):
     def setUp(self):
-        from src.context.console import attach_console_listener
+        from workbench.context.console import attach_console_listener
 
         self.attach = attach_console_listener
 
@@ -339,7 +339,7 @@ class TestAttachConsoleListener(unittest.TestCase):
 
 class TestAttachNetworkListener(unittest.TestCase):
     def setUp(self):
-        from src.context.network import attach_network_listener
+        from workbench.context.network import attach_network_listener
 
         self.attach = attach_network_listener
 
@@ -413,7 +413,7 @@ class TestAttachNetworkListener(unittest.TestCase):
 
 class TestCaptureFromPage(unittest.TestCase):
     def setUp(self):
-        from src.context.screenshot import capture_from_page
+        from workbench.context.screenshot import capture_from_page
 
         self.capture = capture_from_page
 
@@ -463,13 +463,15 @@ class TestCaptureFromPage(unittest.TestCase):
 
 class TestCaptureScreenshot(unittest.TestCase):
     def setUp(self):
-        from src.context.screenshot import capture_screenshot
+        from workbench.context.screenshot import capture_screenshot
 
         self.capture = capture_screenshot
 
     def test_delegates_to_playwright(self):
         mock_ctx_mgr, _mock_p, _mock_browser, _mock_ctx, mock_page = _make_pw_mocks()
-        with patch("src.context.screenshot.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.screenshot.sync_playwright", return_value=mock_ctx_mgr
+        ):
             with TemporaryDirectory() as tmp:
                 result = self.capture(
                     "https://example.com", Path(tmp), tag="test", wait_ms=0
@@ -480,7 +482,9 @@ class TestCaptureScreenshot(unittest.TestCase):
 
     def test_creates_output_dir(self):
         mock_ctx_mgr, *_ = _make_pw_mocks()
-        with patch("src.context.screenshot.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.screenshot.sync_playwright", return_value=mock_ctx_mgr
+        ):
             with TemporaryDirectory() as tmp:
                 new_dir = Path(tmp) / "caps"
                 self.assertFalse(new_dir.exists())
@@ -489,7 +493,9 @@ class TestCaptureScreenshot(unittest.TestCase):
 
     def test_closes_browser(self):
         mock_ctx_mgr, _mock_p, mock_browser, *_ = _make_pw_mocks()
-        with patch("src.context.screenshot.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.screenshot.sync_playwright", return_value=mock_ctx_mgr
+        ):
             with TemporaryDirectory() as tmp:
                 self.capture("https://example.com", Path(tmp), wait_ms=0)
         mock_browser.close.assert_called_once()
@@ -504,7 +510,7 @@ class TestCollectContext(unittest.TestCase):
     """Tests for the unified context collector."""
 
     def setUp(self):
-        from src.context.collector import collect_context
+        from workbench.context.collector import collect_context
 
         self.collect = collect_context
 
@@ -534,11 +540,13 @@ class TestCollectContext(unittest.TestCase):
         page.on.return_value = None
 
     def test_returns_context_snapshot(self):
-        from schemas.artifacts import ContextSnapshot
+        from workbench.models.artifacts import ContextSnapshot
 
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://example.com", wait_ms=0)
         self.assertIsInstance(result, ContextSnapshot)
         self.assertEqual(result.url, "https://example.com")
@@ -546,7 +554,9 @@ class TestCollectContext(unittest.TestCase):
     def test_collects_html(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://example.com", capture_html=True, wait_ms=0)
         self.assertIsNotNone(result.html)
         self.assertIn("Submit", result.html)
@@ -554,7 +564,9 @@ class TestCollectContext(unittest.TestCase):
     def test_collects_accessibility_tree(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://example.com", capture_a11y=True, wait_ms=0)
         self.assertIsNotNone(result.accessibility_tree)
         self.assertIn("[button] Submit", result.accessibility_tree)
@@ -562,7 +574,9 @@ class TestCollectContext(unittest.TestCase):
     def test_extracts_locator_candidates(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://example.com", capture_a11y=True, wait_ms=0)
         self.assertIn(
             "getByRole('button', { name: 'Submit' })",
@@ -572,7 +586,9 @@ class TestCollectContext(unittest.TestCase):
     def test_skip_html_when_disabled(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect(
                 "https://example.com",
                 capture_html=False,
@@ -584,7 +600,9 @@ class TestCollectContext(unittest.TestCase):
     def test_skip_a11y_when_disabled(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect(
                 "https://example.com",
                 capture_html=False,
@@ -597,7 +615,9 @@ class TestCollectContext(unittest.TestCase):
     def test_returns_partial_snapshot_on_navigation_error(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         mock_page.goto.side_effect = Exception("net::ERR_NAME_NOT_RESOLVED")
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://nonexistent.invalid", wait_ms=0)
         # URL is always set; HTML/a11y are None
         self.assertEqual(result.url, "https://nonexistent.invalid")
@@ -608,14 +628,18 @@ class TestCollectContext(unittest.TestCase):
         mock_ctx_mgr = MagicMock()
         mock_ctx_mgr.__enter__ = MagicMock(side_effect=Exception("playwright crash"))
         mock_ctx_mgr.__exit__ = MagicMock(return_value=False)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             result = self.collect("https://example.com", wait_ms=0)
         self.assertEqual(result.url, "https://example.com")
 
     def test_closes_browser_on_success(self):
         mock_ctx_mgr, _, mock_browser, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             self.collect("https://example.com", wait_ms=0)
         mock_browser.close.assert_called_once()
 
@@ -626,7 +650,9 @@ class TestCollectContext(unittest.TestCase):
         call_order = []
         mock_page.on.side_effect = lambda ev, _h: call_order.append(f"on:{ev}")
         mock_page.goto.side_effect = lambda *a, **kw: call_order.append("goto")
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             self.collect(
                 "https://example.com",
                 capture_console=True,
@@ -647,7 +673,9 @@ class TestCollectContext(unittest.TestCase):
         call_order = []
         mock_page.on.side_effect = lambda ev, _h: call_order.append(f"on:{ev}")
         mock_page.goto.side_effect = lambda *a, **kw: call_order.append("goto")
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             self.collect(
                 "https://example.com",
                 capture_network=True,
@@ -662,7 +690,9 @@ class TestCollectContext(unittest.TestCase):
     def test_no_listeners_when_disabled(self):
         mock_ctx_mgr, _, _, _, mock_page = _make_pw_mocks()
         self._mock_page_defaults(mock_page)
-        with patch("src.context.collector.sync_playwright", return_value=mock_ctx_mgr):
+        with patch(
+            "workbench.context.collector.sync_playwright", return_value=mock_ctx_mgr
+        ):
             self.collect(
                 "https://example.com",
                 capture_console=False,
@@ -679,7 +709,7 @@ class TestCollectContext(unittest.TestCase):
 
 class TestContextSnapshotProperties(unittest.TestCase):
     def setUp(self):
-        from schemas.artifacts import ContextSnapshot
+        from workbench.models.artifacts import ContextSnapshot
 
         self.ContextSnapshot = ContextSnapshot
 
@@ -727,8 +757,8 @@ class TestContextSnapshotProperties(unittest.TestCase):
 
 class TestEvidenceFromContextSnapshot(unittest.TestCase):
     def setUp(self):
-        from schemas.artifacts import ContextSnapshot
-        from schemas.healing import Evidence
+        from workbench.models.artifacts import ContextSnapshot
+        from workbench.models.heal import Evidence
 
         self.Evidence = Evidence
         self.ContextSnapshot = ContextSnapshot

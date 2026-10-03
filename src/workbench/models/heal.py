@@ -16,7 +16,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from src.utils.formatting import clean_ansi_codes
+from workbench.text import clean_ansi_codes
 
 from .artifacts import ContextSnapshot
 from .shared import FailureType, ProvenanceRecord
@@ -246,7 +246,7 @@ class HealingDecision(ProvenanceRecord):
             test_file:            Path to the failing test file.
             analysis:             Validated :class:`HealingAnalysis` from the LLM.
             evidence:             Evidence collected from the failure run.
-            model_used:           Model identifier from :class:`~src.llm.router.LLMResponse`.
+            model_used:           Model identifier from :class:`~workbench.llm.router.LLMResponse`.
             provider:             LLM provider name from LLMResponse.
             prompt_version:       Version string from ``prompts/manifest.json``.
             prompt_hash:          SHA-256 hex prefix of the healer prompt.

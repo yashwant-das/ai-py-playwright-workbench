@@ -1,8 +1,8 @@
 """Pydantic data contracts for LLM inputs, outputs and artifacts."""
 
 from .artifacts import ContextSnapshot
-from .generation import GenerationDecision, GenerationResult
-from .healing import (
+from .generate import GenerationDecision, GenerationResult
+from .heal import (
     Evidence,
     ExecutionTimeline,
     HealingAction,

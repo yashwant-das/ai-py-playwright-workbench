@@ -6,7 +6,7 @@ triple without making LLM calls or touching the filesystem.  The output feeds
 planner.analyze_and_plan() as a pre-diagnosis hint.
 """
 
-from schemas.shared import FailureType
+from workbench.models.shared import FailureType
 
 
 def classify_failure_heuristic(logs: str) -> tuple[FailureType, float, str]:

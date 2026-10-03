@@ -15,15 +15,15 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schemas.artifacts import ContextSnapshot
-from schemas.generation import GenerationDecision
-from schemas.healing import (
+from workbench.models.artifacts import ContextSnapshot
+from workbench.models.generate import GenerationDecision
+from workbench.models.heal import (
     Evidence,
     HealingAction,
     HealingAnalysis,
     HealingDecision,
 )
-from schemas.shared import FailureType
+from workbench.models.shared import FailureType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -193,13 +193,13 @@ class TestEmitArtifactsSingleFile(unittest.TestCase):
     """emit_artifacts() writes exactly one healing_decision_*.json file."""
 
     def _emit(self, tmpdir: Path):
-        from schemas.healing import ExecutionTimeline
-        from src.healing.artifact_store import emit_artifacts
+        from workbench.heal.artifact_store import emit_artifacts
+        from workbench.models.heal import ExecutionTimeline
 
         decision = _make_healing_decision(_evidence_no_context())
         timeline = ExecutionTimeline()
         timeline.add_step("Start", "Session started")
-        with patch("src.healing.artifact_store.ARTIFACTS_DIR", tmpdir):
+        with patch("workbench.heal.artifact_store.ARTIFACTS_DIR", tmpdir):
             emit_artifacts(decision, timeline)
 
     def test_exactly_one_file_written(self):

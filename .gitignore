@@ -60,6 +60,8 @@ logs/
 Thumbs.db
 
 # Project Specific
+# v2 runtime output (Phase 2 onwards)
+workspace/
 tests/screenshots/*.png
 tests/artifacts/
 # Specs the workbench generates at runtime

@@ -23,13 +23,13 @@ from unittest.mock import patch
 # ---------------------------------------------------------------------------
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from schemas.healing import (
+from workbench.models.heal import (
     Evidence,
     HealingAction,
     HealingAnalysis,
     HealingDecision,
 )
-from schemas.shared import FailureType
+from workbench.models.shared import FailureType
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -334,18 +334,18 @@ class TestGetPromptVersion(unittest.TestCase):
 
     def setUp(self):
         # Reset the module-level cache before each test
-        import src.utils.prompt_loader as pl
+        import workbench.llm.prompts as pl
 
         pl._manifest_cache = None
 
     def tearDown(self):
-        import src.utils.prompt_loader as pl
+        import workbench.llm.prompts as pl
 
         pl._manifest_cache = None
 
     def test_returns_version_from_manifest(self):
         """Should return the version string for a known agent."""
-        from src.utils.prompt_loader import get_prompt_version
+        from workbench.llm.prompts import get_prompt_version
 
         fake_manifest = {
             "prompts": {
@@ -353,32 +353,28 @@ class TestGetPromptVersion(unittest.TestCase):
                 "generator": {"version": "3"},
             }
         }
-        with patch(
-            "src.utils.prompt_loader._load_manifest", return_value=fake_manifest
-        ):
+        with patch("workbench.llm.prompts._load_manifest", return_value=fake_manifest):
             self.assertEqual(get_prompt_version("healer"), "5")
             self.assertEqual(get_prompt_version("generator"), "3")
 
     def test_fallback_to_one_when_agent_not_in_manifest(self):
-        from src.utils.prompt_loader import get_prompt_version
+        from workbench.llm.prompts import get_prompt_version
 
         fake_manifest = {"prompts": {"healer": {"version": "2"}}}
-        with patch(
-            "src.utils.prompt_loader._load_manifest", return_value=fake_manifest
-        ):
+        with patch("workbench.llm.prompts._load_manifest", return_value=fake_manifest):
             self.assertEqual(get_prompt_version("nonexistent"), "1")
 
     def test_fallback_to_one_when_manifest_empty(self):
-        from src.utils.prompt_loader import get_prompt_version
+        from workbench.llm.prompts import get_prompt_version
 
         with patch(
-            "src.utils.prompt_loader._load_manifest", return_value={"prompts": {}}
+            "workbench.llm.prompts._load_manifest", return_value={"prompts": {}}
         ):
             self.assertEqual(get_prompt_version("healer"), "1")
 
     def test_reads_real_manifest_for_healer(self):
         """Integration check: real manifest has healer version '2'."""
-        from src.utils.prompt_loader import get_prompt_version
+        from workbench.llm.prompts import get_prompt_version
 
         # This relies on the actual prompts/manifest.json existing in the project.
         # If the manifest is missing the test gracefully falls back to '1'.
@@ -388,7 +384,7 @@ class TestGetPromptVersion(unittest.TestCase):
 
     def test_load_manifest_caches_result(self):
         """_load_manifest() should not re-read the file on repeated calls."""
-        from src.utils.prompt_loader import _load_manifest
+        from workbench.llm.prompts import _load_manifest
 
         with tempfile.TemporaryDirectory() as tmpdir:
             manifest_path = Path(tmpdir) / "manifest.json"
@@ -396,7 +392,7 @@ class TestGetPromptVersion(unittest.TestCase):
                 json.dumps({"prompts": {"healer": {"version": "7"}}})
             )
 
-            with patch("src.utils.prompt_loader._MANIFEST_PATH", manifest_path):
+            with patch("workbench.llm.prompts._MANIFEST_PATH", manifest_path):
                 first = _load_manifest()
                 # Overwrite file — second call should still return cached value
                 manifest_path.write_text(json.dumps({"prompts": {}}))
@@ -414,7 +410,7 @@ class TestEvidenceSnapshotId(unittest.TestCase):
     """_evidence_snapshot_id() produces a stable 12-char SHA-256 prefix."""
 
     def _snapshot_id(self, evidence: Evidence) -> str:
-        from src.healing.planner import _evidence_snapshot_id
+        from workbench.heal.planner import _evidence_snapshot_id
 
         return _evidence_snapshot_id(evidence)
 
@@ -450,7 +446,7 @@ class TestEvidenceSnapshotId(unittest.TestCase):
     def test_none_error_log_handled(self):
         """Evidence with error_log=None-equivalent should not crash."""
 
-        from src.healing.planner import _evidence_snapshot_id
+        from workbench.heal.planner import _evidence_snapshot_id
 
         # error_log is a required str field, but planner guards with `or ""`
         ev = Evidence(error_log="")

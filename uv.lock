@@ -8,8 +8,8 @@ resolution-markers = [
 
 [[package]]
 name = "ai-py-playwright-workbench"
-version = "1.0.0"
-source = { virtual = "." }
+version = "2.0.0.dev0"
+source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "openai" },

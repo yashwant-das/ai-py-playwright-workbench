@@ -17,14 +17,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from schemas.healing import (
+from workbench.heal.repair import _apply_ast_fix, _apply_string_fix, apply_fix
+from workbench.models.heal import (
     Evidence,
     HealingAction,
     HealingDecision,
     RepairStrategy,
 )
-from schemas.shared import FailureType
-from src.healing.repair import _apply_ast_fix, _apply_string_fix, apply_fix
+from workbench.models.shared import FailureType
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
@@ -171,7 +171,7 @@ class TestApplyFixRouting(unittest.TestCase):
         m.stderr = ""
         return m
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_string_replace_strategy_skips_subprocess(self, mock_run):
         decision = _make_decision(
             original_code="await page.click('#old');",
@@ -183,7 +183,7 @@ class TestApplyFixRouting(unittest.TestCase):
         mock_run.assert_not_called()
         self.assertIn("#new", result)
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_ast_strategy_calls_subprocess(self, mock_run):
         mock_run.return_value = self._mock_ast_success("modified source")
         decision = _make_decision(
@@ -195,7 +195,7 @@ class TestApplyFixRouting(unittest.TestCase):
         mock_run.assert_called_once()
         self.assertEqual(result, "modified source")
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_ast_failure_falls_back_to_string(self, mock_run):
         mock_run.return_value = self._mock_ast_failure()
         decision = _make_decision(
@@ -208,7 +208,7 @@ class TestApplyFixRouting(unittest.TestCase):
         # AST failed → string fallback applied
         self.assertIn("#new", result)
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_ast_zero_changes_falls_back_to_string(self, mock_run):
         original = "    await page.click('#old');"
         # Node.js returns same source with 0 changes
@@ -226,7 +226,7 @@ class TestApplyFixRouting(unittest.TestCase):
         self.assertIn("#new", result)
 
     @patch(
-        "src.healing.repair.subprocess.run",
+        "workbench.heal.repair.subprocess.run",
         side_effect=subprocess.TimeoutExpired("node", 30),
     )
     def test_ast_timeout_falls_back_to_string(self, _mock_run):
@@ -239,7 +239,7 @@ class TestApplyFixRouting(unittest.TestCase):
         result = apply_fix("test.ts", current, decision)
         self.assertIn("#new", result)
 
-    @patch("src.healing.repair.subprocess.run", side_effect=FileNotFoundError())
+    @patch("workbench.heal.repair.subprocess.run", side_effect=FileNotFoundError())
     def test_node_not_found_falls_back_to_string(self, _mock_run):
         decision = _make_decision(
             original_code="await page.click('#old');",
@@ -250,7 +250,7 @@ class TestApplyFixRouting(unittest.TestCase):
         result = apply_fix("test.ts", current, decision)
         self.assertIn("#new", result)
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_subprocess_input_contains_strategy_and_source(self, mock_run):
         mock_run.return_value = self._mock_ast_success("x")
         decision = _make_decision(
@@ -449,7 +449,7 @@ class TestAstRepairIntegration(unittest.TestCase):
 
     # error handling ──────────────────────────────────────────────────────────
 
-    @patch("src.healing.repair.subprocess.run")
+    @patch("workbench.heal.repair.subprocess.run")
     def test_unknown_strategy_node_returns_original(self, mock_run):
         """When Node.js reports an unknown strategy, _apply_ast_fix returns original."""
         m = MagicMock()

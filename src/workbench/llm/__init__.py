@@ -19,7 +19,7 @@ get_default_router()  returns the module-level lazily initialised LLMRouter
 
 Example
 -------
-    from src.llm import get_default_router
+    from workbench.llm import get_default_router
 
     router = get_default_router()
     response = router.complete_primary(messages=[
@@ -32,10 +32,10 @@ Example
 
 from __future__ import annotations
 
-from src.llm.client import LLMClientFactory, ProviderConfig
-from src.llm.policies import RetryPolicy, TimeoutPolicy
-from src.llm.registry import ModelCapabilities, ModelRegistry
-from src.llm.router import LLMRequest, LLMResponse, LLMRouter
+from workbench.llm.client import LLMClientFactory, ProviderConfig
+from workbench.llm.policies import RetryPolicy, TimeoutPolicy
+from workbench.llm.registry import ModelCapabilities, ModelRegistry
+from workbench.llm.router import LLMRequest, LLMResponse, LLMRouter
 
 # ---------------------------------------------------------------------------
 # Module-level lazy singleton — no OpenAI() call at import time.

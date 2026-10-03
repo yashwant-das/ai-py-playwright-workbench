@@ -3,7 +3,7 @@
 import os
 import unittest
 
-from src.utils.validation import ValidationError, validate_file_path
+from workbench.validation import ValidationError, validate_file_path
 
 
 class TestValidateFilePath(unittest.TestCase):

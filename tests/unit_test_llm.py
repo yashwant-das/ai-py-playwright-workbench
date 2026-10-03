@@ -22,7 +22,7 @@ from unittest.mock import MagicMock, patch
 
 from pydantic import ValidationError
 
-from src.llm import (
+from workbench.llm import (
     LLMClientFactory,
     LLMRequest,
     LLMResponse,
@@ -368,7 +368,9 @@ class TestLLMRouterSuccess(unittest.TestCase):
         router = _make_router()
         mock_completion = _make_completion(content="test response")
 
-        with patch("src.llm.router.LLMClientFactory.create", return_value=MagicMock()):
+        with patch(
+            "workbench.llm.router.LLMClientFactory.create", return_value=MagicMock()
+        ):
             router._LLMRouter__primary_client = MagicMock()
             router._LLMRouter__primary_client.chat.completions.create.return_value = (
                 mock_completion
@@ -618,7 +620,7 @@ class TestLLMRouterFallback(unittest.TestCase):
 class TestLLMRouterLazyInit(unittest.TestCase):
     def test_client_not_created_at_init(self):
         """LLMClientFactory.create must not be called during LLMRouter.__init__."""
-        with patch("src.llm.router.LLMClientFactory.create") as mock_create:
+        with patch("workbench.llm.router.LLMClientFactory.create") as mock_create:
             config = ProviderConfig(name="test", base_url="http://x:1/v1", api_key="k")
             LLMRouter(primary_config=config, primary_model="m")
             mock_create.assert_not_called()
@@ -629,7 +631,7 @@ class TestLLMRouterLazyInit(unittest.TestCase):
         mock_client.chat.completions.create.return_value = _make_completion()
 
         with patch(
-            "src.llm.router.LLMClientFactory.create", return_value=mock_client
+            "workbench.llm.router.LLMClientFactory.create", return_value=mock_client
         ) as mock_create:
             config = ProviderConfig(name="test", base_url="http://x:1/v1", api_key="k")
             router = LLMRouter(
@@ -676,7 +678,7 @@ class TestLLMRouterFromEnv(unittest.TestCase):
         """Vision model missing → router builds fine; vision_model is None."""
         env = {"LLM_PROVIDER": "lm_studio", "LM_STUDIO_TEXT_MODEL": "text-only"}
         with (
-            patch("src.llm.router.load_dotenv"),
+            patch("workbench.llm.router.load_dotenv"),
             patch.dict("os.environ", env, clear=False),
         ):
             import os as _os
@@ -695,7 +697,7 @@ class TestLLMRouterFromEnv(unittest.TestCase):
         """Missing text model env var → clear ValueError with guidance."""
         env = {"LLM_PROVIDER": "lm_studio"}
         with (
-            patch("src.llm.router.load_dotenv"),
+            patch("workbench.llm.router.load_dotenv"),
             patch.dict("os.environ", env, clear=False),
         ):
             import os as _os
@@ -727,12 +729,12 @@ class TestLLMRouterFromEnv(unittest.TestCase):
 
 class TestGetDefaultRouter(unittest.TestCase):
     def setUp(self):
-        from src.llm import _reset_default_router_for_testing
+        from workbench.llm import _reset_default_router_for_testing
 
         _reset_default_router_for_testing()
 
     def tearDown(self):
-        from src.llm import _reset_default_router_for_testing
+        from workbench.llm import _reset_default_router_for_testing
 
         _reset_default_router_for_testing()
 
@@ -748,7 +750,7 @@ class TestGetDefaultRouter(unittest.TestCase):
         self.assertIs(r1, r2)
 
     def test_reset_allows_new_router(self):
-        from src.llm import _reset_default_router_for_testing
+        from workbench.llm import _reset_default_router_for_testing
 
         with patch.dict("os.environ", {"LM_STUDIO_TEXT_MODEL": "mock-model"}):
             r1 = get_default_router()
@@ -757,7 +759,7 @@ class TestGetDefaultRouter(unittest.TestCase):
         self.assertIsNot(r1, r2)
 
     def test_router_reads_env_on_first_call(self):
-        from src.llm import _reset_default_router_for_testing
+        from workbench.llm import _reset_default_router_for_testing
 
         # Pin LLM_PROVIDER so the .env file's value doesn't interfere.
         with patch.dict(

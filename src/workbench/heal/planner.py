@@ -21,12 +21,17 @@ import hashlib
 import logging
 import time
 
-from schemas.healing import Evidence, HealingAction, HealingAnalysis, HealingDecision
-from schemas.shared import FailureType
-from src.healing.classifier import classify_failure_heuristic
-from src.llm import get_default_router
-from src.utils.llm import parse_llm_response
-from src.utils.prompt_loader import get_prompt_hash, get_prompt_version, load_prompt
+from workbench.heal.classifier import classify_failure_heuristic
+from workbench.llm import get_default_router
+from workbench.llm.parsing import parse_llm_response
+from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt
+from workbench.models.heal import (
+    Evidence,
+    HealingAction,
+    HealingAnalysis,
+    HealingDecision,
+)
+from workbench.models.shared import FailureType
 
 logger = logging.getLogger(__name__)
 

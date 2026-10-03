@@ -26,14 +26,14 @@ where the LLM chose an AST strategy but the script couldn't apply it.
 import json
 import logging
 import subprocess
-from pathlib import Path
 
-from schemas.healing import HealingDecision, RepairStrategy
+from workbench.models.heal import HealingDecision, RepairStrategy
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-_AST_SCRIPT = PROJECT_ROOT / "scripts" / "ast_repair.js"
+from workbench.config import AST_REPAIR_SCRIPT, PROJECT_ROOT
+
+_AST_SCRIPT = AST_REPAIR_SCRIPT
 
 
 # ── public entry point ────────────────────────────────────────────────────────

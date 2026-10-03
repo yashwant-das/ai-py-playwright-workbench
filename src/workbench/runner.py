@@ -9,13 +9,12 @@ subprocess output.
 import logging
 import subprocess
 import time
-from pathlib import Path
 
-from schemas.shared import RunResult
+from workbench.models.shared import RunResult
 
 logger = logging.getLogger(__name__)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+from workbench.config import PROJECT_ROOT
 
 
 def run_test(test_file) -> RunResult:
