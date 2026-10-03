@@ -77,13 +77,16 @@ else.
 | D3 | One report type per run (`HealReport`, `GenerateReport`) | Replaces decision artifacts, timelines, traces and provenance records that overlapped. The UI, downloads and tests read the same object. |
 | D4 | Providers: LM Studio, Ollama, Demo | Both local servers speak the OpenAI API, so one client covers both. Demo replays recorded answers so the app works without a model. |
 | D5 | Evidence from Playwright's `error-context.md` and the run's own output folder | Playwright already snapshots the page at the moment of failure. Re-opening the start page described the wrong state for any multi-step test. |
-| D6 | `locator.aria_snapshot()` replaces the custom CDP accessibility code | Public, maintained Playwright API; less code. |
+| D6 | `page.aria_snapshot(mode="ai")` replaces the custom CDP accessibility code; `page.console_messages()`, `page.page_errors()` and `page.requests()` replace the custom listeners | Public, maintained Playwright APIs; less code. `mode="ai"` is the format Playwright itself writes into `error-context.md`, so Generate and Heal show the model the same snapshot format. |
 | D7 | Ask the model for JSON-schema output, then validate with Pydantic | Makes "structured output" true. If a provider rejects the schema, retry once without it and rely on validation. |
 | D8 | App-defect guard | If the model diagnoses `POTENTIAL_APP_DEFECT` with confidence ≥ 0.7, the heal stops without editing the test. One rule, and it answers the main criticism of self-healing: hiding real bugs. |
 | D9 | Keep the custom engine; compare with Playwright Test Agents in the README | Test Agents are prompts plus MCP tools run inside a coding assistant, with free-form edits (including assertions) and `test.fixme()` when stuck. This project is a standalone, local-model pipeline with constrained, auditable fixes. Replacing the engine would leave nothing to show. |
 | D10 | Package becomes `workbench` under `src/` | `from src.healing import ...` uses `src` as a package name, which is an anti-pattern. A proper src-layout package fixes imports and packaging. |
 | D11 | All runtime output goes to one git-ignored `workspace/` folder | Replaces `tests/generated`, `tests/artifacts`, `tests/screenshots`, `logs/` and `benchmarks/reports`. |
 | D12 | pytest style tests in `tests/unit`, `tests/integration`, `tests/ui` | Clear levels, modern style. Tests are rewritten as the modules they cover change. |
+| D13 | Python 3.13, Playwright 1.63.0 (Python and npm pinned to the same exact version), Node 24 | Current, supported versions. Matching pins keep the Python library and the test runner on the same browser builds. Node 20 reached end of life in April 2026. |
+| D14 | The runner reads Playwright's JSON report, not terminal output | Verified on 1.63: the JSON report gives each test's status, error message and location, and the exact paths of that test's screenshot and `error-context.md`. Replaces stdout parsing and screenshot globbing. |
+| D15 | Verification re-runs are recorded as video with each action captioned | Playwright 1.59+ `video.show.actions`. The healed screen offers "Watch the re-run": visible proof the fix works, and footage for the README GIF. Only verification runs are recorded, to keep the workspace small. |
 
 ## 5. Product scope
 
@@ -91,7 +94,7 @@ else.
 
 | Feature | Behaviour |
 | --- | --- |
-| **Heal** | Run a spec, collect evidence from the failure, ask the model for a diagnosis and a fix, apply it to the syntax tree (text replacement as fallback), re-run. Repeat up to N attempts (1–5, default 3). Stop early on a suspected app bug. |
+| **Heal** | Run a spec, collect evidence from the failure, ask the model for a diagnosis and a fix, apply it to the syntax tree (text replacement as fallback), re-run. Repeat up to N attempts (1–5, default 3). Stop early on a suspected app bug. Each verification re-run is recorded as a captioned video. |
 | **Heal samples** | Two bundled samples against a sample site the app serves itself: *Selector drift* (heals) and *App bug* (stops without editing). Sample specs contain a `{{BASE_URL}}` placeholder that is filled in when they are copied into the workspace, so they work on any port. With Demo the outcomes are deterministic; with a real model they depend on the model. |
 | **Upload** | Heal your own single-file `.spec.ts` (max 200 KB). The upload is copied into the workspace; the original is never modified. Specs that import local helpers or page objects are not supported. |
 | **Generate** | URL + scenario → collect page context in one Chromium session → model writes the spec → optionally run it. A failed run offers **Heal this test**. |
@@ -108,7 +111,7 @@ All of these are designed in the Figma file. The app must implement each one.
 | Global | Model connected · Demo · Not connected (header pill and popover) |
 | Heal | Idle · Running (live steps + log) · Healed · Healed after retries · Not healed (attempts exhausted) · **Stopped: likely app bug** (new, see 5.3) · Nothing to heal · Cancelled · Model unreachable |
 | Heal attempt outcomes | Healed · Re-run failed · Fix not applied · Invalid model reply |
-| Heal result tabs | Diff · Execution log · Model I/O |
+| Heal result tabs | Diff · Re-run video · Execution log · Model I/O |
 | Generate | Empty · Generating · Passed · Generated, not run · Run failed → Heal |
 | Banners | Playwright browsers missing (blocking) · Page context unavailable · Repair used text replacement |
 | Input errors | Invalid URL · Not a spec file · File too large |
@@ -118,8 +121,9 @@ All of these are designed in the Figma file. The app must implement each one.
 1. Popover footnote: "Defaults come from .env" becomes "Saved on this machine".
 2. Sample card: two samples (*Selector drift*, *App bug*) instead of one.
 3. New result state **Stopped: likely app bug**: warning pill, the diagnosis and its evidence, and "The test was not changed." The existing "Not healed" screen remains for exhausted attempts.
+4. A **Re-run video** tab on the healed screens: the recorded verification run with action captions, plus its length and a download link.
 
-Once the UI phase lands, the templates are the source of truth. Figma is updated only for these three changes.
+Once the UI phase lands, the templates are the source of truth. Figma is updated only for these four changes.
 
 ## 6. Architecture
 
@@ -229,6 +233,7 @@ flowchart LR
 | `GET /reports/{id}` | Result view for a finished run (also used after a page reload) |
 | `GET /reports/{id}.json` | Download the report |
 | `GET /reports/{id}/spec` | Download the fixed or generated spec |
+| `GET /reports/{id}/video` | Stream the verification re-run video |
 | `GET /model`, `POST /model` | Popover content; save provider, server URL and model |
 | `POST /model/test` | Test the connection and refresh the model list |
 | `GET /sample-site/...` | Static sample web app used by the bundled samples |
@@ -237,6 +242,9 @@ flowchart LR
 ### 6.4 Data contracts
 
 ```text
+RunResult       status(passed | failed | timed_out | error), duration_ms, error_message, error_location,
+                screenshot_path?, error_context_path?, video_path?, stdout, stderr
+                (built from Playwright's JSON report)
 Provenance      provider, model, prompt_name, prompt_version, prompt_hash,
                 input_tokens, output_tokens, latency_ms
 PromptSection   name, chars, original_chars (set when truncated)
@@ -261,9 +269,9 @@ RunEvent        run_id, seq, kind(step | log | attempt | done), step?, state?, d
 
 | # | Change | Detail |
 | --- | --- | --- |
-| E1 | Per-run output folder | The runner passes `--output workspace/runs/<id>/test-results`, so the screenshot and `error-context.md` always belong to this run. Fixes the "newest PNG anywhere" bug. |
-| E2 | Evidence from the failure | `evidence.py` reads `error-context.md` (the page snapshot Playwright takes at the moment of failure) and the run's screenshot. If no snapshot exists, it falls back to collecting context from the spec's `page.goto` URL and adds the "Page context unavailable" warning when that fails too. |
-| E3 | Aria snapshot | The context collector uses `page.locator("body").aria_snapshot()`. `locators.py` derives role/name candidates from it. `accessibility.py` (CDP) is deleted. |
+| E1 | Per-run output folder and JSON report | The runner calls `npx playwright test <spec> --config playwright.workspace.config.ts --output workspace/runs/<id>/test-results --reporter=json` with `PLAYWRIGHT_JSON_OUTPUT_FILE=workspace/runs/<id>/report.json`, and builds `RunResult` from that report. The screenshot, `error-context.md` and video paths come from the report's attachments, so they always belong to this run. Fixes the "newest PNG anywhere" bug. |
+| E2 | Evidence from the failure | `evidence.py` reads the `error-context.md` attachment. Verified on 1.63, it holds the error, the test source with the failing line marked, and the page snapshot taken at the moment of failure (mid-test state included). The planner sends the snapshot and the marked source as separate prompt sections and drops Playwright's own "Instructions" header. If there is no attachment, evidence falls back to collecting context from the spec's `page.goto` URL, and adds the "Page context unavailable" warning when that fails too. |
+| E3 | Aria snapshot | The context collector uses `page.aria_snapshot(mode="ai", depth=…)`, the same format as `error-context.md`. `locators.py` derives role/name candidates from it. `accessibility.py` (CDP) is deleted. |
 | E4 | Model I/O capture | The planner builds named prompt sections, records their sizes and truncation, stores the raw response and validation result in a `ModelExchange`. |
 | E5 | Schema-constrained output | `client.chat()` sends `response_format` with the `HealingAnalysis` JSON schema; on a provider error it retries once without it. Pydantic validation always runs. |
 | E6 | One heal loop | `heal/pipeline.py` replaces both `attempt_healing` and `heal_test_streaming`, emits `RunEvent`s and honours cancellation. |
@@ -271,6 +279,8 @@ RunEvent        run_id, seq, kind(step | log | attempt | done), step?, state?, d
 | E8 | Cancellation | The runner starts Playwright in its own process group and kills the group on cancel. Pipelines check the flag between steps. |
 | E9 | Environment checks | At startup and before each run: Node available (else text-replacement warning), Chromium installed (else blocking banner with the install command). |
 | E10 | Prompts | Move to the package; healer prompt bumped to v3 (section headers, schema output), generator to v3. Vision prompt deleted. |
+| E11 | Built-in page signals | The collector reads `page.console_messages()`, `page.page_errors()` and failed entries from `page.requests()` after navigation. `console.py` and `network.py` (custom listeners) are deleted. |
+| E12 | Re-run video | `playwright.workspace.config.ts` enables `video: { mode: "on", show: { actions: { position: "top-right" }, test: { level: "title" } } }` when `WORKBENCH_RECORD_VIDEO=1`. The runner sets it for verification runs only; the video path comes from the JSON report and is stored on the attempt. |
 
 ### 6.6 Providers and settings
 
@@ -309,7 +319,7 @@ RunEvent        run_id, seq, kind(step | log | attempt | done), step?, state?, d
 | `src/observability/` and `logs/` | Duplicated the reports |
 | `src/llm/router.py`, `registry.py`, `policies.py` | Replaced by one small client |
 | Vision: `vision_service.py`, `prompts/vision.md`, `VisionDecision`, vision model settings | Out of scope |
-| `src/context/accessibility.py` (CDP), `screenshot.py` | Replaced by `aria_snapshot()` and the run's own screenshot |
+| `src/context/accessibility.py` (CDP), `screenshot.py`, `console.py`, `network.py` | Replaced by `aria_snapshot(mode="ai")`, the run's own screenshot, and Playwright's built-in console, error and request collections |
 | `src/utils/` | `validation.py`, `llm.py` and `prompt_loader.py` move (see 6.1); `browser.py`, `formatting.py` and `logger.py` are folded into their callers, with logging configured once in `__main__.py` |
 | `schemas/` (top level) | Moves to `workbench.models`, with obsolete types removed (`ExecutionTimeline`, `TraceMetadata`, `BenchmarkRun`, `EvaluationResult`, ...) |
 | `benchmarks/` | Decision in section 3 |
@@ -403,8 +413,8 @@ Phase 4; that is acceptable because `main` keeps the current version until the m
 
 | Phase | Scope | Done when |
 | --- | --- | --- |
-| 1. Foundation | `src/workbench` package; pytest layout; delete section 7 items that nothing depends on; dependency changes; `ROADMAP.md`, `CHANGELOG.md`, new `AGENTS.md`, `CLAUDE.md` | Package imports cleanly; remaining tests pass under pytest; roadmap lists all phases |
-| 2. Engine | E1–E10; unified reports; heal and generate pipelines with events and cancellation | Unit tests cover every heal outcome; integration test proves S3 and S4 with a fake client |
+| 1. Foundation | `src/workbench` package; pytest layout; delete section 7 items that nothing depends on; dependency changes; upgrade to Python 3.13, Playwright 1.63.0 and Node 24 (D13); `ROADMAP.md`, `CHANGELOG.md`, new `AGENTS.md`, `CLAUDE.md` | Package imports cleanly; remaining tests pass under pytest on the new versions; roadmap lists all phases |
+| 2. Engine | E1–E12; unified reports; heal and generate pipelines with events and cancellation | Unit tests cover every heal outcome; integration test proves S3 and S4 with a fake client and records a re-run video |
 | 3. Providers and samples | LLM client, provider detection, settings, Demo provider and recordings, `samples/` site and specs | S1 and S2 pass at pipeline level |
 | 4. Web UI | FastAPI app, templates, CSS tokens, SSE, every state in section 5.2; Figma changes in 5.3 | Manual walkthrough of all states; route tests pass |
 | 5. Quality gates | Integration and UI suites, axe, coverage gate, CI rework, Dependabot, removed workflows | S5 and S6 |
@@ -414,7 +424,8 @@ Phase 4; that is acceptable because `main` keeps the current version until the m
 
 | Risk | Mitigation |
 | --- | --- |
-| `error-context.md` is missing or its format changes | It is on by default in 1.57; evidence falls back to page collection; an integration test fails loudly if the snapshot disappears |
+| `error-context.md` or the JSON report changes format | Playwright is pinned to an exact version; evidence falls back to page collection; an integration test fails loudly if the attachment or its "Page snapshot" section disappears |
+| Re-run videos fill the disk | Only verification runs are recorded, at the default 800×450 scale; videos live under `workspace/runs/<id>/` and are deleted with the run |
 | A provider rejects `response_format` | One retry without it, then Pydantic validation; covered by a unit test |
 | Small local models give weak diagnoses | Out of our control; the UI shows confidence and the Model I/O so a weak answer is visible, not hidden |
 | SSE behaves differently behind proxies | Local tool on 127.0.0.1 only; not a target |

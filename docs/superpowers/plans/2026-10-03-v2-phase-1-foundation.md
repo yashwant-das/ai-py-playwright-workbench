@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn the repository into a `workbench` package with a clean test layout, delete every subsystem v2 drops, and add the roadmap, changelog and agent guides, without changing what the generate and heal pipelines do.
+**Goal:** Turn the repository into a `workbench` package on Python 3.13, Playwright 1.63 and Node 24, with a clean test layout, delete every subsystem v2 drops, and add the roadmap, changelog and agent guides, without changing what the generate and heal pipelines do.
 
 **Architecture:** This phase only moves, renames and deletes code. Source modules move from `src/<area>` and `schemas/` into `src/workbench/`, their imports are rewritten by a one-off codemod, and paths are centralised in `workbench/config.py`. The Gradio UI, the services layer, the CLI, the vision pipeline, the JSONL tracer, the benchmarks and Docker are deleted. The pipelines keep their current behaviour; Phase 2 rewrites them.
 
-**Tech Stack:** Python 3.11, uv, hatchling, pytest, ruff, mypy, Node 20, ts-morph, Playwright 1.57, ESLint, markdownlint-cli2.
+**Tech Stack:** Python 3.13, uv, hatchling, pytest, ruff, mypy, Node 24, ts-morph, Playwright 1.63, ESLint, markdownlint-cli2.
 
 **Spec:** [docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md](../specs/2026-10-03-v2-showcase-simplification-design.md)
 
@@ -25,7 +25,7 @@ The spec is delivered in six phases. Each phase gets its own plan, written once 
 
 ## Global Constraints
 
-- Python `>=3.11`; Playwright pinned at `1.57.0` (Python) and `^1.57.0` (npm).
+- After Task 3: Python `>=3.13` (pinned in `.python-version`), Playwright exactly `1.63.0` for both the Python package and the npm packages, Node 24 (pinned in `.nvmrc`).
 - Ruff line length 88, double quotes; the existing rule set in `pyproject.toml` stays.
 - No behaviour change to generation or healing in this phase. The prompts' content and versions stay as they are, apart from deleting `vision`.
 - Runtime output paths stay as they are in this phase (`tests/generated/`, `tests/artifacts/`, `test-results/`). Phase 2 moves them into `workspace/`.
@@ -37,11 +37,11 @@ The spec is delivered in six phases. Each phase gets its own plan, written once 
 
 ## Review Focus
 
-1. **Paths after the move.** Prompts, the ts-morph script and the project root used to be found with `Path(__file__).parent.parent.parent`, which is wrong one level deeper. Expected: every path comes from `workbench.config` and points at a real file. Pinned by `tests/unit/test_config.py` (Task 3).
-2. **Node resolving `ts-morph` from the script's new location** under `src/workbench/heal/`. Expected: Node walks up to the root `node_modules` and the script still edits code. Pinned by `test_ast_repair_script_resolves_ts_morph_from_the_package` (Task 3).
-3. **Stale imports hidden by `except Exception`.** The router and the runner imported the tracer inside `try/except Exception`, so a leftover legacy import would fail silently at runtime. Expected: no file imports `src.*`, `schemas.*`, `benchmarks`, `gradio` or the tracer. Pinned by `tests/unit/test_layout.py` (Task 3).
-4. **The package imported from outside the repository root.** pytest and editors import `workbench` without `sys.path` tricks. Expected: `import workbench.config` works from any directory after `uv sync`. Pinned by Task 3 Step 12.
-5. **The integration test still finds the sample site** after it moves to `samples/site/`. Expected: the generate-then-heal integration test passes against the moved site. Pinned by Task 4 Step 6.
+1. **Paths after the move.** Prompts, the ts-morph script and the project root used to be found with `Path(__file__).parent.parent.parent`, which is wrong one level deeper. Expected: every path comes from `workbench.config` and points at a real file. Pinned by `tests/unit/test_config.py` (Task 4).
+2. **Node resolving `ts-morph` from the script's new location** under `src/workbench/heal/`. Expected: Node walks up to the root `node_modules` and the script still edits code. Pinned by `test_ast_repair_script_resolves_ts_morph_from_the_package` (Task 4).
+3. **Stale imports hidden by `except Exception`.** The router and the runner imported the tracer inside `try/except Exception`, so a leftover legacy import would fail silently at runtime. Expected: no file imports `src.*`, `schemas.*`, `benchmarks`, `gradio` or the tracer. Pinned by `tests/unit/test_layout.py` (Task 4).
+4. **The package imported from outside the repository root.** pytest and editors import `workbench` without `sys.path` tricks. Expected: `import workbench.config` works from any directory after `uv sync`. Pinned by Task 4 Step 12.
+5. **The integration test still finds the sample site** after it moves to `samples/site/`. Expected: the generate-then-heal integration test passes against the moved site. Pinned by Task 5 Step 6.
 
 ---
 
@@ -51,6 +51,8 @@ The spec is delivered in six phases. Each phase gets its own plan, written once 
 | --- | --- | --- |
 | Create | `ROADMAP.md` | Status of every v2 item |
 | Create | `CHANGELOG.md` | Keep a Changelog history |
+| Create | `.python-version`, `.nvmrc` | Pin Python 3.13 and Node 24 |
+| Create | `tests/unit_test_versions.py` (becomes `tests/unit/test_versions.py`) | Python and npm Playwright stay in step |
 | Create | `src/workbench/__init__.py` | Package marker and version |
 | Create | `src/workbench/config.py` | All filesystem locations |
 | Create | `src/workbench/generate/__init__.py` | Package marker |
@@ -170,7 +172,18 @@ and JSONL tracing.
 Run: `npx markdownlint-cli2 ROADMAP.md CHANGELOG.md`
 Expected: `Summary: 0 issues in 0 files`. The `Removed` table has a header and no rows yet; if markdownlint reports MD055/MD056 for it, add the first row now from Task 2 Step 11 instead of leaving it empty.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 4: Tag the released version**
+
+The 1.0 code is archived by a tag, not a folder. Tag `main`'s current commit locally (pushing the tag waits for the user, see Task 7):
+
+```bash
+git tag -a v1.0.0 main -m "v1.0.0: the Gradio workbench before the v2 redesign"
+git tag -l v1.0.0
+```
+
+Expected: `v1.0.0`.
+
+- [ ] **Step 5: Commit**
 
 ```bash
 git add ROADMAP.md CHANGELOG.md
@@ -469,7 +482,151 @@ git commit -m "refactor!: remove the Gradio UI, vision, tracer, benchmarks and D
 
 ---
 
-### Task 3: Move the source into the `workbench` package
+### Task 3: Upgrade to Python 3.13, Playwright 1.63 and Node 24
+
+**Files:**
+
+- Create: `.python-version`, `.nvmrc`, `tests/unit_test_versions.py`
+- Modify: `pyproject.toml`, `uv.lock`, `package.json`, `package-lock.json`, `.github/workflows/ci.yml`, `ROADMAP.md`, `CHANGELOG.md`
+
+**Interfaces:**
+
+- Consumes: Task 2's trimmed dependency set.
+- Produces: the toolchain every later task and phase runs on.
+
+- [ ] **Step 1: Write the failing version test**
+
+Create `tests/unit_test_versions.py` (Task 5 moves it to `tests/unit/test_versions.py`):
+
+```python
+"""The Python library and the npm test runner must stay on one Playwright."""
+
+import json
+import sys
+from importlib.metadata import version
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def test_python_is_3_13_or_newer() -> None:
+    assert sys.version_info >= (3, 13)
+
+
+def test_playwright_python_and_npm_versions_match() -> None:
+    pkg = json.loads((PROJECT_ROOT / "package.json").read_text(encoding="utf-8"))
+    npm_versions = {
+        pkg["devDependencies"]["@playwright/test"],
+        pkg["dependencies"]["playwright"],
+        pkg["dependencies"]["playwright-core"],
+    }
+    assert npm_versions == {version("playwright")} == {"1.63.0"}
+```
+
+- [ ] **Step 2: Run it to verify it fails**
+
+Run: `uv run python -m pytest tests/unit_test_versions.py -q`
+Expected: `test_playwright_python_and_npm_versions_match` FAILS (npm has `^1.57.0`, Python has `1.57.0`).
+
+- [ ] **Step 3: Upgrade Python and the Python Playwright package**
+
+In `pyproject.toml`:
+
+- `requires-python = ">=3.11"` becomes `requires-python = ">=3.13"`;
+- `"playwright==1.57.0",` becomes `"playwright==1.63.0",`;
+- in `[tool.ruff]`, `target-version = "py311"` becomes `target-version = "py313"`;
+- in `[tool.mypy]`, `python_version = "3.11"` becomes `python_version = "3.13"`.
+
+Run:
+
+```bash
+uv python pin 3.13
+uv lock --upgrade-package playwright
+uv sync --group dev
+uv run python -c "import sys, playwright; from importlib.metadata import version; print(sys.version.split()[0], version('playwright'))"
+```
+
+Expected: `.python-version` contains `3.13`; the last command prints `3.13.x 1.63.0`.
+
+- [ ] **Step 4: Upgrade the npm packages and pin Node**
+
+In `package.json`, set exact versions (no caret) and add an `engines` field after `"license": "MIT",`:
+
+```json
+  "engines": {
+    "node": ">=24"
+  },
+```
+
+- `"@playwright/test": "^1.57.0"` becomes `"@playwright/test": "1.63.0"`;
+- `"playwright": "^1.57.0"` becomes `"playwright": "1.63.0"`;
+- `"playwright-core": "^1.57.0"` becomes `"playwright-core": "1.63.0"`.
+
+Create `.nvmrc` containing the single line `24`.
+
+Run:
+
+```bash
+npm install
+npx playwright --version
+npx playwright install chromium
+```
+
+Expected: `Version 1.63.0`; Chromium for 1.63 is installed.
+
+- [ ] **Step 5: Point CI at the pinned versions**
+
+In `.github/workflows/ci.yml`, in both `Set up Node.js` steps, replace `node-version: '20'` with `node-version-file: '.nvmrc'`. uv reads `.python-version`, so the `Set up uv` steps need no change.
+
+- [ ] **Step 6: Apply the newer lint rules**
+
+Run:
+
+```bash
+uv run ruff check --fix . && uv run ruff format .
+uv run mypy
+```
+
+Expected: ruff may rewrite syntax for Python 3.13 (pyupgrade rules); afterwards no errors. Fix any remaining mypy error in place without changing behaviour.
+
+- [ ] **Step 7: Run every suite on the new toolchain**
+
+Run:
+
+```bash
+uv run python -m pytest tests/unit_test_*.py -q
+uv run python -m pytest tests/e2e/e2e_test_pipeline.py -v
+npm run test:e2e:report
+npm run lint && npm run type-check
+```
+
+Expected: all pass, including both version tests. Note the unit test count; Task 4 compares against it. If page-context collection fails on the new Chromium (the CDP accessibility code in `src/context/accessibility.py`), stop and report it rather than redesigning it: Phase 2 replaces that code with `page.aria_snapshot(mode="ai")`.
+
+- [ ] **Step 8: Update the roadmap and changelog, then commit**
+
+In `ROADMAP.md`, add this row to the `Now` table:
+
+```markdown
+| Python 3.13, Playwright 1.63.0, Node 24 | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+```
+
+In `CHANGELOG.md`, add after the `### Removed` list:
+
+```markdown
+### Changed
+
+- Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
+  same version) and Node 24.
+```
+
+```bash
+git add -A
+git commit -m "build: upgrade to Python 3.13, Playwright 1.63.0 and Node 24" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 4: Move the source into the `workbench` package
 
 **Files:**
 
@@ -480,7 +637,7 @@ git commit -m "refactor!: remove the Gradio UI, vision, tracer, benchmarks and D
 
 **Interfaces:**
 
-- Consumes: Task 2's trimmed modules.
+- Consumes: Task 2's trimmed modules on the Task 3 toolchain.
 - Produces, for Phase 2 onwards:
   - `workbench.config`: `PACKAGE_DIR: Path`, `PROJECT_ROOT: Path`, `PROMPTS_DIR: Path`, `AST_REPAIR_SCRIPT: Path`, `GENERATED_SPECS_DIR: Path`, `ARTIFACTS_DIR: Path`, `TEST_RESULTS_DIR: Path`
   - `workbench.heal.attempt_healing(test_file, max_retries: int = 3) -> str`
@@ -865,7 +1022,7 @@ Expected: 6 passed (the Node test is skipped only if `node` is missing).
 The old test files still live in `tests/` (Task 4 moves them), and the codemod has already rewritten their imports.
 
 Run: `uv run python -m pytest tests/unit_test_*.py -q`
-Expected: the same number of tests pass as in Task 2 Step 10. (Files passed explicitly are collected even though `python_files` is now `test_*.py`.)
+Expected: the same number of tests pass as in Task 3 Step 7. (Files passed explicitly are collected even though `python_files` is now `test_*.py`.)
 
 If a test fails because a file is missing, a source module still points at the old layout. Find it with `grep -rn "scripts/ast_repair\|parent.parent.parent" src/workbench` and switch it to `workbench.config`.
 
@@ -886,7 +1043,7 @@ git commit -m "refactor: move the source into the workbench package" -m "Paths n
 
 ---
 
-### Task 4: Reorganise the tests into unit and integration suites
+### Task 5: Reorganise the tests into unit and integration suites
 
 **Files:**
 
@@ -895,7 +1052,7 @@ git commit -m "refactor: move the source into the workbench package" -m "Paths n
 
 **Interfaces:**
 
-- Consumes: Task 3's package.
+- Consumes: Task 4's package.
 - Produces: `uv run python -m pytest` runs the unit suite; `uv run python -m pytest tests/integration` runs the integration suite; `samples/site/index.html` is the sample web app Phase 3 builds on.
 
 - [ ] **Step 1: Move the unit tests**
@@ -908,7 +1065,7 @@ done
 ls tests/unit
 ```
 
-Expected: `__init__.py`, `test_ast_repair.py`, `test_classification.py`, `test_config.py`, `test_context.py`, `test_explainability.py`, `test_fixer.py`, `test_healing.py`, `test_json.py`, `test_layout.py`, `test_llm.py`, `test_path_validation.py`, `test_provenance.py`, `test_schemas.py`, `test_validation.py`, `test_visibility.py`.
+Expected: `__init__.py`, `test_ast_repair.py`, `test_classification.py`, `test_config.py`, `test_context.py`, `test_explainability.py`, `test_fixer.py`, `test_healing.py`, `test_json.py`, `test_layout.py`, `test_llm.py`, `test_path_validation.py`, `test_provenance.py`, `test_schemas.py`, `test_validation.py`, `test_versions.py`, `test_visibility.py`.
 
 - [ ] **Step 2: Fix paths in the moved unit tests**
 
@@ -924,7 +1081,7 @@ Expected: no output from the second command. (On Linux use `sed -i` without `''`
 - [ ] **Step 3: Run the unit suite from its new home**
 
 Run: `uv run python -m pytest`
-Expected: all tests pass, including `test_config.py` and `test_layout.py`; the total equals Task 3 Step 11's count plus the 6 guard tests.
+Expected: all tests pass, including `test_config.py` and `test_layout.py`; the total equals Task 4 Step 11's count plus the 6 guard tests.
 
 - [ ] **Step 4: Move the integration test and the sample site**
 
@@ -984,11 +1141,9 @@ Expected: everything passes.
 
 - [ ] **Step 8: Update the changelog and commit**
 
-Add under `## [Unreleased]` in `CHANGELOG.md`:
+Add these bullets to the `### Changed` list in `CHANGELOG.md`:
 
 ```markdown
-### Changed
-
 - The code is now the installable `workbench` package under `src/`, with all
   paths in `workbench.config`.
 - Tests are split into `tests/unit` (the default pytest run) and
@@ -1002,7 +1157,7 @@ git commit -m "test: split the suites into unit and integration and move the sam
 
 ---
 
-### Task 5: Replace the documentation and agent guides
+### Task 6: Replace the documentation and agent guides
 
 **Files:**
 
@@ -1013,7 +1168,7 @@ git commit -m "test: split the suites into unit and integration and move the sam
 
 **Interfaces:**
 
-- Consumes: the layout from Tasks 3 and 4.
+- Consumes: the layout from Tasks 4 and 5.
 - Produces: `AGENTS.md` as the single guide for agents; Phases 2–6 update it as the layout grows.
 
 - [ ] **Step 1: Delete the old documentation**
@@ -1043,7 +1198,7 @@ syntax-tree edit and re-runs the test to prove the fix.
 > **v2 is under construction on this branch.** The redesign is described in
 > the [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
 > and its progress is tracked in [ROADMAP.md](ROADMAP.md). The released 1.0
-> version is on `main`.
+> version is tagged [`v1.0.0`](https://github.com/yashwant-das/ai-py-playwright-workbench/tree/v1.0.0).
 
 ## State of this branch
 
@@ -1210,7 +1365,7 @@ Replace the last bullet (two lines, starting `- Dependabot opens weekly`) with:
 
 In `ROADMAP.md`:
 
-- move the three Phase 1 rows from `Now` into `Done`, replacing `Nothing yet.` with:
+- move the four Phase 1 rows from `Now` into `Done`, replacing `Nothing yet.` with:
 
 ```markdown
 | Item | Phase | Plan |
@@ -1218,6 +1373,7 @@ In `ROADMAP.md`:
 | `workbench` package and test layout | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Roadmap, changelog and agent guides | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Python 3.13, Playwright 1.63.0, Node 24 | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 ```
 
 - move the five Phase 2 rows from `Next` into `Now` with status `🔭 Planned` and a `Plan` column of `Phase 2 plan (to be written)`;
@@ -1227,7 +1383,7 @@ In `ROADMAP.md`:
 | Most of `docs/` (31 files) | Replaced in Phase 6 by README, architecture, decisions and development guides | 1 |
 ```
 
-Add under `### Changed` in `CHANGELOG.md`:
+Add to the `### Changed` list in `CHANGELOG.md`:
 
 ```markdown
 - `AGENTS.md`, `CONTRIBUTING.md` and `SECURITY.md` describe v2; `CLAUDE.md`
@@ -1246,7 +1402,7 @@ git commit -m "docs: replace the documentation set with v2 guides" -m "Co-Author
 
 ---
 
-### Task 6: Verify the phase and hand over
+### Task 7: Verify the phase and hand over
 
 **Files:** none changed unless a check fails.
 
@@ -1262,7 +1418,7 @@ npm run lint
 npm run type-check
 ```
 
-Expected: everything passes. Coverage is reported (the 85% gate arrives in Phase 5).
+Expected: everything passes on Python 3.13 and Playwright 1.63.0. Coverage is reported (the 85% gate arrives in Phase 5).
 
 - [ ] **Step 2: Confirm the removals**
 
@@ -1271,4 +1427,4 @@ Expected: no output.
 
 - [ ] **Step 3: Ask before pushing**
 
-Show the user `git log --oneline main..v2` and ask whether to push `v2` and open the Phase 1 pull request. Do not push without a yes.
+Show the user `git log --oneline main..v2` and ask whether to push `v2` and the `v1.0.0` tag, and open the Phase 1 pull request. Do not push without a yes.
