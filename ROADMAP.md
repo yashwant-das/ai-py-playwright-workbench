@@ -9,20 +9,19 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| `workbench` package and test layout | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
-| Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
-| Roadmap, changelog and agent guides | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
-| Python 3.13, Playwright 1.63.0, Node 24 | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Evidence from Playwright's `error-context.md` and a per-run output folder | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| Accessibility snapshot through `aria_snapshot()` instead of CDP | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| Model I/O capture and schema-constrained model output | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| One heal loop with live events, cancellation and the app-defect guard | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| One report per run, all runtime output in `workspace/` | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| Runner reads Playwright's JSON report instead of terminal output | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| Playwright's built-in console, page-error and request collections replace custom listeners | 🔭 Planned | 2 | Phase 2 plan (to be written) |
+| Captioned video of each verification re-run | 🔭 Planned | 2 | Phase 2 plan (to be written) |
 
 ## Next
 
 | Item | Status | Phase |
 | --- | --- | --- |
-| Evidence from Playwright's `error-context.md` and a per-run output folder | 🔭 Planned | 2 |
-| Accessibility snapshot through `aria_snapshot()` instead of CDP | 🔭 Planned | 2 |
-| Model I/O capture and schema-constrained model output | 🔭 Planned | 2 |
-| One heal loop with live events, cancellation and the app-defect guard | 🔭 Planned | 2 |
-| One report per run, all runtime output in `workspace/` | 🔭 Planned | 2 |
 | LM Studio, Ollama and Demo providers chosen in the UI; no `.env` | 🔭 Planned | 3 |
 | Bundled samples: selector drift and app bug | 🔭 Planned | 3 |
 | FastAPI + HTMX web UI matching the Figma design | 🔭 Planned | 4 |
@@ -42,7 +41,12 @@ the same commit as the work it describes.
 
 ## Done
 
-Nothing yet.
+| Item | Phase | Plan |
+| --- | --- | --- |
+| `workbench` package and test layout | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Roadmap, changelog and agent guides | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Python 3.13, Playwright 1.63.0, Node 24 | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 
 ## Removed
 
@@ -54,3 +58,4 @@ Nothing yet.
 | JSONL tracer and Trace Inspector | Duplicated the per-run reports | 1 |
 | Benchmarks, mutation engine, intent validation | The only published score was circular; the rest was unused | 1 |
 | Docker image and workflow | Needs a model and a browser on the host anyway | 1 |
+| Most of `docs/` (31 files) | Replaced in Phase 6 by README, architecture, decisions and development guides | 1 |

@@ -24,10 +24,9 @@ things that would be unsafe on a shared server:
   running it outside the workbench.
 - It **opens whatever URL you give it** in a real browser to collect DOM,
   accessibility, console and network context.
-- The Gradio UI binds to `127.0.0.1` by default. The Docker image binds to
-  `0.0.0.0` so the port can be published; only publish it on a trusted network.
+- The web app (from v2 Phase 4) binds to `127.0.0.1` only.
 
-Reports in scope include path traversal out of `tests/generated/`, prompt
+Reports in scope include path traversal out of the folders the workbench writes to, prompt
 injection from page content that leads to code running outside the Playwright
 sandbox, secrets written to logs or artifacts, and vulnerable dependencies.
 
@@ -36,5 +35,4 @@ sandbox, secrets written to logs or artifacts, and vulnerable dependencies.
 - CodeQL scans Python, TypeScript and the GitHub Actions workflows on every
   pull request and weekly.
 - Ruff runs the flake8-bandit (`S`) security rules in CI.
-- Dependabot opens weekly update PRs for uv, npm, GitHub Actions and the Docker
-  base image.
+- Dependabot opens weekly update PRs for uv, npm and GitHub Actions.

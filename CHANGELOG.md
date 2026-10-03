@@ -27,6 +27,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   paths in `workbench.config`.
 - Tests are split into `tests/unit` (the default pytest run) and
   `tests/integration`; the sample web app lives in `samples/site/`.
+- `AGENTS.md`, `CONTRIBUTING.md` and `SECURITY.md` describe v2; `CLAUDE.md`
+  points agents at `AGENTS.md`. The old documentation set was removed.
 
 ## [1.0.0] - 2026-09-28
 
