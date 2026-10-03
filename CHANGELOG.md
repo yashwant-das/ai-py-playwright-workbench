@@ -19,6 +19,11 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - The JSONL tracer, benchmarks, mutation engine and intent validation.
 - The Docker image and its workflow.
 
+### Changed
+
+- Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
+  same version) and Node 24.
+
 ## [1.0.0] - 2026-09-28
 
 The Gradio workbench: generation, healing and vision pipelines, benchmarks

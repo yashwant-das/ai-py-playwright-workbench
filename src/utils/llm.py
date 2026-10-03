@@ -9,16 +9,13 @@ Public API:
 
 import logging
 import re
-from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar("T", bound=BaseModel)
 
-
-def parse_llm_response(raw_content: str, model_class: type[T]) -> T:
+def parse_llm_response[T: BaseModel](raw_content: str, model_class: type[T]) -> T:
     """Parse and validate an LLM response string into a Pydantic model.
 
     Attempts two strategies in order:

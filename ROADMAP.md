@@ -12,6 +12,7 @@ the same commit as the work it describes.
 | `workbench` package and test layout | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Roadmap, changelog and agent guides | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
+| Python 3.13, Playwright 1.63.0, Node 24 | 🚧 In progress | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 
 ## Next
 

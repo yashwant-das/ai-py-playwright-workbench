@@ -17,5 +17,6 @@
     "test-results",
     "playwright-report",
     "improvements",
+    ".superpowers",
   ],
 }
