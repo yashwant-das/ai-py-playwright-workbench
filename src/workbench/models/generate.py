@@ -53,8 +53,6 @@ class GenerationDecision(ProvenanceRecord):
     """Full provenance artifact for a test generation run.
 
     Written to tests/artifacts/ as generation_decision_*.json after each run.
-    Mirrors HealingDecision's provenance contract so both appear uniformly in
-    the Artifact Inspector.
     """
 
     pipeline: str = "generation"

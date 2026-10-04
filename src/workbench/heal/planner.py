@@ -1,184 +1,102 @@
-"""
-Healing planner — heuristic pre-diagnosis + LLM reasoning → HealingDecision.
+"""Asks the model for a diagnosis and a fix, and records the exchange."""
 
-Single responsibility: given the test file path, its source code, and the
-collected evidence, produce a HealingDecision that contains the diagnosed
-failure type, hypothesis, and the proposed code swap.
-
-The planner:
-  1. Runs the heuristic classifier for a fast pre-diagnosis.
-  2. Builds a prompt that includes the pre-diagnosis, the broken code, the
-     error logs, and the live DOM snippet (when available).
-  3. Calls the LLM via LLMRouter.complete_primary().
-  4. Validates the response with parse_llm_response(HealingAnalysis).
-  5. Optionally overrides an LLM "UNKNOWN" with the heuristic type when the
-     heuristic confidence is > 0.8.
-  6. Returns a safe fallback HealingDecision on any LLM/parsing error so the
-     healing loop always gets a valid object.
-"""
-
-import hashlib
 import logging
-import time
 
-from workbench.heal.classifier import classify_failure_heuristic
-from workbench.llm import get_default_router
+from workbench.llm.chat import ChatModel
 from workbench.llm.parsing import parse_llm_response
-from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt
-from workbench.models.heal import (
-    Evidence,
-    HealingAction,
-    HealingAnalysis,
-    HealingDecision,
+from workbench.llm.prompts import (
+    get_prompt_hash,
+    get_prompt_version,
+    load_prompt,
+    render_prompt,
 )
-from workbench.models.shared import FailureType
+from workbench.models.heal import FailureEvidence, HealingAnalysis
+from workbench.models.shared import FailureType, ModelExchange, Provenance
 
 logger = logging.getLogger(__name__)
 
+Hint = tuple[FailureType, float, str]
 
-def _evidence_snapshot_id(evidence: Evidence) -> str:
-    """Return a short stable ID for the evidence error_log.
+LIMITS = {
+    "Test file": 12_000,
+    "Error": 2_000,
+    "Page snapshot at failure": 12_000,
+    "Page snapshot (fresh page load)": 12_000,
+    "Locator candidates": 2_000,
+    "Console errors": 2_000,
+    "Failed requests": 2_000,
+}
+# A heuristic this sure replaces an UNKNOWN diagnosis from the model.
+HEURISTIC_OVERRIDE = 0.8
 
-    Used as ``context_snapshot_id`` so healing decisions can be cross-referenced
-    even when no formal snapshot was stored.  First 12 hex chars of SHA-256.
-    """
-    content = evidence.error_log or ""
-    return hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
 
-
-def analyze_and_plan(test_file, code: str, evidence: Evidence) -> HealingDecision:
-    """Analyze a test failure with heuristics + LLM and produce a HealingDecision.
-
-    Args:
-        test_file: Path to the failing test file (used in the prompt and stored
-                   in the decision).
-        code:      Current source code of the failing test.
-        evidence:  Evidence collected from the failure run.
-
-    Returns:
-        HealingDecision with a validated diagnosis and proposed code fix.
-        Falls back to a zero-confidence decision if the LLM call or parsing fails.
-    """
-    t0 = time.monotonic()
-    h_type, h_conf, h_reason = classify_failure_heuristic(evidence.error_log)
-
-    _prompt_version = get_prompt_version("healer")
-    _prompt_hash = get_prompt_hash("healer")
-    _snapshot_id = _evidence_snapshot_id(evidence)
-
-    system_prompt = load_prompt("healer").format(
-        failure_type=h_type.value, confidence=h_conf, reason=h_reason
+def build_sections(code: str, evidence: FailureEvidence) -> list[tuple[str, str]]:
+    """Named context blocks in prompt order; empty ones are left out."""
+    error = evidence.error_message
+    if evidence.error_location:
+        error += f"\nat {evidence.error_location}"
+    snapshot_name = (
+        "Page snapshot at failure"
+        if evidence.source == "error_context"
+        else "Page snapshot (fresh page load)"
     )
-
-    user_prompt_lines = [
-        f"FILE: {test_file}",
-        "",
-        "BROKEN CODE:",
-        "```typescript",
-        code,
-        "```",
-        "",
-        "ERROR LOGS:",
-        evidence.error_log[:2000],
+    sections = [
+        ("Test file", code),
+        ("Error", error),
+        (snapshot_name, evidence.page_snapshot or ""),
+        (
+            "Locator candidates",
+            "\n".join(f"- {c}" for c in evidence.locator_candidates),
+        ),
+        ("Console errors", "\n".join(evidence.console_errors)),
+        ("Failed requests", "\n".join(evidence.network_errors)),
     ]
-    if evidence.dom_snippet:
-        user_prompt_lines.extend(
-            [
-                "",
-                "PAGE DOM CONTEXT (CLEANED):",
-                "```html",
-                evidence.dom_snippet[:30000],
-                "```",
-            ]
-        )
-    if evidence.accessibility_tree:
-        user_prompt_lines.extend(
-            [
-                "",
-                "ACCESSIBILITY TREE (use roles/names for locators):",
-                evidence.accessibility_tree[:5000],
-            ]
-        )
-    if evidence.locator_candidates:
-        cand_lines = "\n".join(f"  - {c}" for c in evidence.locator_candidates[:20])
-        user_prompt_lines.extend(
-            [
-                "",
-                "AVAILABLE LOCATORS (from accessibility tree, prefer these):",
-                cand_lines,
-            ]
-        )
-    if evidence.console_errors:
-        err_lines = "\n".join(evidence.console_errors[:5])
-        user_prompt_lines.extend(
-            [
-                "",
-                "BROWSER CONSOLE ERRORS:",
-                err_lines,
-            ]
-        )
-    if evidence.network_errors:
-        net_lines = "\n".join(evidence.network_errors[:5])
-        user_prompt_lines.extend(
-            [
-                "",
-                "FAILED NETWORK REQUESTS:",
-                net_lines,
-            ]
-        )
-    user_prompt = "\n".join(user_prompt_lines)
+    return [(name, content) for name, content in sections if content.strip()]
 
-    router = get_default_router()
+
+def plan_fix(
+    *, code: str, evidence: FailureEvidence, hint: Hint, model: ChatModel
+) -> tuple[HealingAnalysis | None, ModelExchange]:
+    """Return the model's validated analysis (None if invalid) and the exchange.
+
+    Raises ``ModelError`` when the model cannot be reached.
+    """
+    hint_type, hint_confidence, hint_reason = hint
+    system = load_prompt("healer").format(
+        failure_type=hint_type.value,
+        confidence=f"{hint_confidence:.2f}",
+        reason=hint_reason,
+    )
+    user, sections = render_prompt(build_sections(code, evidence), LIMITS)
+    reply = model.chat(
+        [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        json_schema=HealingAnalysis.model_json_schema(),
+        temperature=0.1,
+    )
+    exchange = ModelExchange(
+        sections=sections,
+        raw_response=reply.content,
+        provenance=Provenance(
+            provider=reply.provider,
+            model=reply.model,
+            prompt_name="healer",
+            prompt_version=get_prompt_version("healer"),
+            prompt_hash=get_prompt_hash("healer"),
+            input_tokens=reply.input_tokens,
+            output_tokens=reply.output_tokens,
+            latency_ms=reply.latency_ms,
+        ),
+    )
     try:
-        llm_response = router.complete_primary(
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-            temperature=0.1,
-        )
-
-        raw_content = llm_response.content
-
-        # Pydantic validation — no silent data corruption
-        analysis = parse_llm_response(raw_content, HealingAnalysis)
-
-        # Heuristic override: trust high-confidence heuristic over LLM UNKNOWN
-        if h_conf > 0.8 and analysis.failure_type == FailureType.UNKNOWN:
-            analysis = analysis.model_copy(update={"failure_type": h_type})
-
-        duration_ms = int((time.monotonic() - t0) * 1000)
-        return HealingDecision.from_analysis(
-            test_file=str(test_file),
-            analysis=analysis,
-            evidence=evidence,
-            model_used=llm_response.model_used,
-            provider=llm_response.provider,
-            prompt_version=_prompt_version,
-            prompt_hash=_prompt_hash,
-            input_tokens=llm_response.input_tokens,
-            output_tokens=llm_response.output_tokens,
-            latency_ms=duration_ms,
-            retry_count=llm_response.retry_count,
-            context_snapshot_id=_snapshot_id,
-        )
-
-    except Exception as exc:
-        logger.error("LLM analysis error: %s", exc)
-        duration_ms = int((time.monotonic() - t0) * 1000)
-        return HealingDecision(
-            test_file=str(test_file),
-            failure_type=FailureType.UNKNOWN,
-            failure_summary=f"Agent failed to analyze: {exc}",
-            evidence=evidence,
-            hypothesis="Fallback: manual intervention needed",
-            confidence_score=0.0,
-            reasoning_steps=["LLM call or response parsing failed"],
-            action_taken=HealingAction(
-                original_code="", fixed_code="", description="No action"
-            ),
-            prompt_version=_prompt_version,
-            prompt_hash=_prompt_hash,
-            latency_ms=duration_ms,
-            context_snapshot_id=_snapshot_id,
-        )
+        analysis = parse_llm_response(reply.content, HealingAnalysis)
+    except ValueError as exc:
+        logger.warning("Healer reply did not match the schema: %s", exc)
+        exchange.validation_error = str(exc)[:500]
+        return None, exchange
+    if (
+        analysis.failure_type == FailureType.UNKNOWN
+        and hint_confidence > HEURISTIC_OVERRIDE
+    ):
+        analysis = analysis.model_copy(update={"failure_type": hint_type})
+    exchange.valid = True
+    return analysis, exchange

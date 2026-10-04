@@ -52,11 +52,6 @@ class RunResult(BaseModel):
         parts = (self.error_message, self.stdout, self.stderr)
         return "\n".join(part for part in parts if part)
 
-    @property
-    def returncode(self) -> int:
-        """Exit-code view for the 1.0 heal loop; removed with it in Task 7."""
-        return 0 if self.passed else 1
-
 
 class LLMConfig(BaseModel):
     """Configuration for a single LLM provider connection.

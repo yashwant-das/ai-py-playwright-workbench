@@ -16,9 +16,6 @@ AST_REPAIR_SCRIPT = PACKAGE_DIR / "heal" / "ast_repair.js"
 WORKSPACE_PLAYWRIGHT_CONFIG = PROJECT_ROOT / "playwright.workspace.config.ts"
 WORKSPACE_ENV = "WORKBENCH_WORKSPACE"
 
-# Where the 1.0 artifact store writes; removed with it in Task 7.
-ARTIFACTS_DIR = PROJECT_ROOT / "tests" / "artifacts"
-
 
 def workspace_dir() -> Path:
     """Root of all runtime output (git-ignored)."""

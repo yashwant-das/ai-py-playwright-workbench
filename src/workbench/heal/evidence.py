@@ -1,83 +1,75 @@
-"""
-Evidence collection — gathers diagnostic artifacts after a Playwright test failure.
+"""Evidence for a diagnosis, taken from the failing run itself.
 
-Single responsibility: given a failing RunResult and the test file path, produce
-an Evidence object containing error logs, the most recent failure screenshot (if
-any), and live page context (HTML, accessibility tree, console errors, network
-failures, locator candidates) from the URL in the test file.
+When a test fails, Playwright writes ``error-context.md``: the error, the test
+source and a snapshot of the page at the moment of failure. That snapshot is
+the main evidence. Only when it is missing is the spec's first URL loaded in
+a fresh browser, which shows the start page rather than the failing state.
 """
 
 import logging
 import re
+from collections.abc import Callable
 from pathlib import Path
 
 from workbench.context import collect_context
-from workbench.models.heal import Evidence
-from workbench.models.shared import RunResult
+from workbench.context.locators import extract_locator_candidates
+from workbench.models.artifacts import ContextSnapshot
+from workbench.models.heal import FailureEvidence
+from workbench.models.shared import RunResult, RunWarning
 
 logger = logging.getLogger(__name__)
 
+Collect = Callable[[str], ContextSnapshot]
 
-def extract_url_from_code(code: str) -> str | None:
-    """Extract the target URL from a ``page.goto()`` call in Playwright test code.
-
-    Args:
-        code: TypeScript source of the test file.
-
-    Returns:
-        The URL string if found, otherwise ``None``.
-    """
-    if not code:
-        return None
-    pattern = r"page\.goto\(['\"`](https?://[^\s'\"`]+)['\"`]\)"
-    match = re.search(pattern, code)
-    if match:
-        return match.group(1)
-    return None
+_GOTO = re.compile(r"page\.goto\(\s*['\"`](https?://[^\s'\"`]+)['\"`]")
+_PAGE_SNAPSHOT = re.compile(
+    r"^# Page snapshot\s*\n+```[a-z]*\n(?P<body>.*?)\n```", re.MULTILINE | re.DOTALL
+)
 
 
-def gather_evidence(test_file, result: RunResult) -> Evidence:
-    """Collect evidence from a failed test run: logs, screenshot, and page context.
+def extract_url_from_code(code: str | None) -> str | None:
+    """The first URL passed to ``page.goto()``, with or without options."""
+    match = _GOTO.search(code or "")
+    return match.group(1) if match else None
 
-    Uses ``workbench.context.collect_context()`` to open a single browser session and
-    collect HTML, accessibility tree, console errors, network failures, and
-    locator candidates from the URL extracted from the test file.
 
-    Args:
-        test_file: Path-like pointing to the failing .spec.ts file.
-        result:    RunResult from the most recent test execution.
+def parse_error_context(text: str) -> str | None:
+    """The page snapshot from Playwright's ``error-context.md``, if present."""
+    match = _PAGE_SNAPSHOT.search(text)
+    return match["body"].strip() or None if match else None
 
-    Returns:
-        Evidence populated with all available context; degrades gracefully when
-        the URL cannot be extracted or the page is unreachable.
-    """
-    logs = result.output
 
-    screenshot_path = result.screenshot_path
-
-    # Extract target URL from the test file source
-    url: str | None = None
-    try:
-        test_file_path = Path(test_file)
-        if test_file_path.exists():
-            code = test_file_path.read_text(encoding="utf-8")
-            url = extract_url_from_code(code)
-    except Exception as exc:
-        logger.warning("Could not read test file for URL extraction: %s", exc)
-
-    if url:
-        try:
-            logger.info("Collecting page context from %s...", url)
-            snapshot = collect_context(url)
-            return Evidence.from_context_snapshot(
-                error_log=logs,
-                snapshot=snapshot,
-                screenshot_path=screenshot_path,  # Playwright failure screenshot wins
-            )
-        except Exception as exc:
-            logger.warning("Context collection failed: %s", exc)
-
-    return Evidence(
-        error_log=logs,
-        screenshot_path=screenshot_path,
+def gather_evidence(
+    code: str, result: RunResult, *, collect: Collect = collect_context
+) -> tuple[FailureEvidence, list[RunWarning]]:
+    """Build the evidence for one failed run, preferring the failure snapshot."""
+    evidence = FailureEvidence(
+        error_message=result.error_message,
+        error_location=result.error_location,
+        screenshot_path=result.screenshot_path,
     )
+    if result.error_context_path:
+        try:
+            snapshot = parse_error_context(
+                Path(result.error_context_path).read_text(encoding="utf-8")
+            )
+        except OSError as exc:
+            logger.warning("Could not read %s: %s", result.error_context_path, exc)
+            snapshot = None
+        if snapshot:
+            evidence.page_snapshot = snapshot
+            evidence.locator_candidates = extract_locator_candidates(snapshot)
+            evidence.source = "error_context"
+            return evidence, []
+
+    url = extract_url_from_code(code)
+    if url:
+        page = collect(url)
+        if not page.is_empty:
+            evidence.page_snapshot = page.aria_snapshot
+            evidence.locator_candidates = list(page.locator_candidates)
+            evidence.console_errors = list(page.console_errors)
+            evidence.network_errors = list(page.network_errors)
+            evidence.source = "page_load"
+            return evidence, []
+    return evidence, ["page_context_unavailable"]

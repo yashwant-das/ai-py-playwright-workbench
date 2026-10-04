@@ -14,6 +14,7 @@ import hashlib
 import json
 
 from workbench.config import PROMPTS_DIR
+from workbench.models.shared import PromptSection
 
 _MANIFEST_PATH = PROMPTS_DIR / "manifest.json"
 _manifest_cache: dict | None = None
@@ -39,7 +40,7 @@ def get_prompt_version(agent_name: str) -> str:
     for content-based fingerprinting).
 
     Args:
-        agent_name: Name of the agent (e.g., 'healer', 'generator', 'vision').
+        agent_name: Name of the agent (e.g., 'healer', 'generator').
 
     Returns:
         Version string (e.g. ``"1"``, ``"2"``).
@@ -53,7 +54,7 @@ def load_prompt(agent_name: str) -> str:
     """Load a prompt from the prompts/ directory.
 
     Args:
-        agent_name: Name of the agent (e.g., 'generator', 'healer', 'vision')
+        agent_name: Name of the agent (e.g., 'generator', 'healer')
 
     Returns:
         str: Content of the prompt file
@@ -70,11 +71,11 @@ def load_prompt(agent_name: str) -> str:
 def get_prompt_hash(agent_name: str) -> str:
     """Return the SHA-256 hex digest (first 16 chars) of a prompt file's content.
 
-    Used by benchmark runners to record which prompt version was active during
-    a run so results can be reproduced or compared across prompt iterations.
+    Recorded in every model exchange so results can be reproduced or compared
+    across prompt iterations.
 
     Args:
-        agent_name: Name of the agent (e.g., 'generator', 'healer', 'vision').
+        agent_name: Name of the agent (e.g., 'generator', 'healer').
 
     Returns:
         16-character hex string derived from the prompt content.
@@ -84,3 +85,27 @@ def get_prompt_hash(agent_name: str) -> str:
     """
     content = load_prompt(agent_name)
     return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
+
+
+def render_prompt(
+    sections: list[tuple[str, str]], limits: dict[str, int]
+) -> tuple[str, list[PromptSection]]:
+    """Join ``(name, content)`` pairs as ``## name`` blocks, each cut to its limit.
+
+    Returns the prompt text and a record of every section's size, with the
+    original size when it was cut.
+    """
+    parts: list[str] = []
+    records: list[PromptSection] = []
+    for name, content in sections:
+        limit = limits[name]
+        kept = content[:limit]
+        records.append(
+            PromptSection(
+                name=name,
+                chars=len(kept),
+                original_chars=len(content) if len(content) > limit else None,
+            )
+        )
+        parts.append(f"## {name}\n{kept}")
+    return "\n\n".join(parts), records

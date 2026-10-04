@@ -6,7 +6,7 @@ LLMRouter → OpenAI client → HTTP path runs in CI without a model:
 
   - generator prompts (``USER STORY:``) get a Playwright spec that targets the
     ``TARGET URL`` from the prompt;
-  - healer prompts (``BROKEN CODE:``) get a HealingAnalysis that swaps the
+  - healer prompts (``## Test file``) get a HealingAnalysis that swaps the
     drifted ``#submit-btn`` selector for ``[data-testid="submit"]``.
 
 Every request body is kept in ``FakeLLM.requests`` so tests can assert on the
@@ -52,7 +52,7 @@ HEALING_ANALYSIS = {
 
 def _answer(messages: list[dict]) -> str:
     user = next((m["content"] for m in messages if m["role"] == "user"), "")
-    if "BROKEN CODE:" in user:
+    if "## Test file" in user:
         return json.dumps(HEALING_ANALYSIS)
     match = re.search(r"TARGET URL:\s*(\S+)", user)
     if match:

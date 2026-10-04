@@ -1,14 +1,11 @@
 """
 Pydantic schemas for the healing pipeline.
 
-Two distinct models serve different purposes:
+  HealingAnalysis  - what the LLM must return (the structured output contract).
+  HealReport       - everything about one heal run, saved as a JSON report.
 
-  HealingAnalysis  — what the LLM must return (the structured output contract).
-  HealingDecision  — the complete artifact record written to tests/artifacts/.
-
-Keeping them separate lets the LLM schema stay minimal while the artifact
-schema carries all provenance metadata (test file, evidence, timestamps,
-verification results).
+Keeping them separate lets the LLM schema stay minimal while the report
+carries the evidence, model exchanges and verification results.
 """
 
 from datetime import datetime
@@ -17,13 +14,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from workbench.text import clean_ansi_codes
-
-from .artifacts import ContextSnapshot
 from .shared import (
     FailureType,
     ModelExchange,
-    ProvenanceRecord,
     RunResult,
     RunWarning,
 )
@@ -91,46 +84,6 @@ class HealingAction(BaseModel):
         return RepairStrategy(v)
 
 
-class Evidence(BaseModel):
-    """Artifacts collected from a failed test run to support diagnosis."""
-
-    error_log: str
-    screenshot_path: str | None = None
-    dom_snippet: str | None = None
-    console_errors: list[str] = Field(default_factory=list)
-    network_errors: list[str] = Field(default_factory=list)
-    accessibility_tree: str | None = None
-    locator_candidates: list[str] = Field(default_factory=list)
-
-    @classmethod
-    def from_context_snapshot(
-        cls,
-        error_log: str,
-        snapshot: ContextSnapshot,
-        *,
-        screenshot_path: str | None = None,
-    ) -> "Evidence":
-        """Create Evidence from a ContextSnapshot plus error logs.
-
-        Args:
-            error_log:       Raw error output from the failing test run.
-            snapshot:        ContextSnapshot collected from the target URL.
-            screenshot_path: Path to a Playwright failure screenshot.
-
-        Returns:
-            Evidence populated with all available context fields.
-        """
-        return cls(
-            error_log=error_log,
-            screenshot_path=screenshot_path,
-            dom_snippet=snapshot.html,
-            console_errors=list(snapshot.console_errors),
-            network_errors=list(snapshot.network_errors),
-            accessibility_tree=snapshot.aria_snapshot,
-            locator_candidates=list(snapshot.locator_candidates),
-        )
-
-
 class HealingAnalysis(BaseModel):
     """
     LLM response schema for healer analysis.
@@ -187,270 +140,6 @@ class HealingAnalysis(BaseModel):
         if isinstance(v, str):
             return [v]
         return list(v) if isinstance(v, (list, tuple)) else []
-
-
-class HealingDecision(ProvenanceRecord):
-    """
-    Full artifact record of a single healing attempt.
-
-    Written to tests/artifacts/ as healing_decision_*.json after every session.
-    Inherits provenance fields (model, provider, tokens, latency, trace_id) from
-    ProvenanceRecord and adds healing-specific explainability metadata.
-    """
-
-    test_file: str
-    failure_type: FailureType
-    failure_summary: str
-    evidence: Evidence
-    hypothesis: str
-    confidence_score: float = Field(ge=0.0, le=1.0)
-    reasoning_steps: list[str]
-    action_taken: HealingAction
-    verification_passed: bool = False
-    verification_log: str | None = None
-    confidence_rationale: str = Field(
-        default="",
-        description="LLM's explanation of why this confidence level was assigned.",
-    )
-    root_cause_evidence: list[str] = Field(
-        default_factory=list,
-        description="Specific evidence items from logs/DOM that support the diagnosis.",
-    )
-    # Backward-compat alias for latency_ms.  Existing artifact JSON files and tests
-    # written before Stage 2 reference this field name.  New callers should pass
-    # latency_ms instead; from_analysis() accepts both and keeps them in sync.
-    execution_duration_ms: int = Field(
-        default=0,
-        ge=0,
-        description="Deprecated alias for latency_ms. Preserved for backward compat.",
-    )
-
-    model_config = ConfigDict(use_enum_values=False)
-
-    @classmethod
-    def from_analysis(
-        cls,
-        *,
-        test_file: str,
-        analysis: HealingAnalysis,
-        evidence: Evidence,
-        model_used: str = "",
-        provider: str = "",
-        prompt_version: str = "",
-        prompt_hash: str = "",
-        input_tokens: int = 0,
-        output_tokens: int = 0,
-        latency_ms: int = 0,
-        execution_duration_ms: int = 0,
-        retry_count: int = 0,
-        trace_id: str = "",
-        context_snapshot_id: str = "",
-    ) -> "HealingDecision":
-        """Construct a HealingDecision from a validated HealingAnalysis + evidence.
-
-        Args:
-            test_file:            Path to the failing test file.
-            analysis:             Validated :class:`HealingAnalysis` from the LLM.
-            evidence:             Evidence collected from the failure run.
-            model_used:           Model identifier from :class:`~workbench.llm.router.LLMResponse`.
-            provider:             LLM provider name from LLMResponse.
-            prompt_version:       Version string from ``prompts/manifest.json``.
-            prompt_hash:          SHA-256 hex prefix of the healer prompt.
-            input_tokens:         Prompt token count from LLMResponse.
-            output_tokens:        Completion token count from LLMResponse.
-            latency_ms:           Wall-clock time for the full planning call (canonical).
-            execution_duration_ms: Legacy alias for latency_ms; accepted for backward compat.
-            retry_count:          Retry attempts before a successful response.
-            trace_id:             Active tracer session ID (links to traces.jsonl).
-            context_snapshot_id:  Short hash of the evidence error_log.
-        """
-        # execution_duration_ms is the pre-Stage-2 name for latency_ms.
-        # If the caller passes the old name, use it; the new name takes precedence.
-        effective_latency = latency_ms or execution_duration_ms
-        return cls(
-            test_file=test_file,
-            failure_type=analysis.failure_type,
-            failure_summary=analysis.failure_summary,
-            evidence=evidence,
-            hypothesis=analysis.hypothesis,
-            confidence_score=analysis.confidence_score,
-            confidence_rationale=analysis.confidence_rationale,
-            reasoning_steps=analysis.reasoning_steps,
-            root_cause_evidence=analysis.root_cause_evidence,
-            action_taken=analysis.action_taken,
-            model_used=model_used,
-            provider=provider,
-            prompt_version=prompt_version,
-            prompt_hash=prompt_hash,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            latency_ms=effective_latency,
-            execution_duration_ms=execution_duration_ms,
-            retry_count=retry_count,
-            trace_id=trace_id,
-            context_snapshot_id=context_snapshot_id,
-        )
-
-    def to_dict(self) -> dict:
-        """Return a JSON-serializable dict (enums as strings)."""
-        return self.model_dump(mode="json")
-
-    def to_json(self) -> str:
-        """Serialize to a JSON string."""
-        return self.model_dump_json(indent=2)
-
-    def to_markdown(self) -> str:
-        """Generate a human-readable markdown healing report.
-
-        Includes Provenance and Root Cause Evidence sections so the artifact
-        is self-explaining without needing to open the raw JSON.
-        """
-        emoji = "✅" if self.verification_passed else "❌"
-        if self.verification_passed and self.failure_type == FailureType.UNKNOWN:
-            status_text = "Passed (No healing needed)"
-        else:
-            status_text = "Fixed" if self.verification_passed else "Failed"
-        fail_type_str = (
-            self.failure_type.value
-            if hasattr(self.failure_type, "value")
-            else str(self.failure_type)
-        )
-        steps_md = "\n".join(f"- {step}" for step in self.reasoning_steps)
-        screenshot_md = (
-            f"![Screenshot]({self.evidence.screenshot_path})"
-            if self.evidence.screenshot_path
-            else "*(no screenshot)*"
-        )
-
-        model_str = (
-            f"{self.model_used} ({self.provider})"
-            if self.model_used and self.provider
-            else self.model_used or "*(unknown)*"
-        )
-        prompt_str = (
-            f"`{self.prompt_version}` (hash: `{self.prompt_hash}`)"
-            if self.prompt_version or self.prompt_hash
-            else "*(unknown)*"
-        )
-        effective_latency = self.latency_ms or self.execution_duration_ms
-        duration_str = (
-            f"{effective_latency} ms" if effective_latency else "*(not recorded)*"
-        )
-        tokens_str = (
-            f"{self.input_tokens:,} in / {self.output_tokens:,} out"
-            if self.input_tokens or self.output_tokens
-            else "*(not recorded)*"
-        )
-        trace_str = f"`{self.trace_id}`" if self.trace_id else "*(n/a)*"
-        snapshot_str = (
-            f"`{self.context_snapshot_id}`" if self.context_snapshot_id else "*(n/a)*"
-        )
-
-        if self.root_cause_evidence:
-            rce_md = "\n".join(f"- {item}" for item in self.root_cause_evidence)
-        else:
-            rce_md = "*(none provided)*"
-
-        rationale_md = self.confidence_rationale or "*(not provided)*"
-
-        # Build evidence context block from any collected page context
-        ev = self.evidence
-        ctx_parts: list[str] = []
-        if ev.dom_snippet:
-            excerpt = ev.dom_snippet[:500].replace("```", "` ` `")
-            ctx_parts.append(f"**DOM (first 500 chars):**\n```html\n{excerpt}\n```")
-        if ev.accessibility_tree:
-            excerpt = ev.accessibility_tree[:500]
-            ctx_parts.append(
-                f"**Accessibility Tree (first 500 chars):**\n```\n{excerpt}\n```"
-            )
-        if ev.locator_candidates:
-            cands = "\n".join(f"- `{c}`" for c in ev.locator_candidates[:10])
-            ctx_parts.append(f"**Locator Candidates:**\n{cands}")
-        if ev.console_errors:
-            errs = "\n".join(f"- {e}" for e in ev.console_errors[:5])
-            ctx_parts.append(f"**Console Errors:**\n{errs}")
-        evidence_context_md = (
-            "\n\n".join(ctx_parts) if ctx_parts else "*(no page context collected)*"
-        )
-
-        return f"""# Healing Report: {self.timestamp}
-
-**File:** `{self.test_file}`
-**Status:** {emoji} {status_text}
-
-## Diagnosis
-
-- **Type:** `{fail_type_str}`
-- **Summary:** {self.failure_summary}
-
-## Evidence
-
-- **Error:** `{clean_ansi_codes(self.evidence.error_log)[:200]}...`
-- **Screenshot:** {screenshot_md}
-
-## Root Cause Evidence
-
-{rce_md}
-
-## Evidence Context
-
-{evidence_context_md}
-
-## Resolution
-
-**Hypothesis:** {self.hypothesis}
-**Confidence:** {self.confidence_score}
-
-**Confidence Rationale:** {rationale_md}
-
-**Reasoning:**
-
-{steps_md}
-
-## Code Change
-
-### Before
-```typescript
-{self.action_taken.original_code}
-```
-
-### After
-```typescript
-{self.action_taken.fixed_code}
-```
-
-## Provenance
-
-- **Model:** {model_str}
-- **Prompt Version:** {prompt_str}
-- **Latency:** {duration_str}
-- **Tokens:** {tokens_str}
-- **Trace:** {trace_str}
-- **Context Snapshot:** {snapshot_str}
-"""
-
-
-class TimelineStep(BaseModel):
-    """A single timestamped step in the healing execution timeline."""
-
-    step: str
-    details: str
-    timestamp: str = Field(default_factory=lambda: datetime.now().isoformat())
-
-
-class ExecutionTimeline(BaseModel):
-    """Ordered audit trail of steps executed during a healing session."""
-
-    steps: list[TimelineStep] = Field(default_factory=list)
-
-    def add_step(self, step: str, details: str) -> None:
-        """Append a new timestamped step."""
-        self.steps.append(TimelineStep(step=step, details=details))
-
-    def to_json(self) -> str:
-        """Serialize to a JSON string."""
-        return self.model_dump_json(indent=2)
 
 
 RepairMethod = Literal["ast", "text"]

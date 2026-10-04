@@ -2,11 +2,12 @@
 End-to-end suite: generation and healing against a real browser.
 
 Only the LLM is faked (see tests/integration/fake_llm.py); everything else is real —
-context collection opens Chromium on a sample site in samples/site/, specs are written to
-tests/generated/ and executed with ``npx playwright test``, and the heal loop
-applies its repair through scripts/ast_repair.js.
+context collection opens Chromium on a sample site in samples/site/, specs are
+executed with ``npx playwright test``, and the heal loop applies its repair
+through src/workbench/heal/ast_repair.js. Healed specs and reports live in the
+workspace folder.
 
-Run from the repo root (validate_file_path resolves tests/generated from cwd):
+Run from the repo root:
 
     uv run python -m pytest tests/integration
 
@@ -14,7 +15,6 @@ The specs are left in tests/generated/ so ``npm run test:e2e:report`` can
 re-run them for the HTML report and JUnit XML.
 """
 
-import json
 import os
 from pathlib import Path
 
@@ -22,16 +22,18 @@ import pytest
 
 from tests.integration.conftest import SITE_URL
 from tests.integration.fake_llm import FakeLLM
+from workbench.config import specs_dir
 from workbench.generate.pipeline import generate_test_script
-from workbench.heal import attempt_healing, run_test
-from workbench.llm import _reset_default_router_for_testing
+from workbench.heal import HealRequest, heal
+from workbench.llm import _reset_default_router_for_testing, get_default_router
+from workbench.llm.chat import RouterChatModel
+from workbench.reports import load_report
+from workbench.runner import run_test
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 GENERATED_DIR = PROJECT_ROOT / "tests" / "generated"
-ARTIFACTS_DIR = PROJECT_ROOT / "tests" / "artifacts"
 
 GENERATED_SPEC = GENERATED_DIR / "e2e_generated_contact.spec.ts"
-HEALED_SPEC = GENERATED_DIR / "e2e_healed_contact.spec.ts"
 
 BROKEN_SPEC = f"""import {{ test, expect }} from "@playwright/test";
 
@@ -71,8 +73,7 @@ def fake_llm():
 @pytest.fixture(scope="module", autouse=True)
 def clean_generated():
     GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    for spec in (GENERATED_SPEC, HEALED_SPEC):
-        spec.unlink(missing_ok=True)
+    GENERATED_SPEC.unlink(missing_ok=True)
 
 
 def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
@@ -93,31 +94,20 @@ def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
 
 
 def test_heal_loop_repairs_a_drifted_selector(site, fake_llm):
-    HEALED_SPEC.write_text(BROKEN_SPEC, encoding="utf-8")
-    spec_path = str(HEALED_SPEC.relative_to(PROJECT_ROOT))
-    started = {p.name for p in ARTIFACTS_DIR.glob("healing_decision_*.json")}
+    spec = specs_dir() / "healed-contact.spec.ts"
+    spec.write_text(BROKEN_SPEC, encoding="utf-8")
 
-    assert not run_test(spec_path).passed, "broken spec should fail before healing"
+    report = heal(
+        HealRequest(spec_path=spec, max_attempts=2),
+        model=RouterChatModel(get_default_router()),
+    )
 
-    outcome = attempt_healing(spec_path, max_retries=2)
-    assert "SUCCESS" in outcome, outcome
-
-    # The healer saw live DOM evidence, and the repair landed in the file.
-    prompts = fake_llm.prompts_containing("BROKEN CODE:")
+    assert report.status == "healed", report.model_dump_json(indent=2)
+    prompts = fake_llm.prompts_containing("## Test file")
     assert prompts, "healer never called the LLM"
-    assert "PAGE DOM CONTEXT" in prompts[-1]
-    healed = HEALED_SPEC.read_text(encoding="utf-8")
+    assert "## Page snapshot at failure" in prompts[-1]
+    healed = spec.read_text(encoding="utf-8")
     assert 'locator("#submit-btn")' not in healed
     assert '[data-testid="submit"]' in healed
-
-    new_artifacts = [
-        p
-        for p in ARTIFACTS_DIR.glob("healing_decision_*.json")
-        if p.name not in started
-    ]
-    assert new_artifacts, "no healing decision artifact was written"
-    decision = json.loads(
-        max(new_artifacts, key=lambda p: p.stat().st_mtime).read_text()
-    )
-    assert decision["verification_passed"] is True
-    assert decision["action_taken"]["repair_strategy"] == "selector_replace"
+    assert report.attempts[-1].repair_method == "ast"
+    assert load_report(report.id).status == "healed"

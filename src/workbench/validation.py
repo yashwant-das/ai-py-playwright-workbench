@@ -2,7 +2,6 @@
 Input validation utilities for the QA Agent.
 """
 
-import os
 import re
 from urllib.parse import urlparse
 
@@ -57,40 +56,6 @@ def validate_and_sanitize_url(url: str) -> str:
         raise ValidationError(f"Invalid URL format: {url}. Must be http:// or https://")
 
     return url
-
-
-def validate_file_path(file_path: str, allowed_dirs: list | None = None) -> str:
-    """Validate and sanitize a file path to prevent directory traversal.
-
-    Args:
-        file_path: The file path to validate
-        allowed_dirs: List of allowed directory prefixes (default: tests/generated)
-
-    Returns:
-        str: Normalized absolute path
-
-    Raises:
-        ValidationError: If path is invalid or outside allowed directories
-    """
-    if not file_path:
-        raise ValidationError("File path cannot be empty")
-
-    if allowed_dirs is None:
-        allowed_dirs = ["tests/generated"]
-
-    # Resolve symlinks and ".." so the prefix check sees the real location.
-    abs_path = os.path.realpath(file_path)
-
-    for allowed_dir in allowed_dirs:
-        allowed_abs = os.path.realpath(allowed_dir)
-        # Compare against "<dir>/" so a sibling like "tests/generated_evil"
-        # does not pass as being inside "tests/generated".
-        if abs_path.startswith(allowed_abs + os.sep):
-            return abs_path
-
-    raise ValidationError(
-        f"File path must be within allowed directories: {allowed_dirs}"
-    )
 
 
 def validate_description(description: str, max_length: int = 500) -> str:

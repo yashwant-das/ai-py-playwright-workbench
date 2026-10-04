@@ -12,13 +12,7 @@ from pydantic import ValidationError
 
 from workbench.llm.parsing import parse_llm_response
 from workbench.models.generate import GenerationResult
-from workbench.models.heal import (
-    Evidence,
-    ExecutionTimeline,
-    HealingAction,
-    HealingAnalysis,
-    HealingDecision,
-)
+from workbench.models.heal import HealingAction, HealingAnalysis
 from workbench.models.shared import FailureType, RunResult
 
 # ---------------------------------------------------------------------------
@@ -129,105 +123,13 @@ class TestHealingAnalysis(unittest.TestCase):
         with self.assertRaises(ValidationError):
             HealingAnalysis(**payload)
 
-
-# ---------------------------------------------------------------------------
-# HealingDecision — full artifact schema
-# ---------------------------------------------------------------------------
-
-
-class TestHealingDecision(unittest.TestCase):
-    def _make_decision(self, **overrides) -> HealingDecision:
-        defaults = {
-            "test_file": "tests/generated/example.spec.ts",
-            "failure_type": FailureType.LOCATOR_DRIFT,
-            "failure_summary": "Selector drifted",
-            "evidence": Evidence(error_log="locator resolved to 0 elements"),
-            "hypothesis": "Selector attribute changed",
-            "confidence_score": 0.9,
-            "reasoning_steps": ["step 1"],
-            "action_taken": HealingAction(
-                original_code="old", fixed_code="new", description="fix"
-            ),
-        }
-        defaults.update(overrides)
-        return HealingDecision(**defaults)
-
-    def test_construction_succeeds(self):
-        d = self._make_decision()
-        self.assertFalse(d.verification_passed)
-        self.assertIsNone(d.verification_log)
-
-    def test_from_analysis(self):
-        analysis = HealingAnalysis(
-            failure_type=FailureType.TIMEOUT,
-            failure_summary="timed out",
-            hypothesis="slow element",
-            confidence_score=0.8,
-            reasoning_steps=["checked logs"],
-            action_taken=HealingAction(
-                original_code="old", fixed_code="new", description="fix"
-            ),
-        )
-        evidence = Evidence(error_log="TimeoutError")
-        d = HealingDecision.from_analysis(
-            test_file="test.ts", analysis=analysis, evidence=evidence
-        )
-        self.assertEqual(d.failure_type, FailureType.TIMEOUT)
-        self.assertEqual(d.hypothesis, "slow element")
-
-    def test_to_dict_serializes_enum_as_string(self):
-        d = self._make_decision()
-        data = d.to_dict()
-        self.assertEqual(data["failure_type"], "LOCATOR_DRIFT")
-
-    def test_to_json_round_trips(self):
-        d = self._make_decision()
-        json_str = d.to_json()
-        parsed = json.loads(json_str)
-        self.assertEqual(parsed["failure_type"], "LOCATOR_DRIFT")
-        self.assertEqual(parsed["hypothesis"], "Selector attribute changed")
-
-    def test_to_markdown_contains_key_fields(self):
-        d = self._make_decision(verification_passed=True)
-        md = d.to_markdown()
-        self.assertIn("LOCATOR_DRIFT", md)
-        self.assertIn("Selector attribute changed", md)
-        self.assertIn("Fixed", md)
-
-    def test_confidence_score_out_of_range_raises(self):
-        with self.assertRaises(ValidationError):
-            self._make_decision(confidence_score=1.5)
-
-    def test_string_failure_type_coerced(self):
-        d = self._make_decision(failure_type="ASSERTION_FAILED")
-        self.assertEqual(d.failure_type, FailureType.ASSERTION_FAILED)
-
     def test_unknown_failure_type_is_rejected(self):
-        # Invalid LLM output is caught by parse_llm_response(HealingAnalysis);
-        # HealingDecision never silently coerces to UNKNOWN.
-        with self.assertRaises(ValidationError):
-            self._make_decision(failure_type="INVALID_TYPE_BLAH")
-
-
-# ---------------------------------------------------------------------------
-# ExecutionTimeline
-# ---------------------------------------------------------------------------
-
-
-class TestExecutionTimeline(unittest.TestCase):
-    def test_add_step(self):
-        t = ExecutionTimeline()
-        t.add_step("Start", "session started")
-        self.assertEqual(len(t.steps), 1)
-        self.assertEqual(t.steps[0].step, "Start")
-
-    def test_to_json_round_trips(self):
-        t = ExecutionTimeline()
-        t.add_step("Step1", "details1")
-        t.add_step("Step2", "details2")
-        data = json.loads(t.to_json())
-        self.assertEqual(len(data["steps"]), 2)
-        self.assertEqual(data["steps"][0]["step"], "Step1")
+        # An invalid failure_type in model output is an invalid reply; it is
+        # never silently coerced to UNKNOWN.
+        payload = self._valid_payload()
+        payload["failure_type"] = "INVALID_TYPE_BLAH"
+        with self.assertRaises(ValueError):
+            parse_llm_response(json.dumps(payload), HealingAnalysis)
 
 
 # ---------------------------------------------------------------------------

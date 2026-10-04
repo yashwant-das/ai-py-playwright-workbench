@@ -23,7 +23,7 @@ current phase's plan, add it to `ROADMAP.md` under "Later" instead of building i
 src/workbench/          the Python package
 ├── config.py           every filesystem path; never count parent folders
 ├── runner.py           runs `npx playwright test`
-├── heal/               classifier, planner, repair (+ ast_repair.js), evidence, verifier
+├── heal/               pipeline (heal()), evidence, planner, repair (+ ast_repair.js), classifier
 ├── generate/           generation pipeline
 ├── context/            page context from one Chromium session
 ├── llm/                router (replaced in Phase 3), parsing, prompt loading
@@ -56,7 +56,7 @@ npm run type-check                         # TypeScript
 - Paths come from `workbench.config`.
 - Prompt changes go in `src/workbench/prompts/` and bump the version in `prompts/manifest.json`.
 - Subprocesses use argument lists, never `shell=True`.
-- Tests never need a live model, browser or network unless they live in `tests/integration/`. Mock the model with `@patch("workbench.heal.planner.get_default_router")`; a mocked `LLMResponse.model_used` must be a string.
+- Tests never need a live model, browser or network unless they live in `tests/integration/`. Pipelines (`heal()`) take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`); pass fakes instead of patching module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer).
 
 ## Commits

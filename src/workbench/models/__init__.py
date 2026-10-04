@@ -1,31 +1,41 @@
-"""Pydantic data contracts for LLM inputs, outputs and artifacts."""
+"""Pydantic data contracts: model output, run results and reports."""
 
 from .artifacts import ContextSnapshot
-from .generate import GenerationDecision, GenerationResult
+from .events import RunEvent
+from .generate import (
+    ContextSummary,
+    GenerateReport,
+    GenerationDecision,
+    GenerationResult,
+)
 from .heal import (
-    Evidence,
-    ExecutionTimeline,
+    Attempt,
+    FailureEvidence,
     HealingAction,
     HealingAnalysis,
-    HealingDecision,
+    HealReport,
+    RepairResult,
     RepairStrategy,
-    TimelineStep,
 )
-from .shared import FailureType, LLMConfig, ProvenanceRecord, RunResult
+from .shared import FailureType, ModelExchange, PromptSection, Provenance, RunResult
 
 __all__ = [
+    "Attempt",
     "ContextSnapshot",
-    "Evidence",
-    "ExecutionTimeline",
+    "ContextSummary",
+    "FailureEvidence",
     "FailureType",
+    "GenerateReport",
     "GenerationDecision",
     "GenerationResult",
+    "HealReport",
     "HealingAction",
     "HealingAnalysis",
-    "HealingDecision",
-    "LLMConfig",
-    "ProvenanceRecord",
+    "ModelExchange",
+    "PromptSection",
+    "Provenance",
+    "RepairResult",
     "RepairStrategy",
+    "RunEvent",
     "RunResult",
-    "TimelineStep",
 ]

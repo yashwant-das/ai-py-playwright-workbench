@@ -120,22 +120,3 @@ def test_dom_collector_returns_empty_when_the_page_is_gone() -> None:
     page = MagicMock()
     page.content.side_effect = RuntimeError("page closed")
     assert collect_dom(page) == ""
-
-
-def test_evidence_takes_the_aria_snapshot_from_the_context() -> None:
-    from workbench.models.artifacts import ContextSnapshot
-    from workbench.models.heal import Evidence
-
-    snap = ContextSnapshot(
-        url="http://x/",
-        html="<p>hi</p>",
-        aria_snapshot='- button "OK" [ref=e1]',
-        console_errors=["[ERROR] boom"],
-        locator_candidates=["getByRole('button', { name: 'OK' })"],
-    )
-    evidence = Evidence.from_context_snapshot("err", snap, screenshot_path="/tmp/a.png")
-    assert evidence.accessibility_tree == '- button "OK" [ref=e1]'
-    assert evidence.dom_snippet == "<p>hi</p>"
-    assert evidence.screenshot_path == "/tmp/a.png"
-    assert evidence.console_errors == ["[ERROR] boom"]
-    assert evidence.locator_candidates == ["getByRole('button', { name: 'OK' })"]
