@@ -5,10 +5,13 @@ GenerationResult   — validates raw LLM code output before writing to disk.
 GenerationDecision — full provenance artifact for a generation run (to tests/artifacts/).
 """
 
+from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 from .artifacts import ContextSnapshot
-from .shared import ProvenanceRecord
+from .shared import ModelExchange, ProvenanceRecord, RunResult, RunWarning
 
 
 class GenerationResult(BaseModel):
@@ -139,3 +142,37 @@ class GenerationDecision(ProvenanceRecord):
 - **Tokens:** {tokens_str}
 - **Trace:** {trace_str}
 """
+
+
+GenerateStatus = Literal["passed", "failed", "not_run", "cancelled", "error"]
+
+
+class ContextSummary(BaseModel):
+    """The page context a generation used, in counts the UI can show."""
+
+    url: str
+    snapshot_lines: int = Field(default=0, ge=0)
+    locator_candidates: list[str] = Field(default_factory=list)
+    console_errors: int = Field(default=0, ge=0)
+    failed_requests: int = Field(default=0, ge=0)
+
+
+class GenerateReport(BaseModel):
+    """Everything about one generate run."""
+
+    kind: Literal["generate"] = "generate"
+    id: str
+    url: str
+    scenario: str
+    status: GenerateStatus
+    spec_name: str = ""
+    code: str = ""
+    context: ContextSummary | None = None
+    exchange: ModelExchange | None = None
+    run: RunResult | None = None
+    warnings: list[RunWarning] = Field(default_factory=list)
+    error_message: str = ""
+    started_at: str = Field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
+    duration_ms: int = Field(default=0, ge=0)

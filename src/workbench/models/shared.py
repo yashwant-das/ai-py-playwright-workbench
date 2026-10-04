@@ -117,3 +117,48 @@ class ProvenanceRecord(BaseModel):
         default_factory=lambda: datetime.now().isoformat(),
         description="ISO-8601 timestamp of when the decision was produced.",
     )
+
+
+RunWarning = Literal[
+    "page_context_unavailable",
+    "ast_unavailable",
+    "playwright_browsers_missing",
+]
+
+
+class Provenance(BaseModel):
+    """Which model and prompt produced an answer, and what it cost."""
+
+    provider: str = ""
+    model: str = ""
+    prompt_name: str = ""
+    prompt_version: str = ""
+    prompt_hash: str = ""
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    latency_ms: int = Field(default=0, ge=0)
+
+
+class PromptSection(BaseModel):
+    """One named block of context sent to the model."""
+
+    name: str
+    chars: int = Field(ge=0)
+    original_chars: int | None = Field(
+        default=None, ge=0, description="Set when the content was cut to fit."
+    )
+
+    @property
+    def truncated(self) -> bool:
+        """True when the section was cut to its limit."""
+        return self.original_chars is not None
+
+
+class ModelExchange(BaseModel):
+    """What was sent to the model and what came back (the UI's Model I/O view)."""
+
+    sections: list[PromptSection] = Field(default_factory=list)
+    raw_response: str = ""
+    valid: bool = False
+    validation_error: str = ""
+    provenance: Provenance = Field(default_factory=Provenance)

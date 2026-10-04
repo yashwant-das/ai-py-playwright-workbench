@@ -20,7 +20,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from workbench.text import clean_ansi_codes
 
 from .artifacts import ContextSnapshot
-from .shared import FailureType, ProvenanceRecord
+from .shared import (
+    FailureType,
+    ModelExchange,
+    ProvenanceRecord,
+    RunResult,
+    RunWarning,
+)
 
 
 class RepairStrategy(str, Enum):
@@ -461,3 +467,65 @@ class RepairResult(BaseModel):
         default=False,
         description="An AST strategy was requested but Node.js was not found.",
     )
+
+
+EvidenceSource = Literal["error_context", "page_load", "none"]
+AttemptOutcome = Literal[
+    "healed", "rerun_failed", "not_applied", "invalid_reply", "app_defect", "cancelled"
+]
+HealStatus = Literal[
+    "healed",
+    "not_healed",
+    "app_defect_suspected",
+    "nothing_to_heal",
+    "cancelled",
+    "error",
+]
+
+
+class FailureEvidence(BaseModel):
+    """What the model is shown about a failure."""
+
+    error_message: str = ""
+    error_location: str = ""
+    page_snapshot: str | None = None
+    screenshot_path: str | None = None
+    console_errors: list[str] = Field(default_factory=list)
+    network_errors: list[str] = Field(default_factory=list)
+    locator_candidates: list[str] = Field(default_factory=list)
+    source: EvidenceSource = "none"
+
+
+class Attempt(BaseModel):
+    """One diagnose → repair → verify cycle."""
+
+    number: int = Field(ge=1)
+    outcome: AttemptOutcome
+    evidence: FailureEvidence | None = None
+    analysis: HealingAnalysis | None = None
+    exchange: ModelExchange | None = None
+    repair_method: RepairMethod | None = None
+    rerun: RunResult | None = None
+    duration_ms: int = Field(default=0, ge=0)
+
+
+class HealReport(BaseModel):
+    """Everything about one heal run; the UI and downloads read this."""
+
+    kind: Literal["heal"] = "heal"
+    id: str
+    spec_name: str
+    status: HealStatus
+    max_attempts: int = Field(default=3, ge=1, le=5)
+    attempts: list[Attempt] = Field(default_factory=list)
+    initial_run: RunResult | None = None
+    original_code: str = ""
+    final_code: str = ""
+    diff: str = ""
+    classifier_hint: str = ""
+    warnings: list[RunWarning] = Field(default_factory=list)
+    error_message: str = ""
+    started_at: str = Field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
+    duration_ms: int = Field(default=0, ge=0)
