@@ -5,7 +5,6 @@ from .events import RunEvent
 from .generate import (
     ContextSummary,
     GenerateReport,
-    GenerationDecision,
     GenerationResult,
 )
 from .heal import (
@@ -26,7 +25,6 @@ __all__ = [
     "FailureEvidence",
     "FailureType",
     "GenerateReport",
-    "GenerationDecision",
     "GenerationResult",
     "HealReport",
     "HealingAction",

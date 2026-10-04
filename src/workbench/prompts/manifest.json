@@ -3,7 +3,7 @@
   "description": "Prompt version registry. Increment 'version' when the prompt content changes. Hash is computed dynamically by get_prompt_hash() — do not hard-code it here.",
   "prompts": {
     "generator": {
-      "version": "2",
+      "version": "3",
       "description": "Playwright test generator — converts URL + user story into a runnable .spec.ts file"
     },
     "healer": {

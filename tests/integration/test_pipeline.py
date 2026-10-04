@@ -4,37 +4,26 @@ End-to-end suite: generation and healing against a real browser.
 Only the LLM is faked (see tests/integration/fake_llm.py); everything else is real —
 context collection opens Chromium on a sample site in samples/site/, specs are
 executed with ``npx playwright test``, and the heal loop applies its repair
-through src/workbench/heal/ast_repair.js. Healed specs and reports live in the
-workspace folder.
+through src/workbench/heal/ast_repair.js. Generated and healed specs, and the
+reports, live in the workspace folder.
 
 Run from the repo root:
 
     uv run python -m pytest tests/integration
-
-The generated spec is left in tests/generated/ so ``npm run test:e2e:report``
-can re-run it for the HTML report and JUnit XML; the healed spec lives in
-``specs_dir()``.
 """
 
 import os
-from pathlib import Path
 
 import pytest
 
 from tests.integration.conftest import SITE_URL
 from tests.integration.fake_llm import FakeLLM
 from workbench.config import specs_dir
-from workbench.generate.pipeline import generate_test_script
+from workbench.generate import GenerateRequest, generate
 from workbench.heal import HealRequest, heal
 from workbench.llm import _reset_default_router_for_testing, get_default_router
 from workbench.llm.chat import RouterChatModel
 from workbench.reports import load_report
-from workbench.runner import run_test
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-GENERATED_DIR = PROJECT_ROOT / "tests" / "generated"
-
-GENERATED_SPEC = GENERATED_DIR / "e2e_generated_contact.spec.ts"
 
 BROKEN_SPEC = f"""import {{ test, expect }} from "@playwright/test";
 
@@ -71,27 +60,22 @@ def fake_llm():
             _reset_default_router_for_testing()
 
 
-@pytest.fixture(scope="module", autouse=True)
-def clean_generated():
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    GENERATED_SPEC.unlink(missing_ok=True)
-
-
 def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
-    decision = generate_test_script(site, "A user can submit the contact form")
+    report = generate(
+        GenerateRequest(url=site, scenario="A user can submit the contact form"),
+        model=RouterChatModel(get_default_router()),
+    )
 
-    # The generator collected live page context from Chromium and sent it on.
-    prompts = fake_llm.prompts_containing("USER STORY:")
+    prompts = fake_llm.prompts_containing("## Target URL")
     assert prompts, "generator never called the LLM"
-    assert "PAGE SNAPSHOT" in prompts[-1]
-    assert "Submit" in prompts[-1]
-
-    assert site in decision.code
-    assert decision.provider == "lm_studio"
-    GENERATED_SPEC.write_text(decision.code, encoding="utf-8")
-
-    result = run_test(GENERATED_SPEC.relative_to(PROJECT_ROOT))
-    assert result.passed, result.output
+    assert "## Page snapshot" in prompts[-1]
+    assert 'button "Submit"' in prompts[-1]
+    assert report.status == "passed", report.model_dump_json(indent=2)
+    assert site in report.code
+    assert (
+        report.exchange is not None
+        and report.exchange.provenance.provider == "lm_studio"
+    )
 
 
 def test_heal_loop_repairs_a_drifted_selector(site, fake_llm):

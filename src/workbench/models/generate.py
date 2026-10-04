@@ -1,8 +1,9 @@
 """
 Pydantic schemas for the test generation pipeline.
 
-GenerationResult   — validates raw LLM code output before writing to disk.
-GenerationDecision — full provenance artifact for a generation run (to tests/artifacts/).
+GenerationResult — validates raw LLM code output before writing to disk.
+ContextSummary   — the page context a generation used, in counts the UI can show.
+GenerateReport   — everything about one generate run.
 """
 
 from datetime import datetime
@@ -10,8 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-from .artifacts import ContextSnapshot
-from .shared import ModelExchange, ProvenanceRecord, RunResult, RunWarning
+from .shared import ModelExchange, RunResult, RunWarning
 
 
 class GenerationResult(BaseModel):
@@ -47,99 +47,6 @@ class GenerationResult(BaseModel):
     def line_count(self) -> int:
         """Number of lines in the generated code."""
         return len(self.code.splitlines())
-
-
-class GenerationDecision(ProvenanceRecord):
-    """Full provenance artifact for a test generation run.
-
-    Written to tests/artifacts/ as generation_decision_*.json after each run.
-    """
-
-    pipeline: str = "generation"
-    url: str
-    story: str
-    code: str
-    line_count: int = Field(default=0, ge=0)
-    context_snapshot: ContextSnapshot | None = None
-
-    def to_dict(self) -> dict:
-        """Return a JSON-serializable dict."""
-        return self.model_dump(mode="json")
-
-    def to_json(self) -> str:
-        """Serialize to a JSON string."""
-        return self.model_dump_json(indent=2)
-
-    def to_markdown(self) -> str:
-        """Generate a human-readable markdown report for the Artifact Inspector."""
-        model_str = (
-            f"{self.model_used} ({self.provider})"
-            if self.model_used and self.provider
-            else self.model_used or "*(unknown)*"
-        )
-        prompt_str = (
-            f"`{self.prompt_version}` (hash: `{self.prompt_hash}`)"
-            if self.prompt_version or self.prompt_hash
-            else "*(unknown)*"
-        )
-        duration_str = (
-            f"{self.latency_ms} ms" if self.latency_ms else "*(not recorded)*"
-        )
-        tokens_str = (
-            f"{self.input_tokens:,} in / {self.output_tokens:,} out"
-            if self.input_tokens or self.output_tokens
-            else "*(not recorded)*"
-        )
-        trace_str = f"`{self.trace_id}`" if self.trace_id else "*(n/a)*"
-        snapshot_str = (
-            f"`{self.context_snapshot_id}`" if self.context_snapshot_id else "*(n/a)*"
-        )
-        ctx_parts: list[str] = []
-        if self.context_snapshot:
-            snap = self.context_snapshot
-            if snap.html:
-                excerpt = snap.html[:500].replace("```", "` ` `")
-                ctx_parts.append(f"**DOM (first 500 chars):**\n```html\n{excerpt}\n```")
-            if snap.aria_snapshot:
-                excerpt = snap.aria_snapshot[:500]
-                ctx_parts.append(
-                    f"**Accessibility Tree (first 500 chars):**\n```\n{excerpt}\n```"
-                )
-            if snap.locator_candidates:
-                cands = "\n".join(f"- `{c}`" for c in snap.locator_candidates[:10])
-                ctx_parts.append(f"**Locator Candidates:**\n{cands}")
-            if snap.console_errors:
-                errs = "\n".join(f"- {e}" for e in snap.console_errors[:5])
-                ctx_parts.append(f"**Console Errors:**\n{errs}")
-        ctx_md = "\n\n".join(ctx_parts) if ctx_parts else "*(no page context captured)*"
-
-        return f"""# Generation Report: {self.timestamp}
-
-**URL:** `{self.url}`
-**Scenario:** {self.story}
-
-## Generated Test
-
-```typescript
-{self.code}
-```
-
-*{self.line_count} lines*
-
-## Context Snapshot
-
-*Snapshot ID: {snapshot_str}*
-
-{ctx_md}
-
-## Provenance
-
-- **Model:** {model_str}
-- **Prompt Version:** {prompt_str}
-- **Latency:** {duration_str}
-- **Tokens:** {tokens_str}
-- **Trace:** {trace_str}
-"""
 
 
 GenerateStatus = Literal["passed", "failed", "not_run", "cancelled", "error"]

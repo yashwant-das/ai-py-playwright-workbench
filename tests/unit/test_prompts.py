@@ -28,3 +28,8 @@ def test_render_prompt_cuts_and_records() -> None:
         ("A", 3, None),
         ("B", 4, 10),
     ]
+
+
+def test_generator_prompt_is_version_3() -> None:
+    assert get_prompt_version("generator") == "3"
+    assert "Page snapshot" in load_prompt("generator")

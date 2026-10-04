@@ -4,8 +4,8 @@ Fake OpenAI-compatible LLM server for the end-to-end suite.
 Serves ``POST /v1/chat/completions`` with scripted answers so the real
 LLMRouter → OpenAI client → HTTP path runs in CI without a model:
 
-  - generator prompts (``USER STORY:``) get a Playwright spec that targets the
-    ``TARGET URL`` from the prompt;
+  - generator prompts (``## Target URL``) get a Playwright spec that targets the
+    URL from the prompt;
   - healer prompts (``## Test file``) get a HealingAnalysis that swaps the
     drifted ``#submit-btn`` selector for ``[data-testid="submit"]``.
 
@@ -54,7 +54,7 @@ def _answer(messages: list[dict]) -> str:
     user = next((m["content"] for m in messages if m["role"] == "user"), "")
     if "## Test file" in user:
         return json.dumps(HEALING_ANALYSIS)
-    match = re.search(r"TARGET URL:\s*(\S+)", user)
+    match = re.search(r"## Target URL\n(\S+)", user)
     if match:
         return GENERATED_SPEC.format(url=match.group(1))
     return "Unrecognised prompt"
