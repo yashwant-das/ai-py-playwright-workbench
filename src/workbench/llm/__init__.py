@@ -32,10 +32,15 @@ Example
 
 from __future__ import annotations
 
-from workbench.llm.client import LLMClientFactory, ProviderConfig
 from workbench.llm.policies import RetryPolicy, TimeoutPolicy
 from workbench.llm.registry import ModelCapabilities, ModelRegistry
-from workbench.llm.router import LLMRequest, LLMResponse, LLMRouter
+from workbench.llm.router import (
+    LLMClientFactory,
+    LLMRequest,
+    LLMResponse,
+    LLMRouter,
+    ProviderConfig,
+)
 
 # ---------------------------------------------------------------------------
 # Module-level lazy singleton — no OpenAI() call at import time.
