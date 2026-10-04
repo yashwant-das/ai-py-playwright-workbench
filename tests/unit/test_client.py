@@ -185,3 +185,32 @@ def test_list_models_reports_http_errors() -> None:
 def test_list_models_rejects_an_answer_that_is_not_a_model_list() -> None:
     with pytest.raises(ModelError, match="did not return a model list"):
         _listing(lambda _: httpx.Response(200, json={"hello": "world"}))
+
+
+def test_an_html_answer_is_a_model_error() -> None:
+    page = httpx.Response(200, html="<html>Not an API</html>")
+    with pytest.raises(ModelError, match="did not return a chat completion"):
+        _model(lambda _: page).chat(MESSAGES)
+
+
+def test_json_content_type_with_a_non_json_body_is_a_model_error() -> None:
+    broken = httpx.Response(
+        200, content=b"not json", headers={"content-type": "application/json"}
+    )
+    with pytest.raises(ModelError, match="did not return a chat completion"):
+        _model(lambda _: broken).chat(MESSAGES)
+
+
+def test_a_choice_without_a_message_is_a_model_error() -> None:
+    reply = httpx.Response(
+        200,
+        json={
+            "id": "c1",
+            "object": "chat.completion",
+            "created": 0,
+            "model": "m-1",
+            "choices": [{"index": 0, "message": None, "finish_reason": "stop"}],
+        },
+    )
+    with pytest.raises(ModelError, match="did not return a chat completion"):
+        _model(lambda _: reply).chat(MESSAGES)

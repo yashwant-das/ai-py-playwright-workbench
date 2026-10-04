@@ -121,17 +121,36 @@ class OpenAICompatibleModel:
                 completion = self._complete(messages, temperature, None)
             except openai.OpenAIError as retry_exc:
                 raise self._error(retry_exc) from retry_exc
+            except ValueError as bad_exc:
+                raise self._not_a_completion(bad_exc) from bad_exc
         except openai.OpenAIError as exc:
             raise self._error(exc) from exc
-        usage = completion.usage
-        content = completion.choices[0].message.content if completion.choices else None
-        return ChatReply(
-            content=content or "",
-            model=completion.model or self.model,
-            provider=self.provider,
-            input_tokens=usage.prompt_tokens if usage else 0,
-            output_tokens=usage.completion_tokens if usage else 0,
-            latency_ms=int((time.monotonic() - started) * 1000),
+        except ValueError as exc:  # the body was declared JSON but is not
+            raise self._not_a_completion(exc) from exc
+        try:
+            if not isinstance(completion, ChatCompletion):
+                raise TypeError(
+                    f"expected a chat completion, got {type(completion).__name__}"
+                )
+            usage = completion.usage
+            content = (
+                completion.choices[0].message.content if completion.choices else None
+            )
+            return ChatReply(
+                content=content or "",
+                model=completion.model or self.model,
+                provider=self.provider,
+                input_tokens=usage.prompt_tokens if usage else 0,
+                output_tokens=usage.completion_tokens if usage else 0,
+                latency_ms=int((time.monotonic() - started) * 1000),
+            )
+        except (AttributeError, TypeError, ValueError) as exc:
+            raise self._not_a_completion(exc) from exc
+
+    def _not_a_completion(self, exc: Exception) -> ModelError:
+        logger.info("%s sent an unusable answer: %r", self._label, exc)
+        return ModelError(
+            f"{self._label} at {self.base_url} did not return a chat completion."
         )
 
     def _complete(
