@@ -4,9 +4,27 @@ from typing import Any
 
 from workbench.playwright_report import parse_json_report
 
+# Fixtures follow the shape Playwright 1.63's JSON reporter writes: every test
+# carries its outcome in a test-level "status" ("expected", "unexpected",
+# "flaky", "skipped"); each result carries the raw status of one try.
+
+
+def _outcome(result: dict[str, Any]) -> str:
+    """The outcome Playwright gives a test without annotations."""
+    raw = result.get("status")
+    if raw == "passed":
+        return "expected"
+    if raw in ("skipped", "interrupted"):
+        return "skipped"
+    return "unexpected"
+
+
+def _test(result: dict[str, Any], outcome: str | None = None) -> dict[str, Any]:
+    return {"status": outcome or _outcome(result), "results": [result]}
+
 
 def _report(result: dict[str, Any], nested: bool = False) -> dict[str, Any]:
-    spec = {"title": "submit", "tests": [{"results": [result]}]}
+    spec = {"title": "submit", "tests": [_test(result)]}
     suite: dict[str, Any] = {"title": "contact.spec.ts", "specs": [spec]}
     if nested:
         suite = {"title": "contact.spec.ts", "specs": [], "suites": [suite]}
@@ -79,10 +97,11 @@ def test_interrupted_run_is_cancelled() -> None:
 
 
 def _two_tests(first: dict[str, Any], second: dict[str, Any]) -> dict[str, Any]:
-    specs = [
-        {"title": "one", "tests": [{"results": [first]}]},
-        {"title": "two", "tests": [{"results": [second]}]},
-    ]
+    return _specs(_test(first), _test(second))
+
+
+def _specs(*tests: dict[str, Any]) -> dict[str, Any]:
+    specs = [{"title": f"t{i}", "tests": [test]} for i, test in enumerate(tests)]
     return {"suites": [{"title": "contact.spec.ts", "specs": specs}], "errors": []}
 
 
@@ -116,3 +135,112 @@ def test_all_tests_passing_is_a_pass() -> None:
     )
     assert run.passed
     assert run.duration_ms == 12
+
+
+def test_a_skipped_test_does_not_hide_the_failing_one() -> None:
+    skipped = {"status": "skipped", "duration": 0, "errors": [], "attachments": []}
+    failing = {
+        "status": "failed",
+        "duration": 30,
+        "errors": [
+            {
+                "message": "Error: expect(received).toBe(expected)",
+                "location": {"file": "/w/skip.spec.ts", "line": 3, "column": 35},
+            }
+        ],
+        "attachments": [
+            {"name": "error-context", "path": "/w/out/b/error-context.md"},
+        ],
+    }
+    run = parse_json_report(_specs(_test(skipped), _test(failing)))
+    assert run.status == "failed"
+    assert run.error_message == "Error: expect(received).toBe(expected)"
+    assert run.error_location == "/w/skip.spec.ts:3:35"
+    assert run.error_context_path == "/w/out/b/error-context.md"
+
+
+def test_a_test_that_fails_as_marked_by_test_fail_passes() -> None:
+    result = {
+        "status": "failed",
+        "duration": 20,
+        "errors": [{"message": "Error: expect(received).toBe(expected)"}],
+        "attachments": [{"name": "error-context", "path": "/w/out/error-context.md"}],
+    }
+    run = parse_json_report(_specs(_test(result, outcome="expected")))
+    assert run.passed
+    assert run.error_message == ""
+    assert run.error_context_path is None
+
+
+def test_a_flaky_test_counts_as_passed() -> None:
+    test = {
+        "status": "flaky",
+        "results": [
+            {"status": "failed", "errors": [{"message": "Error: first try"}]},
+            {"status": "passed", "duration": 9},
+        ],
+    }
+    assert parse_json_report(_specs(test)).passed
+
+
+def test_a_timed_out_unexpected_test_is_timed_out() -> None:
+    skipped = {"status": "skipped"}
+    timed_out = {
+        "status": "timedOut",
+        "errors": [{"message": "Test timeout of 30000ms exceeded."}],
+    }
+    run = parse_json_report(_specs(_test(skipped), _test(timed_out)))
+    assert run.status == "timed_out"
+    assert run.error_message == "Test timeout of 30000ms exceeded."
+
+
+def test_every_test_skipped_is_an_error() -> None:
+    skipped = {"status": "skipped", "duration": 0, "errors": [], "attachments": []}
+    run = parse_json_report(_specs(_test(skipped), _test(dict(skipped))))
+    assert run.status == "error"
+    assert "skipped" in run.error_message
+
+
+def test_no_tests_found_is_an_error_not_a_failure() -> None:
+    message = (
+        "Error: No tests found.\nMake sure that arguments are regular expressions"
+        " matching test files."
+    )
+    run = parse_json_report(
+        {"suites": [], "errors": [{"message": message, "stack": message}]}
+    )
+    assert run.status == "error"
+    assert run.error_message.startswith("Error: No tests found.")
+
+
+def test_top_level_error_without_a_location_is_an_error() -> None:
+    run = parse_json_report(
+        {"suites": [], "errors": [{"message": "Error: config could not be loaded"}]}
+    )
+    assert run.status == "error"
+    assert run.error_message == "Error: config could not be loaded"
+
+
+def test_a_passing_run_keeps_only_its_video() -> None:
+    skipped = {"status": "skipped"}
+    expected_failure = {
+        "status": "failed",
+        "errors": [{"message": "Error: failed as marked"}],
+        "attachments": [
+            {"name": "error-context", "path": "/w/out/error-context.md"},
+            {"name": "video", "path": "/w/out/video.webm"},
+        ],
+    }
+    run = parse_json_report(
+        _specs(_test(skipped), _test(expected_failure, outcome="expected"))
+    )
+    assert run.passed
+    assert run.video_path == "/w/out/video.webm"
+    assert run.error_context_path is None
+
+
+def test_a_test_without_a_known_outcome_fails_closed() -> None:
+    result = {"status": "failed", "errors": [{"message": "Error: boom"}]}
+    run = parse_json_report(_specs({"results": [result]}))
+    assert run.status == "failed"
+    assert run.error_message == "Error: boom"

@@ -34,7 +34,6 @@ the same commit as the work it describes.
 - Heal: record a failed model call as an attempt with its `ModelExchange` (an outcome such as `model_error`, sections built before the call) so the Model I/O view shows it; revisit with Phase 3 providers.
 - Generate: guard unexpected exceptions after the spec is written (end the active step, save an error report) and reject a reply with no `test(` block as an invalid reply.
 - Generate: make spec names and report ids collision-safe under concurrent runs (Phase 4).
-- Runner: a skipped test currently maps to "failed"; treat a spec with skipped and passing tests as passed.
 
 ## Done
 

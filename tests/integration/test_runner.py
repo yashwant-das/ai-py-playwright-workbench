@@ -68,6 +68,14 @@ def test_syntax_error_spec_is_reported_as_a_failure() -> None:
     assert result.error_message
 
 
+def test_empty_spec_is_an_error_not_a_failure() -> None:
+    path = specs_dir() / "empty.spec.ts"
+    path.write_text("", encoding="utf-8")
+    result = run_test(path)
+    assert result.status == "error", result.output
+    assert "No tests found" in result.error_message
+
+
 def test_cancel_stops_a_long_run() -> None:
     spec = _spec("slow.spec.ts", "  await page.waitForTimeout(25000);")
     cancel = threading.Event()

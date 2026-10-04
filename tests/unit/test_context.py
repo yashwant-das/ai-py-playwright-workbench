@@ -70,10 +70,12 @@ def test_snapshot_signals_and_candidates(monkeypatch: pytest.MonkeyPatch) -> Non
     browser.close.assert_called_once()
 
 
-def test_long_snapshot_is_cut(monkeypatch: pytest.MonkeyPatch) -> None:
-    _browser(monkeypatch, _page(aria="- text: " + "x" * 500))
-    snap = collector.collect_context("http://x/", wait_ms=0, max_snapshot_chars=100)
-    assert len(snap.aria_snapshot or "") == 100
+def test_long_snapshot_is_kept_whole(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Only render_prompt cuts the snapshot, so the cut is recorded on the exchange.
+    aria = "- text: " + "x" * 50_000
+    _browser(monkeypatch, _page(aria=aria))
+    snap = collector.collect_context("http://x/", wait_ms=0)
+    assert snap.aria_snapshot == aria
 
 
 def test_navigation_failure_returns_an_empty_snapshot(

@@ -22,7 +22,6 @@ def collect_context(
     *,
     capture_html: bool = True,
     max_html_chars: int = 30_000,
-    max_snapshot_chars: int = 12_000,
     max_locator_candidates: int = 20,
     wait_ms: int = 1_000,
 ) -> ContextSnapshot:
@@ -47,7 +46,8 @@ def collect_context(
                 if capture_html:
                     snapshot.html = collect_dom(page, max_chars=max_html_chars) or None
                 aria = page.aria_snapshot(mode="ai")
-                snapshot.aria_snapshot = aria[:max_snapshot_chars] or None
+                # Kept whole: render_prompt cuts it and records the cut.
+                snapshot.aria_snapshot = aria or None
                 snapshot.locator_candidates = extract_locator_candidates(
                     aria, max_count=max_locator_candidates
                 )

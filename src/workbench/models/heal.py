@@ -130,8 +130,16 @@ class HealingAnalysis(BaseModel):
     @field_validator("confidence_score", mode="before")
     @classmethod
     def clamp_confidence(cls, v: object) -> float:
-        """Clamp to [0, 1] — LLMs occasionally return 1.05 etc."""
-        return max(0.0, min(1.0, float(v)))  # type: ignore[arg-type]
+        """Clamp to [0, 1] — LLMs occasionally return 1.05 etc.
+
+        A null or non-numeric value raises ValueError, which Pydantic reports as
+        a validation error; a TypeError would escape validation and crash heal().
+        """
+        try:
+            score = float(v)  # type: ignore[arg-type]
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"confidence_score must be a number, got {v!r}") from exc
+        return max(0.0, min(1.0, score))
 
     @field_validator("reasoning_steps", mode="before")
     @classmethod

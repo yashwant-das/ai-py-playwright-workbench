@@ -3,10 +3,13 @@
 import threading
 from pathlib import Path
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
+from workbench.context import collector
 from workbench.generate import GenerateRequest, generate
+from workbench.generate.pipeline import LIMITS
 from workbench.llm.chat import ChatReply, ModelError
 from workbench.models.artifacts import ContextSnapshot
 from workbench.models.events import RunEvent
@@ -249,3 +252,33 @@ def test_events_describe_the_run() -> None:
         ("execute", "done"),
     ]
     assert events[-1].detail == "passed"
+
+
+def test_a_long_snapshot_is_cut_only_in_the_prompt_and_the_cut_is_recorded(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The real collector over a fake browser, so any cut it makes shows up here.
+    lines = [f'- button "Action {i}" [ref=e{i}]' for i in range(1_000)]
+    aria = "\n".join(lines)
+    assert len(aria) > LIMITS["Page snapshot"]
+    browser_page = MagicMock()
+    browser_page.content.return_value = "<html><body></body></html>"
+    browser_page.aria_snapshot.return_value = aria
+    browser_page.console_messages.return_value = []
+    browser_page.page_errors.return_value = []
+    browser_page.requests.return_value = []
+    playwright = MagicMock()
+    playwright.__enter__.return_value.chromium.launch.return_value.new_page.return_value = browser_page
+    monkeypatch.setattr(collector, "sync_playwright", lambda: playwright)
+
+    report = go(
+        FakeModel(),
+        runner("passed")[0],
+        collect=lambda url: collector.collect_context(url, wait_ms=0),
+    )
+
+    (section,) = [s for s in report.exchange.sections if s.name == "Page snapshot"]  # type: ignore[union-attr]
+    assert section.truncated
+    assert section.original_chars == len(aria)
+    assert section.chars == LIMITS["Page snapshot"]
+    assert report.context.snapshot_lines == len(lines)  # type: ignore[union-attr]

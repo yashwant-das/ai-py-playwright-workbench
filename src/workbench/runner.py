@@ -58,6 +58,9 @@ def run_test(
         "--output",
         str(run_dir / "test-results"),
         "--reporter=json",
+        # Heal only uses the first failure, and stopping there keeps a run of
+        # many slow failures inside the time limit, so its report is written.
+        "--max-failures=1",
     ]
     env = {
         **os.environ,

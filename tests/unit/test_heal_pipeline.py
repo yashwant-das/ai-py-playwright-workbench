@@ -163,6 +163,27 @@ def test_invalid_reply_is_retried(spec: Path, tmp_path: Path) -> None:
     assert report.attempts[0].exchange.valid is False  # type: ignore[union-attr]
 
 
+def test_null_confidence_is_an_invalid_reply_not_a_crash(
+    spec: Path, tmp_path: Path
+) -> None:
+    payload = json.loads(reply())
+    payload["confidence_score"] = None
+    events: list[RunEvent] = []
+    report = run_heal(
+        spec,
+        FakeModel(json.dumps(payload)),
+        FakeRunner(tmp_path, "failed"),
+        max_attempts=1,
+        emit=events.append,
+    )
+    assert report.status == "not_healed"
+    assert [a.outcome for a in report.attempts] == ["invalid_reply"]
+    assert load_report(report.id).status == "not_healed"
+    assert events[-1].kind == "done" and events[-1].detail == "not_healed"
+    assert _last_states(events)["diagnose"] == "failed"
+    assert spec.read_text() == BROKEN
+
+
 def test_confident_app_defect_stops_without_editing(spec: Path, tmp_path: Path) -> None:
     runner = FakeRunner(tmp_path, "failed")
     report = run_heal(

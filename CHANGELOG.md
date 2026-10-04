@@ -45,6 +45,11 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - Healer and generator prompts are version 3; the model is asked for
   schema-constrained output where the provider supports it.
 
+### Fixed
+
+- The runner uses Playwright's test outcomes (skipped tests, `test.fail()`,
+  "No tests found") and stops at the first failure.
+
 ## [1.0.0] - 2026-09-28
 
 The Gradio workbench: generation, healing and vision pipelines, benchmarks

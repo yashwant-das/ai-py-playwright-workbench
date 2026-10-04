@@ -231,6 +231,15 @@ class TestParseLlmResponse(unittest.TestCase):
         result = parse_llm_response(json.dumps(payload), HealingAnalysis)
         self.assertAlmostEqual(result.confidence_score, 1.0)
 
+    def test_null_or_non_numeric_confidence_is_a_validation_error(self):
+        """A null or list confidence is a ValueError, never a TypeError."""
+        for bad in (None, [1]):
+            with self.subTest(confidence=bad):
+                payload = json.loads(self._valid_json())
+                payload["confidence_score"] = bad
+                with self.assertRaises(ValueError):
+                    parse_llm_response(json.dumps(payload), HealingAnalysis)
+
     def test_list_code_coercion_via_parser(self):
         """LLM returns original_code as list — should be coerced to string."""
         payload = json.loads(self._valid_json())

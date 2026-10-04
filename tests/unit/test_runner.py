@@ -20,13 +20,14 @@ FAILED_REPORT = {
                 {
                     "tests": [
                         {
+                            "status": "unexpected",
                             "results": [
                                 {
                                     "status": "failed",
                                     "duration": 50,
                                     "errors": [{"message": "Error: boom"}],
                                 }
-                            ]
+                            ],
                         }
                     ]
                 }
@@ -85,6 +86,7 @@ def test_command_uses_the_workspace_config_and_the_json_reporter(
         tmp_path / "run" / "test-results"
     )
     assert "--reporter=json" in call.command
+    assert "--max-failures=1" in call.command  # heal only uses the first failure
     env = call.kwargs["env"]
     assert env["PLAYWRIGHT_JSON_OUTPUT_FILE"] == str(tmp_path / "run" / "report.json")
     assert env["WORKBENCH_SPECS_DIR"] == str(spec.resolve().parent)
