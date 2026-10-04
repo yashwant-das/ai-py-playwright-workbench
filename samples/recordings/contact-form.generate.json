@@ -1,0 +1,6 @@
+{
+  "kind": "generate",
+  "sample": "contact-form",
+  "match": "A user can send the contact form",
+  "reply": "```typescript\nimport { test, expect } from '@playwright/test';\n\ntest('A user can send the contact form', async ({ page }) => {\n  await page.goto('{{URL}}');\n  await page.getByLabel('Name').fill('Ada Lovelace');\n  await page.getByRole('button', { name: 'Submit' }).click();\n  await expect(page.getByRole('status')).toHaveText('Submitted');\n});\n```"
+}

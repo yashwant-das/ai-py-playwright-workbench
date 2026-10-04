@@ -1,0 +1,28 @@
+{
+  "kind": "heal",
+  "sample": "selector-drift",
+  "match": "Contact form sends a message",
+  "reply": {
+    "failure_type": "LOCATOR_DRIFT",
+    "failure_summary": "The click on #submit-btn timed out: no element has that id any more.",
+    "hypothesis": "The submit button is still on the page and still named Submit; only its id is gone. Finding it by role and name matches what the user sees.",
+    "confidence_score": 0.9,
+    "confidence_rationale": "The page snapshot at the failure shows exactly one button named Submit, and the error names the missing selector.",
+    "reasoning_steps": [
+      "The error is a timeout waiting for locator('#submit-btn').",
+      "The page snapshot at the failure shows the form with the name filled in and a button named \"Submit\".",
+      "Nothing in the snapshot carries the id submit-btn, so the selector drifted.",
+      "getByRole('button', { name: 'Submit' }) finds the same button by what the user sees."
+    ],
+    "root_cause_evidence": [
+      "button \"Submit\" in the page snapshot at the failure",
+      "TimeoutError waiting for locator('#submit-btn')"
+    ],
+    "action_taken": {
+      "original_code": "page.locator('#submit-btn')",
+      "fixed_code": "page.getByRole('button', { name: 'Submit' })",
+      "description": "Find the submit button by its role and name instead of the removed id.",
+      "repair_strategy": "selector_replace"
+    }
+  }
+}

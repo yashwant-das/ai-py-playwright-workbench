@@ -1,8 +1,8 @@
 """The bundled samples the app offers on the Heal page."""
 
-from typing import Literal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Sample(BaseModel):
@@ -15,3 +15,14 @@ class Sample(BaseModel):
     description: str
     spec_file: str
     expected_status: Literal["healed", "app_defect_suspected"]
+
+
+class Recording(BaseModel):
+    """One recorded model answer that the Demo provider replays."""
+
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["heal", "generate"]
+    sample: str
+    match: str = Field(min_length=1)
+    reply: str | dict[str, Any]
