@@ -70,7 +70,7 @@ def test_a_running_server_is_detected_and_used(site: str) -> None:
             provider="ollama", base_url=llm.base_url, model="fake-model"
         )
 
-        status = check_connection(choice)
+        status = check_connection(choice.provider, choice.base_url)
         assert status.reachable and status.models == ["fake-model"]
 
         report = generate(
