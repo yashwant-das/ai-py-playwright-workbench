@@ -16,6 +16,11 @@ AST_REPAIR_SCRIPT = PACKAGE_DIR / "heal" / "ast_repair.js"
 WORKSPACE_PLAYWRIGHT_CONFIG = PROJECT_ROOT / "playwright.workspace.config.ts"
 WORKSPACE_ENV = "WORKBENCH_WORKSPACE"
 
+SAMPLES_DIR = PROJECT_ROOT / "samples"
+SAMPLE_SITE_DIR = SAMPLES_DIR / "site"
+SAMPLE_SPECS_DIR = SAMPLES_DIR / "specs"
+RECORDINGS_DIR = SAMPLES_DIR / "recordings"
+
 
 def workspace_dir() -> Path:
     """Root of all runtime output (git-ignored)."""

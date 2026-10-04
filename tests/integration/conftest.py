@@ -11,7 +11,7 @@ import pytest
 
 from workbench import config
 
-SITE_DIR = config.PROJECT_ROOT / "samples" / "site"
+SITE_DIR = config.SAMPLE_SITE_DIR
 # Fixed so specs written by tests can hard-code the URL.
 SITE_PORT = int(os.environ.get("E2E_SITE_PORT", "4173"))
 SITE_URL = f"http://127.0.0.1:{SITE_PORT}/"

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sample shop · Checkout</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <nav aria-label="Sample shop">
+      <a href="./">Contact</a>
+      <a href="checkout.html" aria-current="page">Checkout</a>
+    </nav>
+    <main>
+      <h1>Checkout</h1>
+      <form id="checkout">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" />
+        <label for="quantity">Quantity</label>
+        <input id="quantity" name="quantity" type="number" value="1" min="1" />
+        <button type="submit">Place order</button>
+      </form>
+      <p id="result" role="status"></p>
+    </main>
+    <script>
+      // Orders go to api/orders, which the sample site does not serve, so every
+      // order fails on the server side.
+      document.getElementById('checkout').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const result = document.getElementById('result');
+        try {
+          const response = await fetch('api/orders', { method: 'POST' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          result.textContent = 'Order placed';
+        } catch (error) {
+          console.error(`Order failed: ${error.message}`);
+          result.textContent = 'Something went wrong. Please try again.';
+        }
+      });
+    </script>
+  </body>
+</html>
