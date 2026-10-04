@@ -169,6 +169,15 @@ def test_list_models_skips_embedding_models() -> None:
     assert _listing(answer) == ["qwen3-8b", "gemma-3-4b"]
 
 
+def test_list_models_skips_blank_ids() -> None:
+    def answer(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json={"data": [{"id": ""}, {"id": "  "}, {"id": "qwen3-8b"}]}
+        )
+
+    assert _listing(answer) == ["qwen3-8b"]
+
+
 def test_list_models_reports_an_unreachable_server() -> None:
     def refuse(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused", request=request)

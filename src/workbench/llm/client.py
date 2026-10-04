@@ -40,7 +40,7 @@ def list_models(
 ) -> list[str]:
     """Ids of the chat models the server at ``base_url`` offers, in its order.
 
-    Embedding models are left out: they cannot answer a chat request.
+    Embedding models and blank ids are left out: neither can answer a chat request.
     Raises ``ModelError`` when the server does not answer or answers nonsense.
     """
     client = http_client or httpx.Client(timeout=timeout_s)
@@ -55,7 +55,7 @@ def list_models(
     finally:
         if http_client is None:
             client.close()
-    return [entry.id for entry in listing.data if "embed" not in entry.id.lower()]
+    return [e.id for e in listing.data if e.id.strip() and "embed" not in e.id.lower()]
 
 
 def _provider_message(exc: openai.APIStatusError) -> str:

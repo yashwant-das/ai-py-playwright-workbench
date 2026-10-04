@@ -51,6 +51,19 @@ def test_a_server_with_no_models_is_skipped() -> None:
     assert choice is not None and choice.provider == "ollama"
 
 
+def test_blank_model_ids_are_ignored() -> None:
+    choice = detect_provider(list_models=_servers({LM: ["", "gemma3:4b"]}))
+    assert choice == ModelSettings(provider="lm_studio", base_url=LM, model="gemma3:4b")
+
+
+def test_a_server_listing_only_blank_ids_is_skipped() -> None:
+    choice = detect_provider(
+        list_models=_servers({LM: [""], OLLAMA: ["  ", "gemma3:4b"]})
+    )
+    assert choice is not None and choice.provider == "ollama"
+    assert detect_provider(list_models=_servers({LM: [""]})) is None
+
+
 def test_no_server_means_no_choice() -> None:
     assert detect_provider(list_models=_servers({})) is None
 
@@ -96,3 +109,11 @@ def test_build_model_picks_the_implementation() -> None:
         OLLAMA,
         "gemma3:4b",
     )
+
+
+def test_connection_lists_only_non_blank_models() -> None:
+    choice = ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
+    status = check_connection(
+        choice, list_models=_servers({OLLAMA: ["", "gemma3:4b", " "]})
+    )
+    assert status.models == ["gemma3:4b"]

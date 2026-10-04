@@ -17,6 +17,11 @@ ListModels = Callable[[str], list[str]]
 DETECTION_ORDER: tuple[ProviderName, ...] = ("lm_studio", "ollama")
 
 
+def _usable(models: list[str]) -> list[str]:
+    """Drop blank ids; a model choice needs a non-empty name."""
+    return [model for model in models if model.strip()]
+
+
 def detect_provider(
     *,
     order: Iterable[ProviderName] = DETECTION_ORDER,
@@ -30,7 +35,7 @@ def detect_provider(
     for provider in order:
         base_url = urls[provider]
         try:
-            models = list_models(base_url)
+            models = _usable(list_models(base_url))
         except ModelError:
             continue
         if models:
@@ -45,7 +50,7 @@ def check_connection(
     if settings.provider == "demo":
         return ConnectionStatus(provider="demo", reachable=True, models=[DEMO_MODEL])
     try:
-        models = list_models(settings.base_url)
+        models = _usable(list_models(settings.base_url))
     except ModelError as exc:
         return ConnectionStatus(
             provider=settings.provider,
