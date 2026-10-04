@@ -19,6 +19,13 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - A confident `POTENTIAL_APP_DEFECT` diagnosis stops the heal without editing
   the test.
 - Runs can be cancelled; Playwright and its browsers are stopped.
+- LM Studio and Ollama through one OpenAI-compatible client. The first server
+  that answers is detected on start, and the model choice is saved in
+  `workspace/settings.json`.
+- A Demo provider that replays recorded answers, so the bundled samples work
+  without a model server.
+- Two bundled samples against the sample site: *Selector drift* heals, and
+  *App bug* stops without editing the test.
 
 ### Removed
 
@@ -28,6 +35,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - The Docker image and its workflow.
 - The 1.0 heal loop, decision artifacts, CDP accessibility code, custom
   console and network listeners, and the Playwright report re-run configs.
+- The LLM router, model registry, retry policies, `python-dotenv` and
+  `.env.example`. No environment variable configures the app.
 
 ### Changed
 
@@ -44,6 +53,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   request collections.
 - Healer and generator prompts are version 3; the model is asked for
   schema-constrained output where the provider supports it.
+- A failed model call names the provider and server and says what went wrong
+  (not running, timed out, unknown model, or the server's own error).
 
 ### Fixed
 

@@ -9,14 +9,12 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| LM Studio, Ollama and Demo providers chosen in the UI; no `.env` | 🔭 Planned | 3 | Phase 3 plan (to be written) |
-| Bundled samples: selector drift and app bug | 🔭 Planned | 3 | Phase 3 plan (to be written) |
+| FastAPI + HTMX web UI matching the Figma design | 🔭 Planned | 4 | Phase 4 plan (to be written) |
 
 ## Next
 
 | Item | Status | Phase |
 | --- | --- | --- |
-| FastAPI + HTMX web UI matching the Figma design | 🔭 Planned | 4 |
 | Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🔭 Planned | 5 |
 | README, GIF, architecture and decision docs, 2.0.0 release | 🔭 Planned | 6 |
 
@@ -31,14 +29,18 @@ the same commit as the work it describes.
 - Dark mode.
 - Renaming the repository.
 - Heal: send Playwright's marked "Test source" block from `error-context.md` to the planner as its own prompt section (spec E2; currently the whole file plus file:line:col is sent).
-- Heal: record a failed model call as an attempt with its `ModelExchange` (an outcome such as `model_error`, sections built before the call) so the Model I/O view shows it; revisit with Phase 3 providers.
+- Heal: record a failed model call as an attempt with its `ModelExchange` (an outcome such as `model_error`, sections built before the call) so the Model I/O view shows it.
 - Generate: guard unexpected exceptions after the spec is written (end the active step, save an error report) and reject a reply with no `test(` block as an invalid reply.
 - Generate: make spec names and report ids collision-safe under concurrent runs (Phase 4).
+- Cancel an in-flight model call; today a cancel takes effect when the model answers (calls time out after 5 minutes).
+- Warn when a prompt may not fit the model's context window; Ollama silently drops the start of a prompt that is too long.
 
 ## Done
 
 | Item | Phase | Plan |
 | --- | --- | --- |
+| LM Studio, Ollama and Demo providers chosen in the UI; no `.env` | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
+| Bundled samples: selector drift and app bug | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | `workbench` package and test layout | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Roadmap, changelog and agent guides | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
@@ -63,3 +65,4 @@ the same commit as the work it describes.
 | Benchmarks, mutation engine, intent validation | The only published score was circular; the rest was unused | 1 |
 | Docker image and workflow | Needs a model and a browser on the host anyway | 1 |
 | Most of `docs/` (30 files) | Replaced in Phase 6 by README, architecture, decisions and development guides | 1 |
+| LLM router with retries and a fallback provider, model registry, `.env` | One client talks to the provider chosen in the UI; the choice is saved in the workspace | 3 |
