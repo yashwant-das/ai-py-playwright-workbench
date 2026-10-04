@@ -1,4 +1,4 @@
-"""S3 and S4 against a real Chromium, with a scripted in-process model."""
+"""S3 against a real Chromium with a scripted in-process model (S4 lives in test_samples.py)."""
 
 import json
 from pathlib import Path
@@ -18,9 +18,6 @@ test("Submit the contact form", async ({{ page }}) => {{
   await expect(page.getByRole("status")).toHaveText("Submitted");
 }});
 """
-WRONG_EXPECTATION = DRIFTED.replace(
-    'page.locator("#submit-btn")', 'page.getByRole("button", { name: "Submit" })'
-).replace('toHaveText("Submitted")', 'toHaveText("Order placed", { timeout: 2000 })')
 
 
 def _analysis(failure_type: str, original: str = "", fixed: str = "") -> str:
@@ -76,16 +73,3 @@ def test_evidence_is_the_page_at_the_moment_of_failure(site: str) -> None:
     assert 'textbox "Name"' in snapshot_section and "Ada" in snapshot_section
     video = report.attempts[0].rerun.video_path  # type: ignore[union-attr]
     assert video and video.endswith(".webm") and Path(video).is_file()
-
-
-def test_suspected_app_bug_leaves_the_test_alone(site: str) -> None:
-    spec = _spec("order.spec.ts", WRONG_EXPECTATION)
-    report = heal(
-        HealRequest(spec_path=spec),
-        model=ScriptedModel(_analysis("POTENTIAL_APP_DEFECT")),
-    )
-
-    assert report.status == "app_defect_suspected"
-    assert [a.outcome for a in report.attempts] == ["app_defect"]
-    assert report.attempts[0].rerun is None
-    assert spec.read_text(encoding="utf-8") == WRONG_EXPECTATION
