@@ -20,6 +20,8 @@ Coverage:
 import unittest
 from unittest.mock import MagicMock, patch
 
+import httpx
+import openai
 from pydantic import ValidationError
 
 from workbench.llm import (
@@ -769,6 +771,45 @@ class TestGetDefaultRouter(unittest.TestCase):
             _reset_default_router_for_testing()
             router = get_default_router()
         self.assertEqual(router.primary_model, "env-test-model")
+
+
+def _bad_request() -> openai.BadRequestError:
+    request = httpx.Request("POST", "http://localhost:9999/v1/chat/completions")
+    return openai.BadRequestError(
+        "response_format is not supported",
+        response=httpx.Response(400, request=request),
+        body=None,
+    )
+
+
+class TestRequestOptions(unittest.TestCase):
+    def _router_with_client(self, **kwargs):
+        router = _make_router(**kwargs)
+        router._LLMRouter__primary_client = MagicMock()
+        return router, router._LLMRouter__primary_client.chat.completions.create
+
+    def test_response_format_is_sent(self):
+        router, create = self._router_with_client()
+        create.return_value = _make_completion()
+        fmt = {"type": "json_schema", "json_schema": {"name": "X", "schema": {}}}
+        router.complete(LLMRequest(messages=[], model="m", response_format=fmt))
+        self.assertEqual(create.call_args.kwargs["response_format"], fmt)
+
+    def test_response_format_is_omitted_when_unset(self):
+        router, create = self._router_with_client()
+        create.return_value = _make_completion()
+        router.complete(LLMRequest(messages=[], model="m"))
+        self.assertNotIn("response_format", create.call_args.kwargs)
+
+    def test_bad_request_is_not_retried(self):
+        router, create = self._router_with_client(
+            retry_policy=RetryPolicy(max_retries=2)
+        )
+        create.side_effect = _bad_request()
+        with self.assertRaises(RuntimeError) as caught:
+            router.complete(LLMRequest(messages=[], model="m"))
+        self.assertEqual(create.call_count, 1)
+        self.assertIsInstance(caught.exception.__cause__, openai.BadRequestError)
 
 
 if __name__ == "__main__":

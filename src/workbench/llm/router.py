@@ -17,6 +17,7 @@ import os
 import time
 from typing import Any, cast
 
+import openai
 from dotenv import load_dotenv
 from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam
@@ -57,6 +58,10 @@ class LLMRequest(BaseModel):
         gt=0,
         description="Maximum tokens in the response. None means provider default.",
     )
+    response_format: dict[str, Any] | None = Field(
+        default=None,
+        description="OpenAI response_format, e.g. a JSON schema the reply must match.",
+    )
 
 
 class LLMResponse(BaseModel):
@@ -90,9 +95,14 @@ class LLMResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-def _max_tokens_kwargs(request: LLMRequest) -> dict[str, Any]:
-    """Pass max_tokens only when set, so providers apply their own default."""
-    return {"max_tokens": request.max_tokens} if request.max_tokens else {}
+def _request_kwargs(request: LLMRequest) -> dict[str, Any]:
+    """Optional arguments, sent only when set so providers keep their defaults."""
+    kwargs: dict[str, Any] = {}
+    if request.max_tokens:
+        kwargs["max_tokens"] = request.max_tokens
+    if request.response_format:
+        kwargs["response_format"] = request.response_format
+    return kwargs
 
 
 class LLMRouter:
@@ -195,7 +205,7 @@ class LLMRouter:
                     model=request.model,
                     messages=cast(list[ChatCompletionMessageParam], request.messages),
                     temperature=request.temperature,
-                    **_max_tokens_kwargs(request),
+                    **_request_kwargs(request),
                     timeout=self._timeout_policy.timeout_seconds,
                 )
                 latency_ms = int((time.monotonic() - start) * 1000)
@@ -206,6 +216,11 @@ class LLMRouter:
                     retry_count=retry_count,
                 )
 
+            except openai.BadRequestError as exc:
+                # The provider rejected the request itself; retrying cannot help.
+                raise RuntimeError(
+                    f"The provider rejected the request (model={request.model}): {exc}"
+                ) from exc
             except Exception as exc:
                 last_exc = exc
                 retry_count += 1
@@ -245,7 +260,7 @@ class LLMRouter:
                     model=self._fallback_model,
                     messages=cast(list[ChatCompletionMessageParam], request.messages),
                     temperature=request.temperature,
-                    **_max_tokens_kwargs(request),
+                    **_request_kwargs(request),
                     timeout=self._timeout_policy.timeout_seconds,
                 )
                 latency_ms = int((time.monotonic() - start) * 1000)
@@ -324,7 +339,7 @@ class LLMRouter:
                 f"Configuration error: {var} is not set.\n\n"
                 f"Add it to your .env file:\n\n"
                 f"  {var}=your-vision-model-name\n\n"
-                f"See docs/env-variables.md for the full reference."
+                f"See .env.example for the variables."
             )
         return self.complete(
             LLMRequest(
@@ -422,7 +437,7 @@ class LLMRouter:
                 f"Configuration error: {text_var} is not set.\n\n"
                 f"Add it to your .env file:\n\n"
                 f"  {text_var}=your-model-name\n\n"
-                f"See docs/env-variables.md for the full reference."
+                f"See .env.example for the variables."
             )
 
         return cls(
