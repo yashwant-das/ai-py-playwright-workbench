@@ -5,7 +5,9 @@ from pathlib import Path
 import pytest
 
 from workbench import config
+from workbench.environment import node_available
 from workbench.heal import HealRequest, heal
+from workbench.heal.repair import apply_fix
 from workbench.llm.chat import ModelError
 from workbench.llm.demo import DemoModel, load_recordings, prompt_sections
 from workbench.llm.parsing import extract_code_block, parse_llm_response
@@ -67,6 +69,19 @@ def test_drift_sample_gets_a_fix_that_matches_its_source() -> None:
     assert (reply.provider, reply.model) == ("demo", DEMO_MODEL)
 
 
+@pytest.mark.skipif(not node_available(), reason="Node.js is needed for the AST repair")
+def test_drift_fix_is_a_real_selector_edit_of_the_sample_spec() -> None:
+    spec = _sample_spec("selector-drift")
+    reply = DemoModel().chat(_messages(_heal_prompt(spec)))
+    analysis = parse_llm_response(reply.content, HealingAnalysis)
+
+    result = apply_fix(spec, analysis.action_taken)
+
+    assert result.method == "ast"
+    assert "page.locator('[data-testid=\"submit\"]')" in result.code
+    assert "#submit-btn" not in result.code
+
+
 def test_app_bug_sample_gets_a_confident_app_defect_diagnosis() -> None:
     reply = DemoModel().chat(_messages(_heal_prompt(_sample_spec("app-bug"))))
     analysis = parse_llm_response(reply.content, HealingAnalysis)
@@ -86,6 +101,18 @@ def test_sample_scenario_is_generated_for_the_given_url() -> None:
 def test_unknown_spec_is_not_covered() -> None:
     with pytest.raises(ModelError, match="Demo only covers the bundled samples"):
         DemoModel().chat(_messages(_heal_prompt("test('mine', async () => {});")))
+
+
+@pytest.mark.parametrize(
+    "spec",
+    [
+        "test('Checkout places an order twice', async () => {});",
+        "// Contact form sends a message\ntest('mine', async () => {});",
+    ],
+)
+def test_a_spec_that_only_resembles_a_sample_is_not_covered(spec: str) -> None:
+    with pytest.raises(ModelError, match="Demo only covers the bundled samples"):
+        DemoModel().chat(_messages(_heal_prompt(spec)))
 
 
 def test_unknown_scenario_is_not_covered() -> None:

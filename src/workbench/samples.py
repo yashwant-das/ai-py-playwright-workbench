@@ -22,8 +22,8 @@ SAMPLES: dict[str, Sample] = {
             name="selector-drift",
             title="Selector drift",
             description=(
-                "The submit button lost its id. The healer finds it by role and "
-                "the test passes again."
+                "The submit button lost its id. The healer finds it by its test id "
+                "and the test passes again."
             ),
             spec_file="contact-form.spec.ts",
             expected_status="healed",

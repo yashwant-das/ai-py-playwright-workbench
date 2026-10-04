@@ -1,18 +1,18 @@
 {
   "kind": "heal",
   "sample": "selector-drift",
-  "match": "Contact form sends a message",
+  "match": "test('Contact form sends a message'",
   "reply": {
     "failure_type": "LOCATOR_DRIFT",
     "failure_summary": "The click on #submit-btn timed out: no element has that id any more.",
-    "hypothesis": "The submit button is still on the page and still named Submit; only its id is gone. Finding it by role and name matches what the user sees.",
+    "hypothesis": "The submit button is still on the page, but it lost its id submit-btn. It still carries the test id data-testid=\"submit\", so the test can target that instead.",
     "confidence_score": 0.9,
-    "confidence_rationale": "The page snapshot at the failure shows exactly one button named Submit, and the error names the missing selector.",
+    "confidence_rationale": "The page snapshot at the failure shows the Submit button, the error names the missing id, and the button still has a stable test id.",
     "reasoning_steps": [
       "The error is a timeout waiting for locator('#submit-btn').",
       "The page snapshot at the failure shows the form with the name filled in and a button named \"Submit\".",
-      "Nothing in the snapshot carries the id submit-btn, so the selector drifted.",
-      "getByRole('button', { name: 'Submit' }) finds the same button by what the user sees."
+      "Nothing on the page carries the id submit-btn, so the id drifted.",
+      "The Submit button still has data-testid=\"submit\", which is a more stable selector than an id."
     ],
     "root_cause_evidence": [
       "button \"Submit\" in the page snapshot at the failure",
@@ -20,8 +20,8 @@
     ],
     "action_taken": {
       "original_code": "page.locator('#submit-btn')",
-      "fixed_code": "page.getByRole('button', { name: 'Submit' })",
-      "description": "Find the submit button by its role and name instead of the removed id.",
+      "fixed_code": "page.locator('[data-testid=\"submit\"]')",
+      "description": "Find the submit button by its test id instead of the removed id.",
       "repair_strategy": "selector_replace"
     }
   }

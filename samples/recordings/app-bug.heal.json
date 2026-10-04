@@ -1,7 +1,7 @@
 {
   "kind": "heal",
   "sample": "app-bug",
-  "match": "Checkout places an order",
+  "match": "test('Checkout places an order'",
   "reply": {
     "failure_type": "POTENTIAL_APP_DEFECT",
     "failure_summary": "After Place order, the page says \"Something went wrong\" instead of \"Order placed\".",
