@@ -50,10 +50,6 @@ playwright/.cache/
 .env.local
 .env.*.local
 
-# Logs
-*.log
-logs/
-
 # OS
 .DS_Store
 Thumbs.db
@@ -61,8 +57,5 @@ Thumbs.db
 # Project Specific
 # v2 runtime output (Phase 2 onwards)
 workspace/
-tests/artifacts/
-# Specs the workbench generates at runtime
-tests/generated/*.spec.ts
 
 coverage.xml
