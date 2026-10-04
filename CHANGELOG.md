@@ -11,6 +11,14 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 ### Added
 
 - `ROADMAP.md` and this changelog.
+- The engine records every model exchange (sections sent, raw reply, validity,
+  provenance) and writes one JSON report per run to `workspace/reports/`.
+- Healing evidence comes from Playwright's `error-context.md`: the page as it
+  was at the moment of failure.
+- Verification re-runs are recorded as video with each action captioned.
+- A confident `POTENTIAL_APP_DEFECT` diagnosis stops the heal without editing
+  the test.
+- Runs can be cancelled; Playwright and its browsers are stopped.
 
 ### Removed
 
@@ -18,6 +26,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - The vision pipeline and its prompt.
 - The JSONL tracer, benchmarks, mutation engine and intent validation.
 - The Docker image and its workflow.
+- The 1.0 heal loop, decision artifacts, CDP accessibility code, custom
+  console and network listeners, and the Playwright report re-run configs.
 
 ### Changed
 
@@ -29,6 +39,11 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   `tests/integration`; the sample web app lives in `samples/site/`.
 - `AGENTS.md`, `CONTRIBUTING.md` and `SECURITY.md` describe v2; `CLAUDE.md`
   points agents at `AGENTS.md`. The old documentation set was removed.
+- The runner reads Playwright's JSON report; page context uses
+  `aria_snapshot(mode="ai")` and Playwright's own console, page-error and
+  request collections.
+- Healer and generator prompts are version 3; the model is asked for
+  schema-constrained output where the provider supports it.
 
 ## [1.0.0] - 2026-09-28
 

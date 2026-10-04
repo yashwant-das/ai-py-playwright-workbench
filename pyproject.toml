@@ -53,7 +53,6 @@ exclude = [
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "C4", "PIE", "RET", "RUF"]
 ignore = [
     "E501",   # line length is left to the formatter
-    "E402",   # some modules set up sys.path before importing
     "RUF001", # en dashes in UI strings, docstrings and comments are intentional
     "RUF002",
     "RUF003",

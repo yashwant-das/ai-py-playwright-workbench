@@ -53,7 +53,6 @@ playwright/.cache/
 # Logs
 *.log
 logs/
-!logs/.gitkeep
 
 # OS
 .DS_Store
@@ -62,13 +61,8 @@ Thumbs.db
 # Project Specific
 # v2 runtime output (Phase 2 onwards)
 workspace/
-tests/screenshots/*.png
 tests/artifacts/
 # Specs the workbench generates at runtime
 tests/generated/*.spec.ts
-benchmarks/reports/*.json
 
-# Gradio
-flagged/
-gradio_queue.db
 coverage.xml

@@ -6,9 +6,9 @@ to the layout, commands or conventions.
 
 ## What this project is
 
-A local web app that generates Playwright tests and heals failing ones with
-local LLMs (LM Studio or Ollama). It is being redesigned as v2 on the `v2`
-branch:
+A tool that generates Playwright tests and heals failing ones with local LLMs
+(LM Studio or Ollama), rebuilt as a local web app in v2. It is being redesigned
+on the `v2` branch:
 
 - Design: [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
 - Progress: [ROADMAP.md](ROADMAP.md)
@@ -21,20 +21,26 @@ current phase's plan, add it to `ROADMAP.md` under "Later" instead of building i
 
 ```text
 src/workbench/          the Python package
-├── config.py           every filesystem path; never count parent folders
-├── runner.py           runs `npx playwright test`
-├── heal/               pipeline (heal()), evidence, planner, repair (+ ast_repair.js), classifier
-├── generate/           generation pipeline
-├── context/            page context from one Chromium session
-├── llm/                router (replaced in Phase 3), parsing, prompt loading
-├── models/             Pydantic data contracts
+├── config.py           every path; workspace_dir() / runs_dir() / reports_dir() / specs_dir()
+├── ids.py              run ids and slugs
+├── runner.py           runs one spec; result from Playwright's JSON report
+├── playwright_report.py  JSON report → RunResult
+├── environment.py      Node.js and Chromium checks
+├── events.py           EventSink: numbered progress events
+├── reports.py          save / load / list run reports
+├── heal/               pipeline.py (heal), evidence, planner, repair (+ ast_repair.js), classifier
+├── generate/           pipeline.py (generate)
+├── context/            page context: aria snapshot, console, page errors, requests
+├── llm/                chat.py (ChatModel), router (until Phase 3), parsing, prompts
+├── models/             Pydantic contracts: reports, events, model output
 ├── prompts/            prompt files and manifest.json
 ├── validation.py       input checks
 └── text.py             clean_ansi_codes()
-samples/site/           sample web app used by tests (and by the app from Phase 3)
+samples/site/           sample web app used by tests
 tests/unit/             default pytest run: no model, no browser, no network
-tests/integration/      real Chromium + fake OpenAI-compatible server
-docs/superpowers/       specs and plans
+tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
+workspace/              runtime output (git-ignored): specs/, runs/, reports/
+playwright.workspace.config.ts  the config the runner uses for every spec
 ```
 
 ## Commands
@@ -54,9 +60,12 @@ npm run type-check                         # TypeScript
 - All LLM output is parsed into a Pydantic model (`workbench.llm.parsing.parse_llm_response`), never `json.loads` alone.
 - New data shapes are Pydantic models in `workbench/models/`.
 - Paths come from `workbench.config`.
-- Prompt changes go in `src/workbench/prompts/` and bump the version in `prompts/manifest.json`.
+- Talk to models only through `workbench.llm.chat.ChatModel`.
+- `heal()` must leave the spec unchanged unless the status is `healed`.
+- Prompt changes go in `src/workbench/prompts/` and bump the version in `src/workbench/prompts/manifest.json`.
 - Subprocesses use argument lists, never `shell=True`.
-- Tests never need a live model, browser or network unless they live in `tests/integration/`. Pipelines (`heal()`) take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`); pass fakes instead of patching module globals.
+- Tests never need a live model, browser or network unless they live in `tests/integration/`.
+- Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer).
 
 ## Commits
