@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import subprocess
 import threading
 from pathlib import Path
@@ -71,7 +72,12 @@ def test_command_uses_the_workspace_config_and_the_json_reporter(
     runner.run_test(spec, tmp_path / "run", record_video=True)
 
     (call,) = calls
-    assert call.command[:4] == ["npx", "playwright", "test", str(spec.resolve())]
+    assert call.command[:4] == [
+        "npx",
+        "playwright",
+        "test",
+        re.escape(str(spec.resolve())),
+    ]
     assert call.command[call.command.index("--config") + 1] == str(
         WORKSPACE_PLAYWRIGHT_CONFIG
     )
@@ -147,3 +153,18 @@ def test_timeout_stops_the_run(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
     monkeypatch.setattr(runner, "_stop", lambda _proc: None)
     result = runner.run_test(tmp_path / "a.spec.ts", tmp_path / "run", timeout_s=0)
     assert result.status == "timed_out"
+
+
+def test_spec_path_is_escaped_for_playwrights_regex_filter(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    fake, calls = _fake_popen(FAILED_REPORT)
+    monkeypatch.setattr(runner.subprocess, "Popen", fake)
+    spec = tmp_path / "specs (v2)" / "c++.spec.ts"
+
+    runner.run_test(spec, tmp_path / "run")
+
+    argument = calls[0].command[3]
+    assert argument == re.escape(str(spec.resolve()))
+    assert re.fullmatch(argument, str(spec.resolve()))
+    assert "\\(v2\\)" in argument and "c\\+\\+" in argument

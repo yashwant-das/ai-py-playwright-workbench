@@ -76,3 +76,17 @@ def test_cancel_stops_a_long_run() -> None:
     result = run_test(spec, cancel=cancel)
     assert result.status == "cancelled"
     assert time.monotonic() - started < 15
+
+
+def test_spec_in_a_folder_with_regex_characters_runs() -> None:
+    folder = specs_dir() / "specs (v2)"
+    folder.mkdir()
+    path = folder / "c++.spec.ts"
+    path.write_text(
+        HEADER + 'test("odd path", async ({ page }) => {\n'
+        f"  await page.setContent(`{FORM}`);\n"
+        '  await expect(page.getByLabel("Name")).toBeVisible();\n});\n',
+        encoding="utf-8",
+    )
+    result = run_test(path)
+    assert result.passed, result.output

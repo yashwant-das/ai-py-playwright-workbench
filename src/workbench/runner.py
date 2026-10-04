@@ -7,6 +7,7 @@ process group, so stopping a run also stops the browsers it launched.
 
 import logging
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -51,7 +52,7 @@ def run_test(
         "npx",
         "playwright",
         "test",
-        str(spec),
+        re.escape(str(spec)),  # Playwright treats file arguments as regexes
         "--config",
         str(WORKSPACE_PLAYWRIGHT_CONFIG),
         "--output",

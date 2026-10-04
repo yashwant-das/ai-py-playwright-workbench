@@ -26,13 +26,15 @@ def read_json_report(path: Path) -> dict[str, Any] | None:
 
 
 def parse_json_report(report: dict[str, Any]) -> RunResult:
-    """Build a RunResult from the first test result in a JSON report.
+    """Build a RunResult from every test result in a JSON report.
 
-    A spec that does not compile has no test results, only top-level errors;
-    that is a failure the healer can work on, not a runner error.
+    The run fails if any test did not pass; the first such test supplies the
+    status, error and attachments. A spec that does not compile has no test
+    results, only top-level errors; that is a failure the healer can work on,
+    not a runner error.
     """
-    result = _first_result(report.get("suites") or [])
-    if result is None:
+    results = _final_results(report.get("suites") or [])
+    if not results:
         errors = report.get("errors") or []
         if errors:
             message, location = _error_text(errors[0])
@@ -41,16 +43,17 @@ def parse_json_report(report: dict[str, Any]) -> RunResult:
             )
         return RunResult(status="error", error_message="Playwright ran no tests.")
 
-    errors = result.get("errors") or []
+    chosen = next((r for r in results if r.get("status") != "passed"), results[0])
+    errors = chosen.get("errors") or []
     message, location = _error_text(errors[0]) if errors else ("", "")
     attachments: dict[str, str] = {}
-    for attachment in result.get("attachments") or []:
+    for attachment in chosen.get("attachments") or []:
         name, path = attachment.get("name"), attachment.get("path")
         if name and path and name not in attachments:
             attachments[name] = path
     return RunResult(
-        status=_STATUS.get(str(result.get("status")), "failed"),
-        duration_ms=int(result.get("duration") or 0),
+        status=_STATUS.get(str(chosen.get("status")), "failed"),
+        duration_ms=sum(int(r.get("duration") or 0) for r in results),
         error_message=message,
         error_location=location,
         screenshot_path=attachments.get("screenshot"),
@@ -59,17 +62,17 @@ def parse_json_report(report: dict[str, Any]) -> RunResult:
     )
 
 
-def _first_result(suites: list[dict[str, Any]]) -> dict[str, Any] | None:
+def _final_results(suites: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The deciding (last retry) result of every test, in report order."""
+    found: list[dict[str, Any]] = []
     for suite in suites:
         for spec in suite.get("specs") or []:
             for test in spec.get("tests") or []:
                 results: list[dict[str, Any]] = test.get("results") or []
                 if results:
-                    return results[-1]  # the final retry decides the outcome
-        nested = _first_result(suite.get("suites") or [])
-        if nested is not None:
-            return nested
-    return None
+                    found.append(results[-1])  # the final retry decides the outcome
+        found.extend(_final_results(suite.get("suites") or []))
+    return found
 
 
 def _error_text(error: dict[str, Any]) -> tuple[str, str]:
