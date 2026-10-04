@@ -87,21 +87,17 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Generate and heal specs against a real browser
-        run: uv run python -m pytest tests/integration -v --junitxml=reports/e2e-pytest.xml
+        env:
+          WORKBENCH_WORKSPACE: ${{ github.workspace }}/workspace
+        run: uv run python -m pytest tests/integration -v --junitxml=reports/integration-pytest.xml
 
-      - name: Re-run generated and healed specs for the report
-        run: npm run test:e2e:report
-
-      - name: Upload E2E artifacts
+      - name: Upload integration artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-report
+          name: integration-report
           path: |
             reports/
-            playwright-report/
-            test-results/
-            tests/generated/
-            tests/artifacts/
+            workspace/
           if-no-files-found: warn
           retention-days: 14

@@ -12,6 +12,6 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": ["tests/**/*", "playwright.config.ts", "playwright.e2e.config.ts", "playwright.workspace.config.ts", "src/**/*"],
+  "include": ["tests/**/*", "playwright.workspace.config.ts", "src/**/*"],
   "exclude": ["node_modules", "dist", "tests/fixtures", ".venv", "samples"]
 }
