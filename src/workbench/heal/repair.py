@@ -1,14 +1,14 @@
 """
 Code repair — AST-first with indentation-tolerant string replacement fallback.
 
-Single responsibility: given the current file content and a HealingDecision,
-return the updated source string.  No filesystem I/O — the caller is
-responsible for writing the returned string.
+Single responsibility: given the current file content and a HealingAction,
+return the updated source and how it was changed.  No filesystem I/O — the
+caller is responsible for writing the returned string.
 
 Repair routing
 --------------
-1. If ``decision.action_taken.repair_strategy`` is anything other than
-   ``STRING_REPLACE``, the ts-morph Node.js script (``scripts/ast_repair.js``)
+1. If ``action.repair_strategy`` is anything other than
+   ``STRING_REPLACE``, the ts-morph Node.js script (``src/workbench/heal/ast_repair.js``)
    is called via subprocess.  The script applies a structural TypeScript AST
    transformation and returns the modified source.
 
@@ -27,11 +27,11 @@ import json
 import logging
 import subprocess
 
-from workbench.models.heal import HealingDecision, RepairStrategy
+from workbench.config import AST_REPAIR_SCRIPT, PROJECT_ROOT
+from workbench.environment import node_available
+from workbench.models.heal import HealingAction, RepairResult, RepairStrategy
 
 logger = logging.getLogger(__name__)
-
-from workbench.config import AST_REPAIR_SCRIPT, PROJECT_ROOT
 
 _AST_SCRIPT = AST_REPAIR_SCRIPT
 
@@ -39,46 +39,46 @@ _AST_SCRIPT = AST_REPAIR_SCRIPT
 # ── public entry point ────────────────────────────────────────────────────────
 
 
-def apply_fix(file_path, current_code: str, decision: HealingDecision) -> str:
-    """Apply the proposed code fix: AST-first, string replacement fallback.
+def apply_fix(code: str, action: HealingAction) -> RepairResult:
+    """Apply the proposed change: AST first, text replacement as the fallback.
 
-    Args:
-        file_path:    Path to the file being modified (used only for logging).
-        current_code: Current file content as a string.
-        decision:     HealingDecision containing the original and fixed code.
-
-    Returns:
-        Updated code string.  Returns ``current_code`` unchanged if no
-        strategy produced a match.
+    Returns the new code and how it was changed; ``method`` is None when no
+    strategy found the code to replace.
     """
-    strategy = decision.action_taken.repair_strategy
-
-    if strategy != RepairStrategy.STRING_REPLACE:
-        ast_result = _apply_ast_fix(current_code, decision)
-        if ast_result != current_code:
-            return ast_result
-        logger.warning(
-            "AST repair (%s) made no changes for %s; falling back to string replacement",
-            strategy.value,
-            file_path,
-        )
-
-    return _apply_string_fix(current_code, decision)
+    ast_unavailable = False
+    if action.repair_strategy != RepairStrategy.STRING_REPLACE:
+        if node_available():
+            new_code = _apply_ast_fix(code, action)
+            if new_code != code:
+                return RepairResult(code=new_code, method="ast")
+            logger.warning(
+                "AST repair (%s) made no change; trying text replacement",
+                action.repair_strategy.value,
+            )
+        else:
+            ast_unavailable = True
+            logger.warning("Node.js not found; using text replacement")
+    new_code = _apply_string_fix(code, action)
+    return RepairResult(
+        code=new_code,
+        method="text" if new_code != code else None,
+        ast_unavailable=ast_unavailable,
+    )
 
 
 # ── AST path (ts-morph via Node.js subprocess) ────────────────────────────────
 
 
-def _apply_ast_fix(current_code: str, decision: HealingDecision) -> str:
-    """Call scripts/ast_repair.js and return the modified source.
+def _apply_ast_fix(current_code: str, action: HealingAction) -> str:
+    """Call src/workbench/heal/ast_repair.js and return the modified source.
 
     Returns ``current_code`` unchanged on any subprocess or parsing failure.
     """
     payload = {
-        "strategy": decision.action_taken.repair_strategy.value,
+        "strategy": action.repair_strategy.value,
         "source": current_code,
-        "original_code": decision.action_taken.original_code,
-        "fixed_code": decision.action_taken.fixed_code,
+        "original_code": action.original_code,
+        "fixed_code": action.fixed_code,
     }
 
     try:
@@ -111,7 +111,7 @@ def _apply_ast_fix(current_code: str, decision: HealingDecision) -> str:
 
         logger.info(
             "AST repair (%s) applied %d change(s)",
-            decision.action_taken.repair_strategy.value,
+            action.repair_strategy.value,
             output["changes"],
         )
         return str(output["source"])
@@ -135,7 +135,7 @@ def _apply_ast_fix(current_code: str, decision: HealingDecision) -> str:
 # ── string path — exact and normalized fallback when all AST strategies miss ──
 
 
-def _apply_string_fix(current_code: str, decision: HealingDecision) -> str:
+def _apply_string_fix(current_code: str, action: HealingAction) -> str:
     """Apply the proposed fix using exact match with normalized fallback.
 
     Strategy 1 — exact string replacement.
@@ -143,8 +143,8 @@ def _apply_string_fix(current_code: str, decision: HealingDecision) -> str:
 
     Returns ``current_code`` unchanged if neither strategy finds a match.
     """
-    target = decision.action_taken.original_code
-    replacement = decision.action_taken.fixed_code
+    target = action.original_code
+    replacement = action.fixed_code
 
     if not target or not replacement:
         return current_code

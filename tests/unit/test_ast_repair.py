@@ -18,44 +18,27 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from workbench.heal.repair import _apply_ast_fix, _apply_string_fix, apply_fix
-from workbench.models.heal import (
-    Evidence,
-    HealingAction,
-    HealingDecision,
-    RepairStrategy,
-)
-from workbench.models.shared import FailureType
+from workbench.models.heal import HealingAction, RepairStrategy
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
-AST_SCRIPT = PROJECT_ROOT / "scripts" / "ast_repair.js"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 
-def _make_decision(
+def _make_action(
     *,
     original_code: str = "",
     fixed_code: str = "",
     description: str = "",
     strategy: RepairStrategy = RepairStrategy.STRING_REPLACE,
-    failure_type: FailureType = FailureType.LOCATOR_DRIFT,
-) -> HealingDecision:
-    return HealingDecision(
-        test_file="dummy.spec.ts",
-        failure_type=failure_type,
-        failure_summary="test summary",
-        evidence=Evidence(error_log="some error"),
-        hypothesis="some hypothesis",
-        confidence_score=0.9,
-        reasoning_steps=["step 1"],
-        action_taken=HealingAction(
-            original_code=original_code,
-            fixed_code=fixed_code,
-            description=description,
-            repair_strategy=strategy,
-        ),
+) -> HealingAction:
+    return HealingAction(
+        original_code=original_code,
+        fixed_code=fixed_code,
+        description=description,
+        repair_strategy=strategy,
     )
 
 
@@ -153,6 +136,11 @@ class TestRepairStrategy(unittest.TestCase):
 class TestApplyFixRouting(unittest.TestCase):
     """apply_fix() routing — subprocess mocked, no live Node.js calls."""
 
+    def setUp(self):
+        patcher = patch("workbench.heal.repair.node_available", return_value=True)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def _mock_ast_success(self, new_source: str, changes: int = 1) -> MagicMock:
         m = MagicMock()
         m.returncode = 0
@@ -173,38 +161,38 @@ class TestApplyFixRouting(unittest.TestCase):
 
     @patch("workbench.heal.repair.subprocess.run")
     def test_string_replace_strategy_skips_subprocess(self, mock_run):
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#old');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.STRING_REPLACE,
         )
         current = "    await page.click('#old');"
-        result = apply_fix("test.ts", current, decision)
+        result = apply_fix(current, action).code
         mock_run.assert_not_called()
         self.assertIn("#new", result)
 
     @patch("workbench.heal.repair.subprocess.run")
     def test_ast_strategy_calls_subprocess(self, mock_run):
         mock_run.return_value = self._mock_ast_success("modified source")
-        decision = _make_decision(
+        action = _make_action(
             original_code="page.locator('#old')",
             fixed_code="page.locator('#new')",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
-        result = apply_fix("test.ts", "original source", decision)
+        result = apply_fix("original source", action).code
         mock_run.assert_called_once()
         self.assertEqual(result, "modified source")
 
     @patch("workbench.heal.repair.subprocess.run")
     def test_ast_failure_falls_back_to_string(self, mock_run):
         mock_run.return_value = self._mock_ast_failure()
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#old');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
         current = "    await page.click('#old');"
-        result = apply_fix("test.ts", current, decision)
+        result = apply_fix(current, action).code
         # AST failed → string fallback applied
         self.assertIn("#new", result)
 
@@ -217,12 +205,12 @@ class TestApplyFixRouting(unittest.TestCase):
         m.stdout = json.dumps({"success": True, "source": original, "changes": 0})
         m.stderr = ""
         mock_run.return_value = m
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#old');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
-        result = apply_fix("test.ts", original, decision)
+        result = apply_fix(original, action).code
         self.assertIn("#new", result)
 
     @patch(
@@ -230,35 +218,35 @@ class TestApplyFixRouting(unittest.TestCase):
         side_effect=subprocess.TimeoutExpired("node", 30),
     )
     def test_ast_timeout_falls_back_to_string(self, _mock_run):
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#old');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
         current = "    await page.click('#old');"
-        result = apply_fix("test.ts", current, decision)
+        result = apply_fix(current, action).code
         self.assertIn("#new", result)
 
     @patch("workbench.heal.repair.subprocess.run", side_effect=FileNotFoundError())
     def test_node_not_found_falls_back_to_string(self, _mock_run):
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#old');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
         current = "    await page.click('#old');"
-        result = apply_fix("test.ts", current, decision)
+        result = apply_fix(current, action).code
         self.assertIn("#new", result)
 
     @patch("workbench.heal.repair.subprocess.run")
     def test_subprocess_input_contains_strategy_and_source(self, mock_run):
         mock_run.return_value = self._mock_ast_success("x")
-        decision = _make_decision(
+        action = _make_action(
             original_code="page.locator('#old')",
             fixed_code="page.locator('#new')",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
-        apply_fix("test.ts", "source code here", decision)
+        apply_fix("source code here", action)
         call_kwargs = mock_run.call_args[1]
         payload = json.loads(call_kwargs["input"])
         self.assertEqual(payload["strategy"], "selector_replace")
@@ -277,12 +265,12 @@ class TestAstRepairIntegration(unittest.TestCase):
     def _run_ast(
         self, strategy: RepairStrategy, source: str, original_code: str, fixed_code: str
     ) -> dict:
-        decision = _make_decision(
+        action = _make_action(
             original_code=original_code,
             fixed_code=fixed_code,
             strategy=strategy,
         )
-        return _apply_ast_fix(source, decision)
+        return _apply_ast_fix(source, action)
 
     # selector_replace ────────────────────────────────────────────────────────
 
@@ -466,12 +454,12 @@ class TestAstRepairIntegration(unittest.TestCase):
         mock_run.return_value = m
 
         source = "const x = 1;"
-        decision = _make_decision(
+        action = _make_action(
             original_code="x",
             fixed_code="y",
             strategy=RepairStrategy.SELECTOR_REPLACE,
         )
-        result = _apply_ast_fix(source, decision)
+        result = _apply_ast_fix(source, action)
         self.assertEqual(result, source)
 
     def test_empty_source_returns_empty(self):
@@ -496,12 +484,12 @@ class TestStringFallback(unittest.TestCase):
         await page.click('#wrong');
         // next line
         """
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#wrong');",
             fixed_code="await page.click('#right');",
             strategy=RepairStrategy.STRING_REPLACE,
         )
-        new_code = apply_fix("dummy.ts", current_code, decision)
+        new_code = apply_fix(current_code, action).code
         self.assertIn("#right", new_code)
         self.assertNotIn("#wrong", new_code)
 
@@ -512,42 +500,42 @@ class TestStringFallback(unittest.TestCase):
         await page.click('#wrong');
     });
 """
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.goto('url');\nawait page.click('#wrong');",
             fixed_code="await page.goto('url');\nawait page.click('#right');",
             strategy=RepairStrategy.STRING_REPLACE,
         )
-        new_code = apply_fix("dummy.ts", current_code, decision)
+        new_code = apply_fix(current_code, action).code
         self.assertIn("#right", new_code)
 
     def test_empty_target_returns_original(self):
         current = "some code"
-        decision = _make_decision(
+        action = _make_action(
             original_code="",
             fixed_code="replacement",
             strategy=RepairStrategy.STRING_REPLACE,
         )
-        result = apply_fix("dummy.ts", current, decision)
+        result = apply_fix(current, action).code
         self.assertEqual(result, current)
 
     def test_no_match_returns_original(self):
         current = "await page.click('#different');"
-        decision = _make_decision(
+        action = _make_action(
             original_code="await page.click('#nonexistent');",
             fixed_code="await page.click('#new');",
             strategy=RepairStrategy.STRING_REPLACE,
         )
-        result = apply_fix("dummy.ts", current, decision)
+        result = apply_fix(current, action).code
         self.assertEqual(result, current)
 
     def test_apply_string_fix_internal_function(self):
         """_apply_string_fix is directly callable for unit testing."""
-        decision = _make_decision(
+        action = _make_action(
             original_code="const x = 1;",
             fixed_code="const x = 2;",
             strategy=RepairStrategy.STRING_REPLACE,
         )
-        result = _apply_string_fix("const x = 1;", decision)
+        result = _apply_string_fix("const x = 1;", action)
         self.assertEqual(result, "const x = 2;")
 
 

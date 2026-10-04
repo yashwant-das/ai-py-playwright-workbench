@@ -121,7 +121,7 @@ def attempt_healing(test_file, max_retries: int = 3) -> str:
                 f"Diagnosed as {decision.failure_type}. Hypothesis: {decision.hypothesis}",
             )
 
-            new_code = apply_fix(validated_path, current_code, decision)
+            new_code = apply_fix(current_code, decision.action_taken).code
             if new_code == current_code:
                 decision.verification_log = "Could not apply fix (code mismatch)"
                 timeline.add_step(

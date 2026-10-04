@@ -13,6 +13,7 @@ verification results).
 
 from datetime import datetime
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -27,7 +28,7 @@ class RepairStrategy(str, Enum):
 
     The planner chooses the strategy most appropriate for the failure type.
     ``string_replace`` is the legacy fallback; all other values trigger the
-    ts-morph AST repair path in ``src/healing/repair.py``.
+    ts-morph AST repair path in ``src/workbench/heal/repair.py``.
 
     | Value              | What the AST script does |
     |--------------------|--------------------------|
@@ -444,3 +445,19 @@ class ExecutionTimeline(BaseModel):
     def to_json(self) -> str:
         """Serialize to a JSON string."""
         return self.model_dump_json(indent=2)
+
+
+RepairMethod = Literal["ast", "text"]
+
+
+class RepairResult(BaseModel):
+    """The code after a repair attempt, and how the change was made."""
+
+    code: str
+    method: RepairMethod | None = Field(
+        default=None, description="None when nothing in the code changed."
+    )
+    ast_unavailable: bool = Field(
+        default=False,
+        description="An AST strategy was requested but Node.js was not found.",
+    )

@@ -202,6 +202,12 @@ class TestHealingDecision(unittest.TestCase):
         d = self._make_decision(failure_type="ASSERTION_FAILED")
         self.assertEqual(d.failure_type, FailureType.ASSERTION_FAILED)
 
+    def test_unknown_failure_type_is_rejected(self):
+        # Invalid LLM output is caught by parse_llm_response(HealingAnalysis);
+        # HealingDecision never silently coerces to UNKNOWN.
+        with self.assertRaises(ValidationError):
+            self._make_decision(failure_type="INVALID_TYPE_BLAH")
+
 
 # ---------------------------------------------------------------------------
 # ExecutionTimeline

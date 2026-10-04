@@ -22,7 +22,6 @@ from workbench.heal.artifact_store import emit_artifacts
 from workbench.heal.classifier import classify_failure_heuristic
 from workbench.heal.evidence import extract_url_from_code
 from workbench.heal.planner import analyze_and_plan
-from workbench.heal.repair import apply_fix
 from workbench.heal.verifier import verify_repair
 from workbench.models.heal import (
     Evidence,
@@ -237,38 +236,6 @@ class TestAnalyzeAndPlan(unittest.TestCase):
         call_kwargs = mock_router.complete_primary.call_args[1]
         user_msg = call_kwargs["messages"][1]["content"]
         self.assertIn("<div>page</div>", user_msg)
-
-
-# ── repair.apply_fix (smoke) ──────────────────────────────────────────────────
-# Full coverage lives in unit_test_fixer.py; this ensures the module is
-# importable independently from workbench.heal.repair.
-
-
-class TestRepairSmoke(unittest.TestCase):
-    def test_exact_match_replaced(self):
-        current = "await page.click('#old');"
-        decision = _make_decision(
-            original_code="await page.click('#old');",
-            fixed_code="await page.click('#new');",
-        )
-        result = apply_fix("test.spec.ts", current, decision)
-        self.assertIn("#new", result)
-        self.assertNotIn("#old", result)
-
-    def test_no_match_returns_original(self):
-        current = "await page.click('#different');"
-        decision = _make_decision(
-            original_code="await page.click('#nonexistent');",
-            fixed_code="await page.click('#new');",
-        )
-        result = apply_fix("test.spec.ts", current, decision)
-        self.assertEqual(result, current)
-
-    def test_empty_target_returns_original(self):
-        current = "some code"
-        decision = _make_decision(original_code="", fixed_code="replacement")
-        result = apply_fix("test.spec.ts", current, decision)
-        self.assertEqual(result, current)
 
 
 # ── verifier.verify_repair ────────────────────────────────────────────────────

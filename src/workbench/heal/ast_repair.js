@@ -17,7 +17,7 @@
  *   role_argument     — update the name option in getByRole() calls
  *   assertion_swap    — rename assertion methods in expect() chains
  *
- * The Python caller in src/healing/repair.py falls back to string replacement
+ * The Python caller in src/workbench/heal/repair.py falls back to string replacement
  * when success is false or changes === 0.
  */
 
