@@ -12,7 +12,7 @@ Run from the repo root:
     uv run python -m pytest tests/integration
 """
 
-import os
+from collections.abc import Iterator
 
 import pytest
 
@@ -21,8 +21,7 @@ from tests.integration.fake_llm import FakeLLM
 from workbench.config import specs_dir
 from workbench.generate import GenerateRequest, generate
 from workbench.heal import HealRequest, heal
-from workbench.llm import _reset_default_router_for_testing, get_default_router
-from workbench.llm.chat import RouterChatModel
+from workbench.llm import OpenAICompatibleModel
 from workbench.reports import load_report
 
 BROKEN_SPEC = f"""import {{ test, expect }} from "@playwright/test";
@@ -38,32 +37,21 @@ test("Submit the contact form after a selector drift", async ({{ page }}) => {{
 
 
 @pytest.fixture(scope="module")
-def fake_llm():
-    overrides = {
-        "LLM_PROVIDER": "lm_studio",
-        "LM_STUDIO_TEXT_MODEL": "fake-model",
-        "LM_STUDIO_API_KEY": "fake-key",
-    }
+def fake_llm() -> Iterator[FakeLLM]:
     with FakeLLM() as llm:
-        overrides["LM_STUDIO_URL"] = llm.base_url
-        saved = {key: os.environ.get(key) for key in overrides}
-        os.environ.update(overrides)
-        _reset_default_router_for_testing()
-        try:
-            yield llm
-        finally:
-            for key, value in saved.items():
-                if value is None:
-                    os.environ.pop(key, None)
-                else:
-                    os.environ[key] = value
-            _reset_default_router_for_testing()
+        yield llm
+
+
+def _model(llm: FakeLLM) -> OpenAICompatibleModel:
+    return OpenAICompatibleModel(
+        provider="lm_studio", base_url=llm.base_url, model="fake-model"
+    )
 
 
 def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
     report = generate(
         GenerateRequest(url=site, scenario="A user can submit the contact form"),
-        model=RouterChatModel(get_default_router()),
+        model=_model(fake_llm),
     )
 
     prompts = fake_llm.prompts_containing("## Target URL")
@@ -84,13 +72,16 @@ def test_heal_loop_repairs_a_drifted_selector(site, fake_llm):
 
     report = heal(
         HealRequest(spec_path=spec, max_attempts=2),
-        model=RouterChatModel(get_default_router()),
+        model=_model(fake_llm),
     )
 
     assert report.status == "healed", report.model_dump_json(indent=2)
     prompts = fake_llm.prompts_containing("## Test file")
     assert prompts, "healer never called the LLM"
     assert "## Page snapshot at failure" in prompts[-1]
+    # E5 end to end: the healer asked for schema-constrained output.
+    healer_calls = [r for r in fake_llm.requests if "response_format" in r]
+    assert healer_calls[-1]["response_format"]["type"] == "json_schema"
     healed = spec.read_text(encoding="utf-8")
     assert 'locator("#submit-btn")' not in healed
     assert '[data-testid="submit"]' in healed

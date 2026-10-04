@@ -31,15 +31,19 @@ src/workbench/          the Python package
 ├── heal/               pipeline.py (heal), evidence, planner, repair (+ ast_repair.js), classifier
 ├── generate/           pipeline.py (generate)
 ├── context/            page context: aria snapshot, console, page errors, requests
-├── llm/                chat.py (ChatModel), router (until Phase 3), parsing, prompts
+├── llm/                chat.py (ChatModel), client.py (LM Studio, Ollama), demo.py, providers.py, parsing, prompts
+├── settings.py         the saved model choice: workspace/settings.json
+├── samples.py          the bundled samples; install_sample()
 ├── models/             Pydantic contracts: reports, events, model output
 ├── prompts/            prompt files and manifest.json
 ├── validation.py       input checks
 └── text.py             clean_ansi_codes()
-samples/site/           sample web app used by tests
+samples/site/           sample web app the samples run against
+samples/specs/          sample specs with a {{BASE_URL}} placeholder
+samples/recordings/     the Demo provider's recorded answers
 tests/unit/             default pytest run: no model, no browser, no network
 tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
-workspace/              runtime output (git-ignored): specs/, runs/, reports/
+workspace/              runtime output (git-ignored): specs/, runs/, reports/, settings.json
 playwright.workspace.config.ts  the config the runner uses for every spec
 ```
 
@@ -66,7 +70,8 @@ npm run type-check                         # TypeScript
 - Subprocesses use argument lists, never `shell=True`.
 - Tests never need a live model, browser or network unless they live in `tests/integration/`.
 - Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
-- `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer).
+- `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
+- No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
 
 ## Commits
 

@@ -7,9 +7,10 @@ from pathlib import Path
 from workbench.config import PROJECT_ROOT
 
 LEGACY_IMPORT = re.compile(
-    r"^\s*(?:from|import)\s+(?:src|schemas|benchmarks|gradio)\b"
+    r"^\s*(?:from|import)\s+(?:src|schemas|benchmarks|gradio|dotenv)\b"
     r"|[\"'](?:src|schemas)\.[a-z_]"
-    r"|observability\.(?:tracer|writer)|get_tracer\(",
+    r"|observability\.(?:tracer|writer)|get_tracer\("
+    r"|workbench\.llm\.(?:router|registry|policies)\b|get_default_router\(",
     re.MULTILINE,
 )
 
@@ -64,6 +65,10 @@ def test_legacy_top_level_folders_are_gone() -> None:
         "src/context",
         "src/llm",
         "src/observability",
+        ".env.example",
+        "src/workbench/llm/router.py",
+        "src/workbench/llm/registry.py",
+        "src/workbench/llm/policies.py",
     ]
     assert tracked_paths(PROJECT_ROOT, legacy) == []
 

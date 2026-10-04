@@ -2,12 +2,14 @@
 Fake OpenAI-compatible LLM server for the end-to-end suite.
 
 Serves ``POST /v1/chat/completions`` with scripted answers so the real
-LLMRouter → OpenAI client → HTTP path runs in CI without a model:
+OpenAICompatibleModel → HTTP path runs in CI without a model:
 
   - generator prompts (``## Target URL``) get a Playwright spec that targets the
     URL from the prompt;
   - healer prompts (``## Test file``) get a HealingAnalysis that swaps the
     drifted ``#submit-btn`` selector for ``[data-testid="submit"]``.
+
+``GET /v1/models`` lists an embedding model and ``fake-model``, so detection must skip the first.
 
 Every request body is kept in ``FakeLLM.requests`` so tests can assert on the
 context the pipeline actually sent.
@@ -50,6 +52,15 @@ HEALING_ANALYSIS = {
 }
 
 
+MODEL_LIST = {
+    "object": "list",
+    "data": [
+        {"id": "text-embedding-nomic-embed-text-v1.5", "object": "model"},
+        {"id": "fake-model", "object": "model"},
+    ],
+}
+
+
 def _answer(messages: list[dict]) -> str:
     user = next((m["content"] for m in messages if m["role"] == "user"), "")
     if "## Test file" in user:
@@ -68,6 +79,17 @@ class FakeLLM:
         self.requests: list[dict] = []
 
         class Handler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:  # noqa: N802 (http.server API)
+                if self.path.rstrip("/") != "/v1/models":
+                    self.send_error(404)
+                    return
+                payload = json.dumps(MODEL_LIST).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(payload)))
+                self.end_headers()
+                self.wfile.write(payload)
+
             def do_POST(self) -> None:  # noqa: N802 (http.server API)
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length) or b"{}")

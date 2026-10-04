@@ -1,89 +1,25 @@
-"""
-LLM layer — factory, registry, router, and policies.
+"""Talking to models.
 
-Public API
-----------
-LLMClientFactory   creates OpenAI clients on demand (no module-level side effects)
-ModelCapabilities  capability descriptor for a registered model
-ModelRegistry      model capability registry; call from_env() to populate
-LLMRequest         normalized chat completion request (Pydantic)
-LLMResponse        normalized response with observability metadata (Pydantic)
-LLMRouter          central dispatch with retry, fallback, and structured logging
-RetryPolicy        configurable retry with exponential backoff (Pydantic)
-TimeoutPolicy      per-call timeout configuration (Pydantic)
-ProviderConfig     provider endpoint configuration (Pydantic)
-
-Convenience
------------
-get_default_router()  returns the module-level lazily initialised LLMRouter
-
-Example
--------
-    from workbench.llm import get_default_router
-
-    router = get_default_router()
-    response = router.complete_primary(messages=[
-        {"role": "system", "content": "You are a helpful assistant."},
-        {"role": "user",   "content": "Write a hello-world Playwright test."},
-    ])
-    print(response.content)
-    print(f"Took {response.latency_ms}ms, {response.output_tokens} tokens")
+ChatModel, ChatReply, ModelError   the interface pipelines use (chat.py)
+OpenAICompatibleModel, list_models  LM Studio and Ollama (client.py)
+DemoModel                           recorded answers for the bundled samples (demo.py)
+detect_provider, check_connection, build_model
+                                    choosing and reaching a provider (providers.py)
 """
 
-from __future__ import annotations
-
-from workbench.llm.policies import RetryPolicy, TimeoutPolicy
-from workbench.llm.registry import ModelCapabilities, ModelRegistry
-from workbench.llm.router import (
-    LLMClientFactory,
-    LLMRequest,
-    LLMResponse,
-    LLMRouter,
-    ProviderConfig,
-)
-
-# ---------------------------------------------------------------------------
-# Module-level lazy singleton — no OpenAI() call at import time.
-# ---------------------------------------------------------------------------
-
-_default_router: LLMRouter | None = None
-
-
-def get_default_router() -> LLMRouter:
-    """Return the default LLMRouter, building it from environment variables on first call.
-
-    The singleton is created lazily — no side effects at import time.
-    The underlying OpenAI client is itself lazy; the first actual network call
-    happens when complete() is called.
-
-    Returns:
-        The shared LLMRouter instance for this process.
-    """
-    global _default_router
-    if _default_router is None:
-        _default_router = LLMRouter.from_env()
-    return _default_router
-
-
-def _reset_default_router_for_testing() -> None:
-    """Reset the module-level router singleton.
-
-    For use in unit tests that need to construct the router under
-    different environment variable conditions.  Not part of the public API.
-    """
-    global _default_router
-    _default_router = None
-
+from workbench.llm.chat import ChatModel, ChatReply, ModelError
+from workbench.llm.client import OpenAICompatibleModel, list_models
+from workbench.llm.demo import DemoModel
+from workbench.llm.providers import build_model, check_connection, detect_provider
 
 __all__ = [
-    "LLMClientFactory",
-    "LLMRequest",
-    "LLMResponse",
-    "LLMRouter",
-    "ModelCapabilities",
-    "ModelRegistry",
-    "ProviderConfig",
-    "RetryPolicy",
-    "TimeoutPolicy",
-    "get_default_router",
+    "ChatModel",
+    "ChatReply",
+    "DemoModel",
+    "ModelError",
+    "OpenAICompatibleModel",
+    "build_model",
+    "check_connection",
+    "detect_provider",
+    "list_models",
 ]
