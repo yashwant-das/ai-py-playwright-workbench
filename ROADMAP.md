@@ -40,7 +40,7 @@ the same commit as the work it describes.
 
 | Item | Phase | Plan |
 | --- | --- | --- |
-| LM Studio, Ollama and Demo providers chosen in the UI; no `.env` | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
+| LM Studio, Ollama and Demo providers; the choice is saved in the workspace (the UI arrives in Phase 4); no `.env` | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | Bundled samples: selector drift and app bug | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | `workbench` package and test layout | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
 | Remove the Gradio UI, services, CLI, vision pipeline, tracer, benchmarks and Docker | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |
