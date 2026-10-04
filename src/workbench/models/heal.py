@@ -108,19 +108,18 @@ class Evidence(BaseModel):
         Args:
             error_log:       Raw error output from the failing test run.
             snapshot:        ContextSnapshot collected from the target URL.
-            screenshot_path: Path to a Playwright failure screenshot.  Takes
-                             precedence over any screenshot in the snapshot.
+            screenshot_path: Path to a Playwright failure screenshot.
 
         Returns:
             Evidence populated with all available context fields.
         """
         return cls(
             error_log=error_log,
-            screenshot_path=screenshot_path or snapshot.screenshot_path,
+            screenshot_path=screenshot_path,
             dom_snippet=snapshot.html,
             console_errors=list(snapshot.console_errors),
             network_errors=list(snapshot.network_errors),
-            accessibility_tree=snapshot.accessibility_tree,
+            accessibility_tree=snapshot.aria_snapshot,
             locator_candidates=list(snapshot.locator_candidates),
         )
 

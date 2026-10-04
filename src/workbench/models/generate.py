@@ -99,8 +99,8 @@ class GenerationDecision(ProvenanceRecord):
             if snap.html:
                 excerpt = snap.html[:500].replace("```", "` ` `")
                 ctx_parts.append(f"**DOM (first 500 chars):**\n```html\n{excerpt}\n```")
-            if snap.accessibility_tree:
-                excerpt = snap.accessibility_tree[:500]
+            if snap.aria_snapshot:
+                excerpt = snap.aria_snapshot[:500]
                 ctx_parts.append(
                     f"**Accessibility Tree (first 500 chars):**\n```\n{excerpt}\n```"
                 )

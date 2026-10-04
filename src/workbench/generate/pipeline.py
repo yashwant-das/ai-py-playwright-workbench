@@ -38,19 +38,17 @@ def generate_test_script(url: str, feature_description: str) -> GenerationDecisi
 
     from workbench.context import collect_context
 
-    snapshot = collect_context(url, capture_html=True, capture_a11y=True)
+    snapshot = collect_context(url)
 
-    if not snapshot.html and not snapshot.accessibility_tree:
+    if snapshot.is_empty:
         raise ValueError(f"Failed to fetch page context from {url}")
 
     # Build a richer PAGE CONTEXT block from the snapshot
     context_parts: list[str] = []
     if snapshot.html:
         context_parts.append(snapshot.html)
-    if snapshot.accessibility_tree:
-        context_parts.append(
-            f"ACCESSIBILITY TREE:\n{snapshot.accessibility_tree[:5000]}"
-        )
+    if snapshot.aria_snapshot:
+        context_parts.append(f"PAGE SNAPSHOT:\n{snapshot.aria_snapshot[:5000]}")
     if snapshot.locator_candidates:
         cands = "\n".join(f"  - {c}" for c in snapshot.locator_candidates)
         context_parts.append(f"LOCATOR CANDIDATES (prefer these):\n{cands}")

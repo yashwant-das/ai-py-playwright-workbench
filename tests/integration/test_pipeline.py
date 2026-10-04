@@ -16,26 +16,19 @@ re-run them for the HTML report and JUnit XML.
 
 import json
 import os
-import threading
-from functools import partial
-from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 import pytest
 
+from tests.integration.conftest import SITE_URL
 from tests.integration.fake_llm import FakeLLM
 from workbench.generate.pipeline import generate_test_script
 from workbench.heal import attempt_healing, run_test
 from workbench.llm import _reset_default_router_for_testing
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-SITE_DIR = PROJECT_ROOT / "samples" / "site"
 GENERATED_DIR = PROJECT_ROOT / "tests" / "generated"
 ARTIFACTS_DIR = PROJECT_ROOT / "tests" / "artifacts"
-
-# Fixed so playwright.e2e.config.ts can serve the same URL the specs contain.
-SITE_PORT = int(os.getenv("E2E_SITE_PORT", "4173"))
-SITE_URL = f"http://127.0.0.1:{SITE_PORT}/"
 
 GENERATED_SPEC = GENERATED_DIR / "e2e_generated_contact.spec.ts"
 HEALED_SPEC = GENERATED_DIR / "e2e_healed_contact.spec.ts"
@@ -50,22 +43,6 @@ test("Submit the contact form after a selector drift", async ({{ page }}) => {{
   await expect(page.locator("#result")).toHaveText("Submitted");
 }});
 """
-
-
-class _QuietHandler(SimpleHTTPRequestHandler):
-    def log_message(self, *args) -> None:
-        pass
-
-
-@pytest.fixture(scope="module")
-def site():
-    handler = partial(_QuietHandler, directory=str(SITE_DIR))
-    server = ThreadingHTTPServer(("127.0.0.1", SITE_PORT), handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield SITE_URL
-    server.shutdown()
-    server.server_close()
 
 
 @pytest.fixture(scope="module")
@@ -104,7 +81,7 @@ def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
     # The generator collected live page context from Chromium and sent it on.
     prompts = fake_llm.prompts_containing("USER STORY:")
     assert prompts, "generator never called the LLM"
-    assert "ACCESSIBILITY TREE" in prompts[-1]
+    assert "PAGE SNAPSHOT" in prompts[-1]
     assert "Submit" in prompts[-1]
 
     assert site in decision.code

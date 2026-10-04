@@ -68,14 +68,7 @@ def gather_evidence(test_file, result: RunResult) -> Evidence:
     if url:
         try:
             logger.info("Collecting page context from %s...", url)
-            snapshot = collect_context(
-                url,
-                capture_html=True,
-                capture_a11y=True,
-                capture_screenshot=False,  # Playwright's own screenshot is preferred
-                capture_console=True,
-                capture_network=True,
-            )
+            snapshot = collect_context(url)
             return Evidence.from_context_snapshot(
                 error_log=logs,
                 snapshot=snapshot,
