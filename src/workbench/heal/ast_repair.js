@@ -85,6 +85,49 @@ function extractFirstStringLiteral(code) {
 }
 
 /**
+ * Like extractFirstStringLiteral, but return the literal with its quotes.
+ *   "page.locator('#old').click()"     → "'#old'"
+ *   "#old"                             → null
+ */
+function firstQuotedLiteral(code) {
+  let earliest = null;
+  for (const pat of [/'(?:[^'\\]|\\.)*'/, /"(?:[^"\\]|\\.)*"/, /`(?:[^`\\]|\\.)*`/]) {
+    const m = code.match(pat);
+    if (m !== null && (earliest === null || m.index < earliest.index)) earliest = m;
+  }
+  return earliest ? earliest[0] : null;
+}
+
+/**
+ * True when fixed_code differs from original_code only in its selector:
+ * original_code with its first quoted literal swapped for fixed_code's first
+ * quoted literal must equal fixed_code, ignoring whitespace.  Two bare
+ * selectors (no quotes on either side, e.g. "#old" → "#new") also count; a
+ * quoted literal on one side only cannot be checked, so it does not.
+ */
+function changesOnlyTheSelector(originalCode, fixedCode) {
+  const litOld = firstQuotedLiteral(originalCode);
+  const litNew = firstQuotedLiteral(fixedCode);
+  if (!litOld && !litNew) return true;
+  if (!litOld || !litNew) return false;
+  const squash = (s) => s.replace(/\s+/g, '');
+  return squash(originalCode.replace(litOld, () => litNew)) === squash(fixedCode);
+}
+
+/**
+ * The method whose call takes original_code's selector, if it names one.
+ *   "page.locator('#old').click()"     → "locator"
+ *   "'#old'" / "#old"                  → null
+ */
+function selectorMethodName(originalCode) {
+  const literal = firstQuotedLiteral(originalCode);
+  if (!literal) return null;
+  const before = originalCode.slice(0, originalCode.indexOf(literal));
+  const m = before.match(/(\w+)\s*\(\s*$/);
+  return m ? m[1] : null;
+}
+
+/**
  * Determine which quote character surrounds the selector in fixed_code.
  * Falls back to single quote.
  */
@@ -120,8 +163,17 @@ function extractLastMethodName(code) {
  * selector_replace: Find all locator/getByX calls whose first string argument
  * matches original_code (or the selector extracted from it) and replace with
  * the selector from fixed_code.
+ *
+ * Declines (0 changes) when fixed_code changes more than the selector, e.g.
+ * locator('#a') → getByRole('button', …): the caller then applies the whole
+ * fix as text.  When original_code names the method (locator, getByText, …),
+ * only calls of that method are rewritten.
  */
 function selectorReplace(sourceFile, originalCode, fixedCode) {
+  if (!changesOnlyTheSelector(originalCode, fixedCode)) {
+    return { changes: 0, error: 'fixed_code changes more than the selector' };
+  }
+
   const selectorOld = extractFirstStringLiteral(originalCode) || originalCode.trim();
   const selectorNew = extractFirstStringLiteral(fixedCode) || fixedCode.trim();
 
@@ -145,6 +197,7 @@ function selectorReplace(sourceFile, originalCode, fixedCode) {
 
   let changes = 0;
   const quoteChar = detectQuoteChar(fixedCode);
+  const namedMethod = selectorMethodName(originalCode);
 
   for (const call of sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)) {
     const expr = call.getExpression();
@@ -157,6 +210,7 @@ function selectorReplace(sourceFile, originalCode, fixedCode) {
     }
 
     if (!LOCATOR_METHODS.has(methodName)) continue;
+    if (namedMethod !== null && methodName !== namedMethod) continue;
 
     const args = call.getArguments();
     if (args.length === 0) continue;

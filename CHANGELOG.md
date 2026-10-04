@@ -60,6 +60,9 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 - The runner uses Playwright's test outcomes (skipped tests, `test.fail()`,
   "No tests found") and stops at the first failure.
+- The syntax-tree selector repair no longer rewrites a model's locator fix
+  into a different call; fixes that change more than the selector are applied
+  as written.
 
 ## [1.0.0] - 2026-09-28
 

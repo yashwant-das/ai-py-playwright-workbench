@@ -2,6 +2,8 @@
 
 import pytest
 
+from workbench.config import SAMPLE_SPECS_DIR
+from workbench.environment import node_available
 from workbench.heal import repair
 from workbench.heal.repair import apply_fix
 from workbench.models.heal import REPAIR_STRATEGY_LABELS, HealingAction, RepairStrategy
@@ -94,6 +96,20 @@ def test_missing_node_falls_back_to_text_and_says_so(
     assert result.method == "text"
     assert result.ast_unavailable
     assert result.code == 'await page.locator("#new").click();'
+
+
+@pytest.mark.skipif(not node_available(), reason="Node.js is needed for the AST repair")
+def test_a_locator_fix_that_changes_the_call_is_applied_as_written() -> None:
+    spec = (SAMPLE_SPECS_DIR / "contact-form.spec.ts").read_text()
+    action = _action(
+        "page.locator('#submit-btn').click({ timeout: 3000 })",
+        "page.getByRole('button', { name: 'Submit' }).click()",
+        RepairStrategy.SELECTOR_REPLACE,
+    )
+    result = apply_fix(spec, action)
+    assert result.method == "text"
+    assert "page.getByRole('button', { name: 'Submit' }).click();" in result.code
+    assert "locator('button')" not in result.code
 
 
 def test_every_strategy_has_a_label() -> None:

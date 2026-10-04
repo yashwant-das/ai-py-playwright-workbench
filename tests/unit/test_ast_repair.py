@@ -17,11 +17,15 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from workbench.config import SAMPLE_SPECS_DIR
 from workbench.heal.repair import _apply_ast_fix, _apply_string_fix, apply_fix
 from workbench.models.heal import HealingAction, RepairStrategy
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 FIXTURES_DIR = PROJECT_ROOT / "tests" / "fixtures"
+SAMPLE_SPEC = SAMPLE_SPECS_DIR / "contact-form.spec.ts"
+# The drifted line of the Selector drift sample, as a model quotes it.
+SAMPLE_LINE = "page.locator('#submit-btn').click({ timeout: 3000 })"
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -334,6 +338,72 @@ class TestAstRepairIntegration(unittest.TestCase):
             "page.locator('#new')",
         )
         self.assertEqual(result, source)
+
+    def test_selector_replace_declines_a_switch_to_get_by_role(self):
+        """A fix that changes the call, not just the selector, is not an AST edit."""
+        source = SAMPLE_SPEC.read_text()
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE,
+            source,
+            SAMPLE_LINE,
+            "page.getByRole('button', { name: 'Submit' }).click()",
+        )
+        self.assertEqual(result, source)
+
+    def test_selector_replace_declines_a_switch_to_get_by_test_id(self):
+        source = SAMPLE_SPEC.read_text()
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE,
+            source,
+            "page.locator('#submit-btn')",
+            "page.getByTestId('submit')",
+        )
+        self.assertEqual(result, source)
+
+    def test_selector_replace_declines_a_selector_moved_into_a_variable(self):
+        source = SAMPLE_SPEC.read_text()
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE,
+            source,
+            "page.locator('#submit-btn')",
+            "page.locator(submitButton)",
+        )
+        self.assertEqual(result, source)
+
+    def test_selector_replace_keeps_the_rest_of_the_line_on_a_quote_change(self):
+        source = SAMPLE_SPEC.read_text()
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE,
+            source,
+            SAMPLE_LINE,
+            "page.locator(\"[data-testid='submit']\").click({ timeout: 3000 })",
+        )
+        self.assertIn(
+            "page.locator(\"[data-testid='submit']\").click({ timeout: 3000 });",
+            result,
+        )
+        self.assertNotIn("#submit-btn", result)
+
+    def test_selector_replace_accepts_bare_selectors(self):
+        source = SAMPLE_SPEC.read_text()
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE, source, "#submit-btn", "#send"
+        )
+        self.assertIn("page.locator('#send').click({ timeout: 3000 });", result)
+
+    def test_selector_replace_only_rewrites_the_method_the_fix_names(self):
+        source = (
+            "await page.locator('#submit-btn').click();\n"
+            'await expect(page.getByText("#submit-btn")).toBeHidden();'
+        )
+        result = self._run_ast(
+            RepairStrategy.SELECTOR_REPLACE,
+            source,
+            "page.locator('#submit-btn')",
+            "page.locator('#send')",
+        )
+        self.assertIn("page.locator('#send').click();", result)
+        self.assertIn('page.getByText("#submit-btn")', result)
 
     # import_add ──────────────────────────────────────────────────────────────
 
