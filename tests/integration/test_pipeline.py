@@ -11,8 +11,9 @@ Run from the repo root:
 
     uv run python -m pytest tests/integration
 
-The specs are left in tests/generated/ so ``npm run test:e2e:report`` can
-re-run them for the HTML report and JUnit XML.
+The generated spec is left in tests/generated/ so ``npm run test:e2e:report``
+can re-run it for the HTML report and JUnit XML; the healed spec lives in
+``specs_dir()``.
 """
 
 import os

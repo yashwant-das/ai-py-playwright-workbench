@@ -84,6 +84,9 @@ class _HealRun:
         self.model, self.run, self.collect = model, run, collect
         self.browsers_ready = browsers_ready
         self.cancel = cancel or threading.Event()
+        # Restoring uses the raw bytes (line endings included); the pipeline
+        # itself works on the decoded text.
+        self.original_bytes = self.spec.read_bytes()
         self.original = self.spec.read_text(encoding="utf-8")
         self.code = self.original
         self.report = HealReport(
@@ -100,6 +103,24 @@ class _HealRun:
         self.started = time.monotonic()
 
     def execute(self) -> HealReport:
+        """Run the heal; the spec is restored unless it ends ``healed``, even on an exception."""
+        try:
+            return self._execute()
+        except BaseException:
+            self._restore_spec()
+            raise
+
+    def _restore_spec(self) -> None:
+        """Put the original bytes back, writing only if the file differs."""
+        try:
+            current: bytes | None = self.spec.read_bytes()
+        except FileNotFoundError:
+            current = None
+        if current != self.original_bytes:
+            self.spec.write_bytes(self.original_bytes)
+        self.code = self.original
+
+    def _execute(self) -> HealReport:
         if not self.browsers_ready():
             self.warnings.add("playwright_browsers_missing")
             return self.finish(
@@ -110,9 +131,10 @@ class _HealRun:
         result = self.run(self.spec, self.run_root / "initial", cancel=self.cancel)
         self.report.initial_run = result
         if result.status == "cancelled":
+            self.events.step("run", "skipped", "Cancelled")
             return self.finish("cancelled")
         if result.status == "error":
-            self.events.step("run", "failed", result.error_message)
+            self.events.step("run", "failed", _first_line(result.error_message))
             return self.finish("error", result.error_message)
         if result.passed:
             self.events.step("run", "done", "Passed on the first run")
@@ -156,8 +178,12 @@ class _HealRun:
             )
         except ModelError as exc:
             self.events.step("diagnose", "failed", str(exc))
-            self.report.error_message = f"The model could not be reached: {exc}"
+            self.report.error_message = f"The model call failed: {exc}"
             return "error", result
+        if self.cancel.is_set():
+            self.events.step("diagnose", "skipped", "Cancelled")
+            record("cancelled", evidence=evidence, analysis=analysis, exchange=exchange)
+            return "cancelled", result
         if analysis is None:
             self.events.step("diagnose", "failed", "The reply did not match the schema")
             record("invalid_reply", evidence=evidence, exchange=exchange)
@@ -208,6 +234,7 @@ class _HealRun:
             "rerun": rerun,
         }
         if rerun.status == "cancelled":
+            self.events.step("verify", "skipped", "Cancelled")
             record("cancelled", **fields)
             return "cancelled", rerun
         if rerun.passed:
@@ -220,8 +247,7 @@ class _HealRun:
 
     def finish(self, status: HealStatus, error_message: str = "") -> HealReport:
         if status != "healed":
-            self.spec.write_text(self.original, encoding="utf-8")
-            self.code = self.original
+            self._restore_spec()
         report = self.report
         report.status = status
         if error_message:

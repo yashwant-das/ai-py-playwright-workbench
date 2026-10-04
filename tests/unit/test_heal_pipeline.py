@@ -284,3 +284,160 @@ def test_events_describe_the_run(spec: Path, tmp_path: Path) -> None:
     ]
     assert events[-1].kind == "done" and events[-1].detail == "healed"
     assert [e.seq for e in events] == list(range(1, len(events) + 1))
+
+
+def test_exception_during_verification_restores_the_spec(
+    spec: Path, tmp_path: Path
+) -> None:
+    def explode_on_rerun(call: int) -> None:
+        if call == 2:
+            raise RuntimeError("runner crashed")
+
+    runner = FakeRunner(tmp_path, "failed", "passed", on_call=explode_on_rerun)
+    with pytest.raises(RuntimeError, match="runner crashed"):
+        run_heal(spec, FakeModel(reply()), runner)
+    assert spec.read_bytes() == BROKEN.encode()
+
+
+def test_keyboard_interrupt_restores_the_spec(spec: Path, tmp_path: Path) -> None:
+    def interrupt_on_rerun(call: int) -> None:
+        if call == 2:
+            raise KeyboardInterrupt
+
+    runner = FakeRunner(tmp_path, "failed", "passed", on_call=interrupt_on_rerun)
+    with pytest.raises(KeyboardInterrupt):
+        run_heal(spec, FakeModel(reply()), runner)
+    assert spec.read_bytes() == BROKEN.encode()
+
+
+def test_exception_in_an_event_callback_restores_the_spec(
+    spec: Path, tmp_path: Path
+) -> None:
+    def explode_on_verify(event: RunEvent) -> None:
+        if event.step == "verify":
+            raise RuntimeError("listener crashed")
+
+    with pytest.raises(RuntimeError, match="listener crashed"):
+        run_heal(
+            spec,
+            FakeModel(reply()),
+            FakeRunner(tmp_path, "failed", "passed"),
+            emit=explode_on_verify,
+        )
+    assert spec.read_bytes() == BROKEN.encode()
+
+
+def test_crlf_spec_is_restored_byte_for_byte(spec: Path, tmp_path: Path) -> None:
+    crlf = BROKEN.replace("\n", "\r\n").encode()
+    spec.write_bytes(crlf)
+    runner = FakeRunner(tmp_path, "failed", "failed")
+    report = run_heal(spec, FakeModel(reply()), runner, max_attempts=1)
+    assert report.status == "not_healed"
+    assert spec.read_bytes() == crlf
+
+
+def test_unedited_spec_is_not_rewritten(spec: Path, tmp_path: Path) -> None:
+    crlf = BROKEN.replace("\n", "\r\n").encode()
+    spec.write_bytes(crlf)
+    spec.chmod(0o444)  # a write of any kind would raise
+    try:
+        report = run_heal(spec, FakeModel(), FakeRunner(tmp_path, "passed"))
+    finally:
+        spec.chmod(0o644)
+    assert report.status == "nothing_to_heal"
+    assert spec.read_bytes() == crlf
+
+
+def test_cancel_after_the_diagnosis_stops_before_any_edit(
+    spec: Path, tmp_path: Path
+) -> None:
+    cancel = threading.Event()
+
+    class CancellingModel(FakeModel):
+        def chat(self, messages, *, json_schema=None, temperature=0.1) -> ChatReply:
+            cancel.set()
+            return super().chat(
+                messages, json_schema=json_schema, temperature=temperature
+            )
+
+    runner = FakeRunner(tmp_path, "failed")
+    report = run_heal(spec, CancellingModel(reply()), runner, cancel=cancel)
+    assert report.status == "cancelled"
+    assert [a.outcome for a in report.attempts] == ["cancelled"]
+    assert len(runner.calls) == 1  # no rerun
+    assert spec.read_bytes() == BROKEN.encode()
+
+
+def test_app_defect_guard_boundary_is_inclusive(spec: Path, tmp_path: Path) -> None:
+    at = run_heal(
+        spec,
+        FakeModel(reply("POTENTIAL_APP_DEFECT", 0.7, "", "")),
+        FakeRunner(tmp_path, "failed"),
+    )
+    assert at.status == "app_defect_suspected"
+    assert [a.outcome for a in at.attempts] == ["app_defect"]
+
+    below = run_heal(
+        spec,
+        FakeModel(reply("POTENTIAL_APP_DEFECT", 0.69)),
+        FakeRunner(tmp_path, "failed", "passed"),
+    )
+    assert below.status == "healed"
+
+
+def _last_states(events: list[RunEvent]) -> dict[str, str]:
+    states: dict[str, str] = {}
+    for event in events:
+        if event.kind == "step" and event.step and event.state:
+            states[event.step] = event.state
+    return states
+
+
+def test_cancelled_initial_run_closes_its_step(spec: Path, tmp_path: Path) -> None:
+    events: list[RunEvent] = []
+    report = run_heal(
+        spec, FakeModel(), FakeRunner(tmp_path, "cancelled"), emit=events.append
+    )
+    assert report.status == "cancelled"
+    assert _last_states(events)["run"] in {"done", "failed", "skipped"}
+
+
+def test_cancelled_verification_closes_its_step(spec: Path, tmp_path: Path) -> None:
+    events: list[RunEvent] = []
+    run_heal(
+        spec,
+        FakeModel(reply()),
+        FakeRunner(tmp_path, "failed", "cancelled"),
+        emit=events.append,
+    )
+    assert _last_states(events)["verify"] in {"done", "failed", "skipped"}
+
+
+def test_runner_error_detail_is_the_first_line(spec: Path, tmp_path: Path) -> None:
+    events: list[RunEvent] = []
+
+    def run(spec_path: Path, run_dir: Path | None = None, **kwargs: Any) -> RunResult:
+        return RunResult(status="error", error_message="first line\nsecond line")
+
+    heal(
+        HealRequest(spec_path=spec),
+        model=FakeModel(),
+        run=run,
+        collect=no_page,
+        browsers_ready=lambda: True,
+        emit=events.append,
+    )
+    failed = [e for e in events if e.step == "run" and e.state == "failed"]
+    assert [e.detail for e in failed] == ["first line"]
+
+
+def test_model_failure_headline_does_not_claim_unreachable(
+    spec: Path, tmp_path: Path
+) -> None:
+    report = run_heal(
+        spec,
+        FakeModel(ModelError("context length exceeded")),
+        FakeRunner(tmp_path, "failed"),
+    )
+    assert report.status == "error"
+    assert report.error_message == "The model call failed: context length exceeded"
