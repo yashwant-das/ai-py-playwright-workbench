@@ -126,6 +126,20 @@ def test_unreachable_server_names_the_provider() -> None:
         _model(refuse, provider="ollama").chat(MESSAGES)
 
 
+def test_an_invalid_port_is_a_model_error_naming_the_server() -> None:
+    model = OpenAICompatibleModel(
+        provider="ollama",
+        base_url="http://localhost:abc/v1",
+        model="m-1",
+        http_client=httpx.Client(transport=httpx.MockTransport(_unreachable)),
+    )
+    with pytest.raises(
+        ModelError,
+        match=r"Ollama at http://localhost:abc/v1 is not a valid server URL",
+    ):
+        model.chat(MESSAGES)
+
+
 def test_timeout_is_reported_as_such() -> None:
     def stall(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("slow", request=request)
@@ -143,6 +157,10 @@ def test_unknown_model_says_so() -> None:
 
 def test_empty_content_becomes_an_empty_reply() -> None:
     assert _model(lambda _: _completion(None)).chat(MESSAGES).content == ""
+
+
+def _unreachable(request: httpx.Request) -> httpx.Response:
+    raise AssertionError(f"no request should be sent to {request.url}")
 
 
 def _listing(handler: Handler) -> list[str]:
@@ -184,6 +202,13 @@ def test_list_models_reports_an_unreachable_server() -> None:
 
     with pytest.raises(ModelError, match="No answer from"):
         _listing(refuse)
+
+
+@pytest.mark.parametrize("url", ["http://localhost:abc/v1", "http://xn--/v1"])
+def test_list_models_reports_an_invalid_url(url: str) -> None:
+    client = httpx.Client(transport=httpx.MockTransport(_unreachable))
+    with pytest.raises(ModelError, match="is not a valid server URL"):
+        list_models(url, http_client=client)
 
 
 def test_list_models_reports_http_errors() -> None:

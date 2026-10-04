@@ -17,7 +17,18 @@ def test_bare_host_gets_the_openai_path() -> None:
     )
 
 
-@pytest.mark.parametrize("url", ["localhost:1234", "ftp://host/v1", "http://", ""])
+@pytest.mark.parametrize(
+    "url",
+    [
+        "localhost:1234",
+        "ftp://host/v1",
+        "http://",
+        "",
+        "http://localhost:1234a",
+        "http://localhost:99999",
+        "http://:1234/v1",
+    ],
+)
 def test_bad_urls_are_rejected(url: str) -> None:
     with pytest.raises(ValueError, match="http:// or https://"):
         normalise_base_url(url)

@@ -22,11 +22,19 @@ DEMO_MODEL = "recorded-answers"
 def normalise_base_url(url: str) -> str:
     """Clean a typed server URL: no trailing slash, and ``/v1`` when no path is given.
 
-    Raises ``ValueError`` unless the URL is http(s) and names a host.
+    Raises ``ValueError`` unless the URL is http(s), names a host and, when it
+    has a port, the port is a number up to 65535.
     """
     cleaned = url.strip().rstrip("/")
     parsed = urlparse(cleaned)
-    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+    try:
+        parsed.port  # noqa: B018 - urlparse checks the port only when it is read
+    except ValueError as exc:
+        raise ValueError(
+            f"Server URL has an invalid port: {url!r}. Use http:// or https://, "
+            "a host and a port number up to 65535."
+        ) from exc
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
         raise ValueError(
             f"Server URL must start with http:// or https:// and name a host: {url!r}"
         )

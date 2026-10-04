@@ -48,6 +48,8 @@ def list_models(
         response = client.get(f"{base_url}/models", timeout=timeout_s)
         response.raise_for_status()
         listing = _ModelList.model_validate_json(response.content)
+    except (httpx.InvalidURL, UnicodeError) as exc:  # bad port, or a host IDNA rejects
+        raise ModelError(f"{base_url} is not a valid server URL: {exc}") from exc
     except httpx.HTTPError as exc:
         raise ModelError(f"No answer from {base_url}: {exc}") from exc
     except ValidationError as exc:
@@ -89,14 +91,21 @@ class OpenAICompatibleModel:
         self.model = model
         self._label = PROVIDER_LABELS[provider]
         self._timeout_s = timeout_s
-        self._client = openai.OpenAI(
-            base_url=base_url,
-            api_key=_API_KEYS.get(provider, "local"),
-            timeout=timeout_s,
-            # A local server that failed once will fail again; say so at once.
-            max_retries=0,
-            http_client=http_client,
-        )
+        self._http_client = http_client
+        self._client: openai.OpenAI | None = None
+
+    def _openai(self) -> openai.OpenAI:
+        """The OpenAI client, built on first use so a bad URL is reported by chat()."""
+        if self._client is None:
+            self._client = openai.OpenAI(
+                base_url=self.base_url,
+                api_key=_API_KEYS.get(self.provider, "local"),
+                timeout=self._timeout_s,
+                # A local server that failed once will fail again; say so at once.
+                max_retries=0,
+                http_client=self._http_client,
+            )
+        return self._client
 
     def chat(
         self,
@@ -125,6 +134,10 @@ class OpenAICompatibleModel:
                 raise self._not_a_completion(bad_exc) from bad_exc
         except openai.OpenAIError as exc:
             raise self._error(exc) from exc
+        except httpx.InvalidURL as exc:  # e.g. a port that is not a number
+            raise ModelError(
+                f"{self._label} at {self.base_url} is not a valid server URL: {exc}"
+            ) from exc
         except ValueError as exc:  # the body was declared JSON but is not
             raise self._not_a_completion(exc) from exc
         try:
@@ -162,7 +175,7 @@ class OpenAICompatibleModel:
         extra: dict[str, Any] = (
             {"response_format": response_format} if response_format else {}
         )
-        completion = self._client.chat.completions.create(
+        completion = self._openai().chat.completions.create(
             model=self.model,
             messages=cast(list[ChatCompletionMessageParam], messages),
             temperature=temperature,
