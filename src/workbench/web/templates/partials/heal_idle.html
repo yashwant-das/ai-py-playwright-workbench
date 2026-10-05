@@ -1,0 +1,6 @@
+{% from "partials/icons.html" import icon %}
+<section class="card empty" aria-labelledby="idle-title">
+  <span class="empty__icon">{{ icon("code", 18) }}</span>
+  <h1 class="t-section" id="idle-title">Pick a sample or upload a spec</h1>
+  <p class="t-small">The workbench runs the test, reads the page as it was when it failed, asks {{ model.model_label }} for a fix, applies it and re-runs the test to prove it.</p>
+</section>

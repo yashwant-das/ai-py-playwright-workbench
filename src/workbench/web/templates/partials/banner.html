@@ -1,0 +1,7 @@
+{% from "partials/icons.html" import icon %}
+{% macro banner(variant, title, body, cmd=None) -%}
+<div class="banner banner--{{ variant }}" role="{{ 'alert' if variant == 'fail' else 'status' }}">
+  {{ icon({"fail": "x", "warn": "warn"}.get(variant, "info")) }}
+  <div><p class="banner__title">{{ title }}</p><p>{{ body }}</p>{% if cmd %}<code class="cmd">{{ cmd }}</code>{% endif %}</div>
+</div>
+{%- endmacro %}

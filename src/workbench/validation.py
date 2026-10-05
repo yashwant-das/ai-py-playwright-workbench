@@ -3,6 +3,7 @@ Input validation utilities for the QA Agent.
 """
 
 import re
+from pathlib import Path
 from urllib.parse import urlparse
 
 
@@ -96,3 +97,23 @@ def validate_description(description: str, max_length: int = 500) -> str:
             )
 
     return description
+
+
+MAX_SPEC_BYTES = 200 * 1024
+
+
+def validate_spec_upload(filename: str, data: bytes) -> str:
+    """The text of an uploaded spec; raises ValidationError saying what is wrong."""
+    name = Path(filename or "").name or "The file"
+    if not name.endswith(".spec.ts"):
+        raise ValidationError(
+            f"{name} isn't a test file. Only .spec.ts files are supported."
+        )
+    if len(data) > MAX_SPEC_BYTES:
+        raise ValidationError(f"{name} is larger than 200 KB.")
+    if not data.strip():
+        raise ValidationError(f"{name} is empty.")
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        raise ValidationError(f"{name} isn't UTF-8 text.") from None

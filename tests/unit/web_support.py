@@ -25,13 +25,12 @@ def _reachable(provider: str, base_url: str = "") -> ConnectionStatus:
 
 def make_client(**overrides: Any) -> TestClient:
     """An app whose services are fakes unless overridden."""
-    services = replace(
-        Services(),
-        detect=lambda: None,
-        check_connection=_reachable,
-        browsers_ready=lambda: True,
-        **overrides,
-    )
+    fakes: dict[str, Any] = {
+        "detect": lambda: None,
+        "check_connection": _reachable,
+        "browsers_ready": lambda: True,
+    }
+    services = replace(Services(), **{**fakes, **overrides})
     return TestClient(create_app(services))
 
 
