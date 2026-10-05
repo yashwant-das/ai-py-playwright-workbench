@@ -1,13 +1,16 @@
 """The SSE stream, cancel and the hand-over to the result page."""
 
+import asyncio
 import threading
 
 import pytest
+from starlette.requests import Request
 
 from tests.unit.web_support import heal_job, heal_report, make_client
 from workbench.events import EventSink
 from workbench.reports import load_report
 from workbench.runs import Run
+from workbench.web.routes.runs import run_events
 from workbench.web.sse import RunStream, sse_message
 
 pytestmark = pytest.mark.usefixtures("web_workspace")
@@ -71,17 +74,20 @@ def test_cancel_sets_the_flag_the_job_sees() -> None:
     client = make_client()
     report = heal_report(status="cancelled")
     seen = threading.Event()
+    saw_cancel: list[bool] = []
 
     def waits(emit, cancel):  # type: ignore[no-untyped-def]
         seen.set()
-        cancel.wait(5)
+        saw_cancel.append(cancel.wait(5))
         return heal_job(report)(emit, cancel)
 
     run = client.app.state.runs.start("heal", "x", waits)  # type: ignore[attr-defined]
     assert seen.wait(5)
     response = client.post(f"/runs/{run.id}/cancel")
+    assert run.cancel.is_set()
     assert "Cancelling" in response.text and "disabled" in response.text
     assert run.wait(5)
+    assert saw_cancel == [True]
 
 
 def test_unknown_runs_are_404() -> None:
@@ -92,15 +98,38 @@ def test_unknown_runs_are_404() -> None:
 
 
 def test_run_finishes_after_the_stream_is_dropped() -> None:
+    # TestClient buffers the whole body, so drive the route with a disconnected request.
     client = make_client()
     gate = threading.Event()
     report = heal_report()
     run = client.app.state.runs.start("heal", "x", heal_job(report, gate=gate))  # type: ignore[attr-defined]
-    with client.stream("GET", f"/runs/{run.id}/events") as response:
-        next(response.iter_text())  # the first clock tick
+
+    async def receive() -> dict[str, str]:
+        return {"type": "http.disconnect"}
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": f"/runs/{run.id}/events",
+            "headers": [],
+            "query_string": b"",
+            "app": client.app,
+        },
+        receive,
+    )
+
+    async def drain() -> list[object]:
+        response = await run_events(run.id, request)
+        return [chunk async for chunk in response.body_iterator]
+
+    sent = asyncio.run(asyncio.wait_for(drain(), timeout=2))
+    assert "event: done" not in "".join(str(chunk) for chunk in sent)
+    assert not run.finished
     gate.set()
     assert run.wait(5)
-    assert load_report(report.id).status == "healed"
+    assert run.report_id
+    assert load_report(run.report_id).status == "healed"
 
 
 def test_clock_says_the_model_is_still_thinking() -> None:
