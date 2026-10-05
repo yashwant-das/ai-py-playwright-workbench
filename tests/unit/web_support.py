@@ -5,6 +5,7 @@ from dataclasses import replace
 from typing import Any
 
 from fastapi.testclient import TestClient
+from httpx import Response
 
 from workbench.app import create_app
 from workbench.events import Emit, EventSink
@@ -12,7 +13,7 @@ from workbench.ids import new_run_id
 from workbench.models.heal import HealReport
 from workbench.models.settings import DEMO_MODEL, ConnectionStatus
 from workbench.reports import save_report
-from workbench.runs import Job
+from workbench.runs import Job, Run
 from workbench.web.services import Services
 
 
@@ -69,3 +70,13 @@ def heal_job(report: HealReport, *, gate: threading.Event | None = None) -> Job:
         return report
 
     return job
+
+
+def started_run(client: TestClient, response: Response, page: str) -> Run:
+    """The run a successful start redirects to: ``/<page>?run=<id>``."""
+    location = response.headers["HX-Redirect"]
+    prefix = f"/{page}?run="
+    assert location.startswith(prefix), location
+    run = client.app.state.runs.get(location.removeprefix(prefix))
+    assert run is not None
+    return run  # type: ignore[no-any-return]

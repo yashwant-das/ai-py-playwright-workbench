@@ -91,13 +91,14 @@ def start_generate(
         GENERATE_STEP_NAMES if generate_request.run_after else GENERATE_STEP_NAMES[:2]
     )
     try:
-        runs.start(
+        run = runs.start(
             "generate", clean_scenario, job, model_label=view.model_label, steps=steps
         )
     except RunInProgress as exc:
         return busy_notice(request, exc.active)
-    # Reload so the page renders the run and its locked start button.
-    return HTMLResponse("", headers={"HX-Redirect": "/generate"})
+    # Reload so the page renders the run and its locked start button; the run id
+    # keeps a run that finishes before the reload on screen.
+    return HTMLResponse("", headers={"HX-Redirect": f"/generate?run={run.id}"})
 
 
 @router.post("/generate/run", response_class=HTMLResponse)
@@ -120,7 +121,7 @@ def run_generated_spec(request: Request, report: str = Form("")) -> HTMLResponse
         return run_generated(saved, run_test=run_test, emit=emit, cancel=cancel)
 
     try:
-        runs.start("generate", saved.spec_name, job, steps=("execute",))
+        run = runs.start("generate", saved.spec_name, job, steps=("execute",))
     except RunInProgress as exc:
         return busy_notice(request, exc.active)
-    return HTMLResponse("", headers={"HX-Redirect": "/generate"})
+    return HTMLResponse("", headers={"HX-Redirect": f"/generate?run={run.id}"})

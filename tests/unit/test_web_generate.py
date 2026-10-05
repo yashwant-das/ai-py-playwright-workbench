@@ -6,7 +6,7 @@ from typing import Any
 import pytest
 
 from tests.unit import report_fixtures as fx
-from tests.unit.web_support import make_client
+from tests.unit.web_support import make_client, started_run
 from workbench.config import specs_dir
 from workbench.events import EventSink
 from workbench.generate import GenerateRequest
@@ -85,7 +85,7 @@ def test_generation_starts_with_the_form_values() -> None:
     )
     # Reloading the page, not swapping #main, keeps the start button locked.
     assert response.status_code == 200
-    assert response.headers["HX-Redirect"] == "/generate"
+    started_run(client, response, "generate")
     _wait(client)
     assert fake.calls[0] == GenerateRequest(
         url="http://127.0.0.1:7860/sample-site/",
@@ -172,7 +172,7 @@ def test_run_test_runs_the_saved_spec_and_updates_the_report() -> None:
     client = make_client(run_test=fake_run)
     response = client.post("/generate/run", data={"report": report.id})
     assert response.status_code == 200
-    assert response.headers["HX-Redirect"] == "/generate"
+    started_run(client, response, "generate")
     _wait(client)
     assert seen == [spec]
     updated = load_report(report.id)
@@ -207,8 +207,7 @@ def test_generate_page_resumes_an_active_generation() -> None:
     started = client.post(
         "/generate", data={"url": "http://x/", "scenario": "s", "run_after": "1"}
     )
-    assert started.headers["HX-Redirect"] == "/generate"
-    run = client.app.state.runs.active()  # type: ignore[attr-defined]
+    run = started_run(client, started, "generate")
     html = client.get("/generate").text
     assert f'sse-connect="/runs/{run.id}/events"' in html
     button = html.split("Generate test</button>")[0].rsplit("<button", 1)[1]
@@ -226,9 +225,59 @@ def _run_job(result: Any) -> GenerateReport:
     )
 
 
-def test_run_generated_records_a_failure_and_a_cancellation() -> None:
+def test_run_generated_records_a_failure_but_not_a_cancellation() -> None:
     failed = _run_job(fx.run_result("failed"))
     assert failed.status == "failed" and failed.run is not None
     assert load_report(failed.id) == failed
     cancelled = _run_job(fx.run_result("cancelled", error_message=""))
-    assert cancelled.status == "cancelled"
+    assert cancelled.status == "not_run" and cancelled.run is None
+
+
+def test_a_run_that_finished_before_the_reload_is_still_shown() -> None:
+    fake = FakeGenerate()
+    client = make_client(generate=fake)
+    started = client.post(
+        "/generate", data={"url": "http://x/", "scenario": "s", "run_after": "1"}
+    )
+    run = started_run(client, started, "generate")
+    run.wait(5)
+    html = client.get(f"/generate?run={run.id}").text
+    assert f'sse-connect="/runs/{run.id}/events"' in html
+    button = html.split("Generate test</button>")[0].rsplit("<button", 1)[1]
+    assert "disabled" not in button
+
+
+def test_a_run_of_the_other_page_or_an_unknown_run_is_ignored() -> None:
+    fake = FakeGenerate()
+    client = make_client(generate=fake)
+    started = client.post("/generate", data={"url": "http://x/", "scenario": "s"})
+    run = started_run(client, started, "generate")
+    run.wait(5)
+    assert "sse-connect=" not in client.get("/generate?run=nope").text
+    assert "sse-connect=" not in client.get(f"/heal?run={run.id}").text
+    assert "Your test will appear here" in client.get("/generate?run=nope").text
+
+
+def test_cancelling_run_test_leaves_the_report_runnable() -> None:
+    report = fx.generate_not_run()
+    save_report(report)
+    (specs_dir() / report.spec_name).write_text(report.code, encoding="utf-8")
+    started = threading.Event()
+
+    def slow_run(path: Any, *, cancel: threading.Event, **kwargs: Any) -> Any:
+        started.set()
+        cancel.wait(5)
+        return fx.run_result("cancelled", error_message="")
+
+    client = make_client(run_test=slow_run)
+    response = client.post("/generate/run", data={"report": report.id})
+    run = started_run(client, response, "generate")
+    assert started.wait(5)
+    assert client.post(f"/runs/{run.id}/cancel").status_code == 200
+    assert run.wait(5)
+    saved = load_report(report.id)
+    assert isinstance(saved, GenerateReport)
+    assert saved == report
+    html = client.get(f"/reports/{report.id}").text
+    assert "Not run" in html and 'hx-post="/generate/run"' in html
+    assert "stopped before it finished" not in html

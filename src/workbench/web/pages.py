@@ -16,12 +16,18 @@ def browsers_ready(request: Request) -> bool:
 
 
 def page_context(request: Request, page: Literal["heal", "generate"]) -> dict[str, Any]:
-    active = request.app.state.runs.active()
+    runs = request.app.state.runs
+    running = runs.active()
+    # ``?run=<id>`` keeps a run on screen after it finishes, until its stream
+    # hands over to the report; ``busy`` still only counts a run in progress.
+    shown = runs.get(request.query_params.get("run", ""))
+    if shown is None or shown.kind != page:
+        shown = running
     return {
         "page": page,
         "model": request.app.state.model.view(),
-        "active": active,
-        "busy": active is not None,
+        "active": shown,
+        "busy": running is not None,
         "browsers_ok": browsers_ready(request),
         "samples": list(SAMPLES.values()),
         "base_url": request.app.state.base_url,

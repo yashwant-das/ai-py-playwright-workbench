@@ -23,12 +23,16 @@ def run_generated(
     spec = specs_dir() / report.spec_name
     events.step("execute", "active", f"npx playwright test {spec.name}")
     result = run_test(spec, cancel=cancel)
+    if result.status == "cancelled":
+        # Stopping a run is not a result: leave the report as it was, so the
+        # test can be run again.
+        events.step("execute", "skipped", "Cancelled")
+        events.done("cancelled")
+        return report
     status: GenerateStatus
     state: StepState
     if result.passed:
         status, state, detail = "passed", "done", "Passed"
-    elif result.status == "cancelled":
-        status, state, detail = "cancelled", "skipped", "Cancelled"
     else:
         first = result.error_message.strip().splitlines()
         status, state, detail = "failed", "failed", first[0] if first else result.status

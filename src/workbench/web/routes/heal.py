@@ -150,7 +150,7 @@ def start_heal(
         )
 
     try:
-        runs.start(
+        run = runs.start(
             "heal",
             path.name,
             job,
@@ -159,5 +159,6 @@ def start_heal(
         )
     except RunInProgress as exc:
         return busy_notice(request, exc.active)
-    # Reload so the page renders the run and its locked start buttons.
-    return HTMLResponse("", headers={"HX-Redirect": "/heal"})
+    # Reload so the page renders the run and its locked start buttons; the run id
+    # keeps a run that finishes before the reload on screen.
+    return HTMLResponse("", headers={"HX-Redirect": f"/heal?run={run.id}"})

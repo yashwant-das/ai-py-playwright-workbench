@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from tests.unit.web_support import heal_job, heal_report, make_client
+from tests.unit.web_support import heal_job, heal_report, make_client, started_run
 from workbench.config import specs_dir, workspace_dir
 from workbench.heal import HealRequest
 from workbench.models.generate import GenerateReport
@@ -91,7 +91,7 @@ def test_a_sample_is_installed_and_healed() -> None:
     client = make_client(heal=fake)
     response = _start(client, fake, action="sample:selector-drift", max_attempts="2")
     assert response.status_code == 200
-    assert response.headers["HX-Redirect"] == "/heal"
+    started_run(client, response, "heal")
     assert response.text == ""
     request = fake.calls[0]
     assert request.spec_path == specs_dir() / "samples" / "contact-form.spec.ts"
@@ -112,7 +112,7 @@ def test_an_upload_is_copied_into_the_workspace() -> None:
         },
     )
     assert response.status_code == 200
-    assert response.headers["HX-Redirect"] == "/heal"
+    started_run(client, response, "heal")
     client.app.state.runs.active() and client.app.state.runs.active().wait(5)  # type: ignore[attr-defined]
     path = specs_dir() / "uploads" / "my-test.spec.ts"
     assert fake.calls[0].spec_path == path
@@ -202,8 +202,7 @@ def test_heal_page_resumes_the_active_run() -> None:
     started = client.post(
         "/heal", data={"action": "sample:selector-drift", "max_attempts": "3"}
     )
-    assert started.headers["HX-Redirect"] == "/heal"
-    run = client.app.state.runs.active()  # type: ignore[attr-defined]
+    run = started_run(client, started, "heal")
     html = client.get("/heal").text
     assert f'sse-connect="/runs/{run.id}/events"' in html
     assert 'value="sample:app-bug" disabled' in html
@@ -227,7 +226,7 @@ def test_a_failed_generated_test_can_be_healed() -> None:
     fake = FakeHeal()
     client = make_client(heal=fake)
     started = _start(client, fake, action="generated", generated=report.id)
-    assert started.headers["HX-Redirect"] == "/heal"
+    started_run(client, started, "heal")
     assert fake.calls[0].spec_path == spec
     refused = client.post(
         "/heal", data={"action": "generated", "generated": "nope", "max_attempts": "3"}
@@ -257,3 +256,20 @@ def test_a_model_that_went_down_shows_the_unreachable_card_instead_of_running() 
     )
     assert "Can't reach Ollama" in response.text
     assert fake.calls == []
+
+
+def test_a_run_that_finished_before_the_reload_is_still_shown() -> None:
+    fake = FakeHeal()
+    client = make_client(heal=fake)
+    started = _start(client, fake, action="sample:selector-drift", max_attempts="3")
+    run = started_run(client, started, "heal")
+    assert run.finished
+    html = client.get(f"/heal?run={run.id}").text
+    assert f'sse-connect="/runs/{run.id}/events"' in html
+    assert 'value="upload" disabled' not in html
+    assert 'value="sample:app-bug" disabled' not in html
+
+
+def test_an_unknown_run_id_shows_the_idle_page() -> None:
+    html = make_client().get("/heal?run=nope").text
+    assert "sse-connect=" not in html
