@@ -22,6 +22,7 @@ module.exports = tseslint.config(
       'playwright-report/',
       'reports/',
       'eslint.config.cjs',
+      'src/workbench/web/static/vendor/',
     ],
   },
   {

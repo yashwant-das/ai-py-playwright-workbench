@@ -1,0 +1,76 @@
+/* Design tokens: one custom property per Figma variable (bg/canvas → --bg-canvas).
+   Figma file eL5DUZmc85ESpusNSmxDkA. Change a value in Figma first, then here. */
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/inter-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/inter-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/inter-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+
+:root {
+  /* Colours (30) */
+  --accent-primary: #18181b;
+  --text-primary: #18181b;
+  --text-secondary: #52525b;
+  --text-tertiary: #8a8a93;
+  --text-inverse: #ffffff;
+  --bg-canvas: #f7f7f5;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f1ee;
+  --border-default: #e4e4df;
+  --border-strong: #d1d1cb;
+  --status-pass: #15803d;
+  --status-pass-bg: #e7f4eb;
+  --status-fail: #b91c1c;
+  --status-fail-bg: #fbeaea;
+  --status-run: #1d4ed8;
+  --status-run-bg: #e8eefd;
+  --status-warn: #b45309;
+  --status-warn-bg: #fcf1e1;
+  --code-bg: #111113;
+  --code-text: #e4e4e7;
+  --code-muted: #71717a;
+  --code-gutter: #18181b;
+  --code-border: #27272a;
+  --code-string: #a5d6ff;
+  --code-keyword: #ff7b72;
+  --code-fn: #d2a8ff;
+  --diff-add-text: #7ee2a8;
+  --diff-add-bg: #11291d;
+  --diff-del-text: #ffa198;
+  --diff-del-bg: #2e1517;
+
+  /* Type styles (8). Figma letter spacing is in percent: -1% = -0.01em. */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --type-title-page: 600 20px/28px var(--font-sans);
+  --tracking-title-page: -0.01em;
+  --type-title-section: 600 15px/22px var(--font-sans);
+  --tracking-title-section: -0.005em;
+  --type-body: 400 14px/20px var(--font-sans);
+  --type-body-small: 400 13px/18px var(--font-sans);
+  --type-label: 500 13px/18px var(--font-sans);
+  --type-label-caps: 600 11px/16px var(--font-sans);
+  --tracking-label-caps: 0.06em;
+  --type-mono-code: 400 13px/21px var(--font-mono);
+  --type-mono-small: 400 12px/18px var(--font-mono);
+}

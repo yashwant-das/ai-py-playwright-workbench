@@ -5,3 +5,4 @@ build
 tests/artifacts
 test-results
 *.spec.ts
+src/workbench/web/static/vendor/
