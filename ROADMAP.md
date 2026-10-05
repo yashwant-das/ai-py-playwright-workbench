@@ -9,21 +9,21 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| FastAPI + HTMX web UI matching the Figma design | 🔭 Planned | 4 | Phase 4 plan (to be written) |
+| Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🔭 Planned | 5 | Phase 5 plan (to be written) |
 
 ## Next
 
 | Item | Status | Phase |
 | --- | --- | --- |
-| Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🔭 Planned | 5 |
 | README, GIF, architecture and decision docs, 2.0.0 release | 🔭 Planned | 6 |
 
 ## Later
 
+- Stream Playwright's own output into the live log; today the log is built from pipeline events, because the runner reads the JSON report after the run.
+- A run history page listing past reports (reports are already saved and linkable).
 - CI integration: a GitHub Action that heals failing specs and opens a pull request, or flags a suspected app bug.
 - The classifier treats "waiting for locator" timeouts as locator problems rather than slow pages.
 - Cloud providers (Anthropic, OpenAI).
-- A run history page.
 - A benchmark built from a deliberately mutated sample app.
 - Comparing heals with Playwright's own healer agent.
 - Dark mode.
@@ -40,6 +40,7 @@ the same commit as the work it describes.
 
 | Item | Phase | Plan |
 | --- | --- | --- |
+| FastAPI + HTMX web UI matching the Figma design | 4 | [Phase 4](docs/superpowers/plans/2026-10-04-v2-phase-4-web-ui.md) |
 | LM Studio, Ollama and Demo providers; the choice is saved in the workspace (the UI arrives in Phase 4); no `.env` | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | Bundled samples: selector drift and app bug | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | `workbench` package and test layout | 1 | [Phase 1](docs/superpowers/plans/2026-10-03-v2-phase-1-foundation.md) |

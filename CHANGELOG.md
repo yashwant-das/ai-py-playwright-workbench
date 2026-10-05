@@ -10,6 +10,13 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 ### Added
 
+- A local web app (FastAPI, Jinja and HTMX, no front-end build): `uv run workbench`
+  opens Heal and Generate on <http://127.0.0.1:7860>.
+- Live progress over server-sent events, with cancel; every finished run has a
+  page at `/reports/<id>` with the diff, a captioned re-run video, the execution
+  log and the Model I/O.
+- A model menu that tests a server, lists its models and saves the choice.
+- Downloads for the report JSON, the fixed or generated spec, and the video.
 - `ROADMAP.md` and this changelog.
 - The engine records every model exchange (sections sent, raw reply, validity,
   provenance) and writes one JSON report per run to `workspace/reports/`.

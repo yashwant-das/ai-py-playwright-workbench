@@ -22,6 +22,10 @@ current phase's plan, add it to `ROADMAP.md` under "Later" instead of building i
 ```text
 src/workbench/          the Python package
 ├── config.py           every path; workspace_dir() / runs_dir() / reports_dir() / specs_dir()
+├── __main__.py         launcher: `uv run workbench` serves http://127.0.0.1:7860 and opens it
+├── app.py              create_app(services): the FastAPI app factory
+├── runs.py             RunRegistry: one background run at a time, with replayable events
+├── web/                routes/, templates/, static/ (tokens.css, app.css, fonts, vendored htmx), views, SSE
 ├── ids.py              run ids and slugs
 ├── runner.py           runs one spec; result from Playwright's JSON report
 ├── playwright_report.py  JSON report → RunResult
@@ -51,6 +55,7 @@ playwright.workspace.config.ts  the config the runner uses for every spec
 
 ```bash
 uv sync --group dev && npm ci && npx playwright install chromium
+uv run workbench                           # start the app on http://127.0.0.1:7860
 uv run python -m pytest                    # unit tests
 uv run python -m pytest tests/integration  # integration tests
 uv run ruff check . && uv run ruff format .
@@ -72,6 +77,8 @@ npm run type-check                         # TypeScript
 - Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
 - No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
+- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension.
+- Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
 
 ## Commits
 
