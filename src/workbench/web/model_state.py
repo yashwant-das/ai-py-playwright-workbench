@@ -1,4 +1,4 @@
-"""The model the app uses: the saved choice, otherwise a server found once at startup."""
+"""The model the app uses: the saved choice, otherwise a server detected on demand."""
 
 import threading
 
@@ -13,12 +13,11 @@ from workbench.web.services import Services
 
 
 class ModelState:
-    """Reads the saved choice each time; detects a server only once per app."""
+    """Reads the saved choice each time; keeps a detected server, and looks again while none is found."""
 
     def __init__(self, services: Services) -> None:
         self._services = services
         self._detected: ModelSettings | None = None
-        self._detection_done = False
         self._lock = threading.Lock()
 
     def choice(self) -> ModelSettings | None:
@@ -26,9 +25,8 @@ class ModelState:
         if saved is not None:
             return saved
         with self._lock:
-            if not self._detection_done:
+            if self._detected is None:
                 self._detected = self._services.detect()
-                self._detection_done = True
             return self._detected
 
     def view(self) -> ModelView:

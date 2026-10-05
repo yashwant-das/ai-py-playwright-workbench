@@ -25,8 +25,13 @@ OLLAMA = DEFAULT_URLS["ollama"]
 class FakeServers:
     """check_connection and detect fakes that record their calls."""
 
-    def __init__(self, models: dict[str, list[str]] | None = None) -> None:
+    def __init__(
+        self,
+        models: dict[str, list[str]] | None = None,
+        found: list[ModelSettings | None] | None = None,
+    ) -> None:
         self.models = models or {}
+        self.found = found or []
         self.checked: list[tuple[str, str]] = []
         self.detections = 0
 
@@ -52,7 +57,7 @@ class FakeServers:
 
     def detect(self) -> ModelSettings | None:
         self.detections += 1
-        return None
+        return self.found.pop(0) if self.found else None
 
 
 @pytest.fixture
@@ -153,11 +158,24 @@ def test_bad_choices_are_refused_inline(
     assert load_settings() is None
 
 
-def test_detection_runs_once_when_nothing_is_saved(servers: FakeServers) -> None:
+def test_a_detected_server_is_found_once_per_app(servers: FakeServers) -> None:
+    servers.found = [
+        ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
+    ]
     client = _client(servers)
     client.get("/model")
     client.get("/model")
     assert servers.detections == 1
+
+
+def test_detection_runs_again_until_a_server_is_found(servers: FakeServers) -> None:
+    detected = ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
+    servers.found = [None, detected]
+    state = _client(servers).app.state.model
+    assert state.choice() is None
+    assert state.choice() == detected
+    assert state.choice() == detected
+    assert servers.detections == 2
 
 
 def _pill(view: ModelView) -> str:
