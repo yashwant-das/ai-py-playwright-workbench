@@ -13,6 +13,7 @@ from workbench.environment import chromium_installed
 from workbench.events import Emit, EventSink
 from workbench.heal.evidence import Collect
 from workbench.ids import new_run_id, slugify
+from workbench.llm.cancellable import cancellable
 from workbench.llm.chat import ChatModel, ModelError
 from workbench.llm.parsing import extract_code_block
 from workbench.llm.prompts import (
@@ -74,6 +75,8 @@ def generate(
     )
     events = EventSink(report.id, emit)
     cancel = cancel or threading.Event()
+    # A model call blocks for minutes; this lets Cancel interrupt it.
+    model = cancellable(model, cancel)
     started = time.monotonic()
 
     def finish(status: GenerateStatus, error_message: str = "") -> GenerateReport:
@@ -132,6 +135,9 @@ def generate(
             temperature=0.1,
         )
     except ModelError as exc:
+        if cancel.is_set():  # ModelCancelled, or a call that failed meanwhile
+            events.step("model", "skipped", "Cancelled")
+            return finish("cancelled")
         events.step("model", "failed", _first_line(str(exc)))
         return finish("error", f"The model call failed: {exc}")
     exchange = ModelExchange(

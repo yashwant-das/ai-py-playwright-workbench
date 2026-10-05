@@ -22,7 +22,7 @@
   </div>
   {% include "partials/warnings.html" %}
   {% if report.status == "error" %}
-    {% if result.model_failed %}{{ banner("fail", "Model unreachable", report.error_message) }}
+    {% if result.model_failed %}{{ banner("fail", result.model_failure_title, report.error_message) }}
     {% else %}{{ banner("fail", "The generation stopped with an error", report.error_message) }}{% endif %}
   {% elif report.status == "cancelled" %}{{ banner("info", "Cancelled", "The generation stopped before it finished.") }}
   {% endif %}

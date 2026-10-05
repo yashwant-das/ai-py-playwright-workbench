@@ -19,7 +19,7 @@
   </div>
   {% include "partials/warnings.html" %}
   {% if report.status == "error" %}
-    {% if result.model_failed %}{{ banner("fail", "Model unreachable", report.error_message) }}
+    {% if result.model_failed %}{{ banner("fail", result.model_failure_title, report.error_message) }}
     {% else %}{{ banner("fail", "The heal stopped with an error", report.error_message) }}{% endif %}
   {% elif report.status == "nothing_to_heal" %}
     {{ banner("info", "The test passed on its first run", "No changes were made. A report is still saved, marked \"nothing to heal\".") }}

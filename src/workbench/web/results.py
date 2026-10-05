@@ -32,6 +32,19 @@ def load_or_none(report_id: str) -> Report | None:
         return None
 
 
+def _model_failed(report: HealReport | GenerateReport) -> bool:
+    return report.status == "error" and report.error_message.startswith(
+        "The model call failed"
+    )
+
+
+def _model_failure_title(report: HealReport | GenerateReport) -> str:
+    """A slow model is not an unreachable one: the server answered the connection."""
+    if "did not answer within" in report.error_message:
+        return "Model timed out"
+    return "Model unreachable"
+
+
 def _tabs(report: HealReport) -> list[str]:
     tabs = ["diff", "video"] if report.status == "healed" else []
     tabs.append("log")
@@ -114,8 +127,8 @@ def heal_context(
             for a in report.attempts
         ),
         "meta": f"{count} attempt{'' if count == 1 else 's'} · {format_duration(report.duration_ms)}",
-        "model_failed": report.status == "error"
-        and report.error_message.startswith("The model call failed"),
+        "model_failed": _model_failed(report),
+        "model_failure_title": _model_failure_title(report),
         "stepbar": _stepbar(report, selected),
     }
 
@@ -135,6 +148,6 @@ def generate_context(report: GenerateReport) -> dict[str, Any]:
         "locators": locators_in(report.code),
         "lines": len(report.code.splitlines()),
         "demo": exchange is not None and exchange.provenance.provider == "demo",
-        "model_failed": report.status == "error"
-        and report.error_message.startswith("The model call failed"),
+        "model_failed": _model_failed(report),
+        "model_failure_title": _model_failure_title(report),
     }

@@ -389,6 +389,68 @@ def test_cancel_after_the_diagnosis_stops_before_any_edit(
     assert spec.read_bytes() == BROKEN.encode()
 
 
+class BlockedModel(FakeModel):
+    """Its call blocks until the test opens the gate."""
+
+    def __init__(self, *outcomes: Any) -> None:
+        super().__init__(*outcomes)
+        self.gate = threading.Event()
+        self.entered = threading.Event()
+
+    def chat(self, messages, *, json_schema=None, temperature=0.1) -> ChatReply:
+        self.entered.set()
+        self.gate.wait(10)
+        return super().chat(messages, json_schema=json_schema, temperature=temperature)
+
+
+def test_cancel_while_the_model_is_answering_stops_the_run_at_once(
+    spec: Path, tmp_path: Path
+) -> None:
+    model, cancel = BlockedModel(reply()), threading.Event()
+    runner = FakeRunner(tmp_path, "failed")
+    events: list[RunEvent] = []
+    outcome: list[Any] = []
+    worker = threading.Thread(
+        target=lambda: outcome.append(
+            run_heal(spec, model, runner, cancel=cancel, emit=events.append)
+        ),
+        daemon=True,
+    )
+    worker.start()
+    try:
+        assert model.entered.wait(5), "heal never reached the model call"
+        cancel.set()
+        worker.join(3)
+        assert not worker.is_alive(), "cancel did not interrupt the model call"
+    finally:
+        model.gate.set()
+        worker.join(5)
+    report = outcome[0]
+    assert report.status == "cancelled"
+    assert [a.outcome for a in report.attempts] == ["cancelled"]
+    assert _last_states(events)["diagnose"] == "skipped"
+    assert len(runner.calls) == 1  # no rerun
+    assert spec.read_bytes() == BROKEN.encode()
+
+
+def test_a_model_error_after_cancel_is_a_cancellation(
+    spec: Path, tmp_path: Path
+) -> None:
+    cancel = threading.Event()
+
+    class FailingAfterCancel(FakeModel):
+        def chat(self, messages, *, json_schema=None, temperature=0.1) -> ChatReply:
+            cancel.set()
+            raise ModelError("connection reset")
+
+    report = run_heal(
+        spec, FailingAfterCancel(), FakeRunner(tmp_path, "failed"), cancel=cancel
+    )
+    assert report.status == "cancelled"
+    assert report.error_message == ""
+    assert spec.read_bytes() == BROKEN.encode()
+
+
 def test_app_defect_guard_boundary_is_inclusive(spec: Path, tmp_path: Path) -> None:
     at = run_heal(
         spec,

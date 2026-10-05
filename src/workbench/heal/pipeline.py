@@ -22,6 +22,7 @@ from workbench.heal.evidence import Collect, gather_evidence
 from workbench.heal.planner import Hint, plan_fix
 from workbench.heal.repair import apply_fix
 from workbench.ids import new_run_id
+from workbench.llm.cancellable import cancellable
 from workbench.llm.chat import ChatModel, ModelError
 from workbench.models.heal import (
     REPAIR_STRATEGY_LABELS,
@@ -81,9 +82,11 @@ class _HealRun:
     ) -> None:
         self.spec = request.spec_path
         self.max_attempts = request.max_attempts
-        self.model, self.run, self.collect = model, run, collect
+        self.run, self.collect = run, collect
         self.browsers_ready = browsers_ready
         self.cancel = cancel or threading.Event()
+        # A model call blocks for minutes; this lets Cancel interrupt it.
+        self.model = cancellable(model, self.cancel)
         # Restoring uses the raw bytes (line endings included); the pipeline
         # itself works on the decoded text.
         self.original_bytes = self.spec.read_bytes()
@@ -177,6 +180,10 @@ class _HealRun:
                 code=self.code, evidence=evidence, hint=hint, model=self.model
             )
         except ModelError as exc:
+            if self.cancel.is_set():  # ModelCancelled, or a call that failed meanwhile
+                self.events.step("diagnose", "skipped", "Cancelled")
+                record("cancelled", evidence=evidence)
+                return "cancelled", result
             self.events.step("diagnose", "failed", str(exc))
             self.report.error_message = f"The model call failed: {exc}"
             return "error", result

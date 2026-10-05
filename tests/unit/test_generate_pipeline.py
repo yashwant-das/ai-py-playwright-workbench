@@ -192,6 +192,64 @@ def test_cancel_during_the_model_call_writes_and_runs_nothing(tmp_path: Path) ->
     assert model_steps == [("active", ""), ("skipped", "Cancelled")]
 
 
+class BlockedModel(FakeModel):
+    """Its call blocks until the test opens the gate."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.gate = threading.Event()
+        self.entered = threading.Event()
+
+    def chat(self, messages, **kwargs: Any) -> ChatReply:
+        self.entered.set()
+        self.gate.wait(10)
+        return super().chat(messages, **kwargs)
+
+
+def test_cancel_while_the_model_is_answering_stops_the_run_at_once(
+    tmp_path: Path,
+) -> None:
+    run, calls = runner()
+    model, cancel = BlockedModel(), threading.Event()
+    events: list[RunEvent] = []
+    outcome: list[Any] = []
+    worker = threading.Thread(
+        target=lambda: outcome.append(
+            go(model, run, cancel=cancel, emit=events.append)
+        ),
+        daemon=True,
+    )
+    worker.start()
+    try:
+        assert model.entered.wait(5), "generate never reached the model call"
+        cancel.set()
+        worker.join(3)
+        assert not worker.is_alive(), "cancel did not interrupt the model call"
+    finally:
+        model.gate.set()
+        worker.join(5)
+    report = outcome[0]
+    assert report.status == "cancelled"
+    assert calls == []
+    assert not any((tmp_path / "specs").glob("*.spec.ts"))
+    model_steps = [(e.state, e.detail) for e in events if e.step == "model"]
+    assert model_steps == [("active", ""), ("skipped", "Cancelled")]
+
+
+def test_a_model_error_after_cancel_is_a_cancellation() -> None:
+    cancel = threading.Event()
+
+    class FailingAfterCancel(FakeModel):
+        def chat(self, messages, **kwargs: Any) -> ChatReply:
+            cancel.set()
+            raise ModelError("connection reset")
+
+    run, _ = runner()
+    report = go(FailingAfterCancel(), run, cancel=cancel)
+    assert report.status == "cancelled"
+    assert report.error_message == ""
+
+
 def test_cancel_before_the_model_call_never_calls_the_model() -> None:
     run, calls = runner()
     cancel = threading.Event()

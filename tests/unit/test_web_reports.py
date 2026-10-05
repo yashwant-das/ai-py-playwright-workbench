@@ -109,6 +109,18 @@ def test_model_failure_result_says_model_unreachable() -> None:
     assert "Could not reach Ollama at http://localhost:11434/v1" in html
 
 
+def test_model_timeout_result_says_model_timed_out() -> None:
+    report = fx.model_error().model_copy(
+        update={
+            "error_message": "The model call failed: Ollama at http://localhost:11434/v1 did not answer within 300 seconds."
+        }
+    )
+    save_report(report)
+    html = make_client().get(f"/reports/{report.id}").text
+    assert "Model timed out" in html and "Model unreachable" not in html
+    assert "did not answer within 300 seconds" in html
+
+
 def test_demo_runs_are_labelled() -> None:
     html = _page(fx.demo_healed)
     assert "Answers replayed from samples/recordings" in html

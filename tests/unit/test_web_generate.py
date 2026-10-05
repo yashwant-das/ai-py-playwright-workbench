@@ -152,11 +152,23 @@ def test_not_run_result_offers_run_test() -> None:
     assert 'hx-post="/generate/run"' in html
 
 
-def test_error_result_says_model_unreachable() -> None:
+def test_timeout_result_says_model_timed_out() -> None:
     report = fx.generate_error()
     save_report(report)
     html = make_client().get(f"/reports/{report.id}").text
-    assert "Model unreachable" in html and "did not answer within 300 seconds" in html
+    assert "Model timed out" in html and "Model unreachable" not in html
+    assert "did not answer within 300 seconds" in html
+
+
+def test_error_result_says_model_unreachable() -> None:
+    report = fx.generate_error().model_copy(
+        update={
+            "error_message": "The model call failed: Could not reach Ollama at http://localhost:11434/v1."
+        }
+    )
+    save_report(report)
+    html = make_client().get(f"/reports/{report.id}").text
+    assert "Model unreachable" in html and "Model timed out" not in html
 
 
 def test_generated_code_lines_have_no_whitespace_between_them() -> None:
