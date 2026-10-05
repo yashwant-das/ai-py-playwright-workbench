@@ -21,6 +21,14 @@ SAMPLE_SITE_DIR = SAMPLES_DIR / "site"
 SAMPLE_SPECS_DIR = SAMPLES_DIR / "specs"
 RECORDINGS_DIR = SAMPLES_DIR / "recordings"
 
+WEB_DIR = PACKAGE_DIR / "web"
+TEMPLATES_DIR = WEB_DIR / "templates"
+STATIC_DIR = WEB_DIR / "static"
+
+HOST = "127.0.0.1"  # local tool: never listen on other interfaces
+PORT_ENV = "WORKBENCH_PORT"
+DEFAULT_PORT = 7860
+
 
 def workspace_dir() -> Path:
     """Root of all runtime output (git-ignored)."""
@@ -47,3 +55,22 @@ def reports_dir() -> Path:
 def specs_dir() -> Path:
     """Generated specs, and copies of uploaded or sample specs."""
     return _subdir("specs")
+
+
+def port() -> int:
+    """The port the app listens on: ``WORKBENCH_PORT`` or 7860."""
+    raw = os.environ.get(PORT_ENV, "").strip()
+    if not raw:
+        return DEFAULT_PORT
+    try:
+        value = int(raw)
+    except ValueError:
+        raise ValueError(f"{PORT_ENV} must be a port number, got {raw!r}") from None
+    if not 1 <= value <= 65535:
+        raise ValueError(f"{PORT_ENV} must be between 1 and 65535, got {value}")
+    return value
+
+
+def base_url(port_number: int | None = None) -> str:
+    """The app's own address, built from the bind address (never a Host header)."""
+    return f"http://{HOST}:{port_number or port()}"
