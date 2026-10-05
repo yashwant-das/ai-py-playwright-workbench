@@ -1,0 +1,10 @@
+{% set state = model.state %}
+<button type="button" popovertarget="model-menu"
+  class="model-pill{% if state == 'demo' %} model-pill--demo{% elif state == 'off' %} model-pill--off{% endif %}"
+  aria-label="Model: {% if state == 'off' %}not connected{% elif state == 'demo' %}Demo{% else %}{{ model.choice.model }}{% endif %}, {{ model.label }}. Change the model">
+  {%- if state == "off" %}Not connected{% elif state == "demo" %}Demo{% else %}{{ model.choice.model }}{% endif %}
+  <span class="model-pill__provider">{% if state == "demo" %}scripted answers{% else %}{{ model.label }}{% endif %}</span>
+</button>
+<div id="model-menu" class="popover" popover aria-label="Model" hx-get="/model" hx-trigger="toggle" hx-swap="innerHTML">
+  <p class="t-small t-faint">Checking the model server…</p>
+</div>

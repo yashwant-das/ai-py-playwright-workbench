@@ -963,3 +963,17 @@ p {
   border-radius: 12px;
   background: #000;
 }
+
+/* Small utilities */
+.ml-auto {
+  margin-left: auto;
+}
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.btn--small {
+  height: 24px;
+  padding: 0 8px;
+}

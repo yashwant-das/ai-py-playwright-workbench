@@ -1,0 +1,17 @@
+{% from "partials/icons.html" import icon %}
+<section class="card center-card" aria-labelledby="unreachable-title">
+  <span class="icon-tile icon-tile--fail">{{ icon("plug", 18) }}</span>
+  <h1 class="t-page" id="unreachable-title">{% if model.choice %}Can't reach {{ model.label }} at {{ model.base_url | replace("http://", "") | replace("https://", "") }}{% else %}No model server found{% endif %}</h1>
+  <p class="t-muted">Healing and generating need a model. Start one locally, or try the samples with the scripted demo model.</p>
+  <div class="card card--subtle stack">
+    <h2 class="t-label row">{{ icon("play", 14) }} Start a local model</h2>
+    <p class="t-small t-muted">LM Studio: load a model and start the local server. Ollama: start the server, then pull a model.</p>
+    <code class="cmd">ollama serve</code>
+    <div><button class="btn btn--secondary" type="button" onclick="location.reload()">Test connection</button></div>
+  </div>
+  <div class="card card--subtle stack">
+    <h2 class="t-label row">{{ icon("check", 14) }} Use the scripted demo model</h2>
+    <p class="t-small t-muted">Replays recorded model answers for the sample tests, so you can see the whole flow without a model. Runs are labelled "Demo".</p>
+    <form hx-post="/model"><input type="hidden" name="provider" value="demo"><button class="btn btn--primary" type="submit">Switch to demo model</button></form>
+  </div>
+</section>

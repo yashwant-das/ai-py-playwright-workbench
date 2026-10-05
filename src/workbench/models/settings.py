@@ -74,3 +74,45 @@ class ConnectionStatus(BaseModel):
     reachable: bool
     models: list[str] = Field(default_factory=list)
     error: str = ""
+
+
+ModelReadiness = Literal["connected", "demo", "off"]
+
+
+class ModelView(BaseModel):
+    """The model choice and its connection, as the header pill and menu show them."""
+
+    choice: ModelSettings | None = None
+    connection: ConnectionStatus | None = None
+
+    @property
+    def state(self) -> ModelReadiness:
+        if (
+            self.choice is None
+            or self.connection is None
+            or not self.connection.reachable
+        ):
+            return "off"
+        return "demo" if self.choice.provider == "demo" else "connected"
+
+    @property
+    def ready(self) -> bool:
+        return self.state != "off"
+
+    @property
+    def provider(self) -> ProviderName:
+        return self.choice.provider if self.choice else "lm_studio"
+
+    @property
+    def label(self) -> str:
+        return PROVIDER_LABELS[self.provider]
+
+    @property
+    def base_url(self) -> str:
+        if self.choice is not None:
+            return self.choice.base_url
+        return DEFAULT_URLS["lm_studio"]
+
+    @property
+    def model_label(self) -> str:
+        return f"{self.choice.model} · {self.label}" if self.choice else self.label
