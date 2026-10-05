@@ -977,3 +977,25 @@ p {
   height: 24px;
   padding: 0 8px;
 }
+
+.io-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: var(--type-body-small);
+}
+.io-table th {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-default);
+  text-align: left;
+  font: var(--type-label-caps);
+  letter-spacing: var(--tracking-label-caps);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.io-table td {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border-default);
+}
+.io-table tr:last-child td {
+  border-bottom: 0;
+}

@@ -1,0 +1,4 @@
+{% from "partials/banner.html" import banner %}
+{% if "playwright_browsers_missing" in report.warnings %}{{ banner("fail", "Playwright browsers aren't installed", "The test can't run until Chromium is installed.", "npx playwright install chromium") }}{% endif %}
+{% if "page_context_unavailable" in report.warnings %}{{ banner("warn", "Page context unavailable", "The page in page.goto() didn't load, so the diagnosis used the error log only. Expect lower confidence.") }}{% endif %}
+{% if "ast_unavailable" in report.warnings %}{{ banner("info", "Repair used text replacement", "Node.js wasn't found, so the syntax-tree (ts-morph) step was skipped and the fix was applied as a text edit.") }}{% endif %}

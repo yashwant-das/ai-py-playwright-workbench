@@ -1,0 +1,8 @@
+{% from "partials/icons.html" import icon %}
+<section class="code" aria-label="Diff">
+  <div class="code__head">{{ icon("file", 14) }} {{ result.report.spec_name }}
+    <span class="code__head-meta"><span class="diffstat--add">+{{ result.added }}</span> <span class="diffstat--del">-{{ result.removed }}</span></span>
+  </div>
+  <pre class="code__body">{% for row in result.rows %}<span class="code__line code__line--diff{% if row.kind != 'same' %} code__line--{{ row.kind }}{% endif %}"><span class="code__num">{{ row.old_no or "" }}</span><span class="code__num">{{ row.new_no or "" }}</span><span class="code__mark">{{ {"add": "+", "del": "-"}.get(row.kind, "") }}</span><span>{{ row.html | safe }}</span></span>
+{% endfor %}</pre>
+</section>

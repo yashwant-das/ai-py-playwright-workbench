@@ -1,0 +1,62 @@
+{% from "partials/icons.html" import icon %}
+{% from "partials/banner.html" import banner %}
+{% set report = result.report %}
+<section aria-labelledby="result-title">
+  <div class="result-head">
+    <span class="pill pill--{{ result.badge.variant }}">{{ result.badge.label }}</span>
+    {% if result.demo %}<span class="pill pill--warn">Demo</span>{% endif %}
+    <h1 class="result-head__name" id="result-title">{{ report.spec_name }}</h1>
+    <span class="result-head__meta">{{ result.meta }}</span>
+    <div class="result-head__actions">
+      {% if report.status == "healed" %}
+      <button class="btn btn--secondary" type="button" data-diff="{{ report.diff }}" onclick="navigator.clipboard.writeText(this.dataset.diff); this.textContent = 'Copied'">{{ icon("copy", 14) }} Copy diff</button>
+      <a class="btn btn--primary" href="/reports/{{ report.id }}/spec" download>{{ icon("download", 14) }} Download fixed spec</a>
+      {% else %}
+      <a class="btn btn--secondary" href="/heal">Heal again</a>
+      <a class="btn btn--secondary" href="/reports/{{ report.id }}.json" download>Download report</a>
+      {% endif %}
+    </div>
+  </div>
+  {% include "partials/warnings.html" %}
+  {% if report.status == "error" %}
+    {% if result.model_failed %}{{ banner("fail", "Model unreachable", report.error_message) }}
+    {% else %}{{ banner("fail", "The heal stopped with an error", report.error_message) }}{% endif %}
+  {% elif report.status == "nothing_to_heal" %}
+    {{ banner("info", "The test passed on its first run", "No changes were made. A report is still saved, marked \"nothing to heal\".") }}
+  {% elif report.status == "cancelled" %}
+    {{ banner("info", "The file was not changed", (report.attempts | length) ~ " attempt(s) kept in the report. The run stopped before a fix was applied.") }}
+  {% elif report.status == "app_defect_suspected" %}
+    {{ banner("warn", "Stopped: likely app bug", "The model thinks the app is broken, not the test. The test was not changed.") }}
+  {% endif %}
+  {% if report.attempts | length > 1 or report.status in ("not_healed", "cancelled") %}
+  <nav class="chips" aria-label="Attempts">
+    {% for a in report.attempts %}
+    {% set outcome = OUTCOME_BADGES[a.outcome] %}
+    <a class="chip" href="/reports/{{ report.id }}?attempt={{ a.number }}&tab={{ result.tab }}"{% if result.attempt and a.number == result.attempt.number %} aria-current="true"{% endif %}>
+      {{ icon("check" if a.outcome == "healed" else "x", 14) }} Attempt {{ a.number }} <span class="chip__note">{{ outcome.title }}</span>
+    </a>
+    {% endfor %}
+    {% if result.attempt %}<span class="t-small t-faint ml-auto">Showing attempt {{ result.attempt.number }}</span>{% endif %}
+  </nav>
+  {% endif %}
+  {% include "partials/stepbar.html" %}
+  <div class="result-grid">
+    <div>
+      {% if report.status == "not_healed" %}
+      <div class="stack" style="margin-bottom: 20px">{% for a in report.attempts %}{% include "partials/attempt_card.html" %}{% endfor %}</div>
+      {% endif %}
+      <nav class="tabs" role="tablist" aria-label="Result views">
+        {% for name, label in result.tabs %}
+        <a class="tab" role="tab" href="/reports/{{ report.id }}?{% if result.attempt %}attempt={{ result.attempt.number }}&{% endif %}tab={{ name }}" aria-selected="{{ 'true' if name == result.tab else 'false' }}">{{ label }}</a>
+        {% endfor %}
+      </nav>
+      <div role="tabpanel">
+        {% if result.tab == "diff" %}{% include "partials/diff_pane.html" %}
+        {% elif result.tab == "video" %}{% include "partials/video_pane.html" %}
+        {% elif result.tab == "log" %}{% include "partials/exec_log.html" %}
+        {% else %}{% include "partials/model_io.html" %}{% endif %}
+      </div>
+    </div>
+    {% if result.attempt %}{% include "partials/diagnosis_card.html" %}{% endif %}
+  </div>
+</section>

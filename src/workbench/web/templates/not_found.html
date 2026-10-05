@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Not found · Playwright Workbench{% endblock %}
+{% block model %}{% include "partials/model_pill.html" %}{% endblock %}
+{% block main %}
+<section class="card empty" aria-labelledby="missing-title">
+  <h1 class="t-section" id="missing-title">No such report</h1>
+  <p class="t-small">It may have been deleted from workspace/reports/. <a href="/heal">Back to Heal</a></p>
+</section>
+{% endblock %}

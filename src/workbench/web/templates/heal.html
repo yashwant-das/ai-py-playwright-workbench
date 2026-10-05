@@ -51,8 +51,8 @@
 {% endblock %}
 {% block main %}
 {% if not browsers_ok %}{% include "partials/browsers_missing.html" %}{% endif %}
-{% if active and active.kind == "heal" %}{% set run = active %}{% include "partials/run_view.html" %}
-{% elif result %}{% include "partials/heal_result.html" %}
+{% if result %}{% include "partials/heal_result.html" %}
+{% elif active and active.kind == "heal" %}{% set run = active %}{% include "partials/run_view.html" %}
 {% elif not model.ready %}{% include "partials/unreachable.html" %}
 {% else %}{% include "partials/heal_idle.html" %}{% endif %}
 {% endblock %}

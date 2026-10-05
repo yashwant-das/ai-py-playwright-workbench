@@ -43,3 +43,13 @@ class DiffRow(BaseModel):
     old_no: int | None
     new_no: int | None
     html: str
+
+
+class StepbarItem(BaseModel):
+    """One step in a finished run's summary bar."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    state: Literal["done", "failed", "skipped"]
+    time: str = ""

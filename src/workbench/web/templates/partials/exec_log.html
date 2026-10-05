@@ -1,0 +1,13 @@
+{% from "partials/icons.html" import icon %}
+{% set report = result.report %}
+<section class="code" aria-label="Execution log">
+  <div class="code__head">{{ icon("file", 14) }} Execution log</div>
+  <div class="log__body">
+    <div class="log__line--muted">$ npx playwright test {{ report.spec_name }}</div>
+    {% if report.initial_run %}<div>{{ report.initial_run.output | ansi }}</div>{% endif %}
+    {% for a in report.attempts %}
+    <div class="log__line--step">[attempt {{ a.number }}] {{ OUTCOME_BADGES[a.outcome].title }}</div>
+    {% if a.rerun %}<div>{{ a.rerun.output | ansi }}</div>{% endif %}
+    {% endfor %}
+  </div>
+</section>

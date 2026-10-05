@@ -1,0 +1,37 @@
+{% from "partials/icons.html" import icon %}
+{% set a = result.attempt %}
+{% set analysis = a.analysis %}
+{% set p = a.exchange.provenance if a.exchange else None %}
+<aside class="card side-card" aria-labelledby="diagnosis-title">
+  <h2 class="t-caps" id="diagnosis-title">Diagnosis · attempt {{ a.number }}</h2>
+  {% if analysis %}
+  <dl class="kv kv--plain"><dt>Failure type</dt><dd><span class="code-badge">{{ analysis.failure_type.value }}</span></dd></dl>
+  <dl class="kv kv--plain"><dt>Confidence</dt><dd class="meter"><span class="meter__bar"><span class="meter__fill" style="width: {{ (analysis.confidence_score * 100) | round }}%"></span></span>{{ "%.2f" | format(analysis.confidence_score) }}</dd></dl>
+  <p class="t-small">{{ analysis.hypothesis }}</p>
+  {% if analysis.reasoning_steps %}<h3 class="t-caps">Why</h3><ol class="reasons">{% for step in analysis.reasoning_steps %}<li>{{ step }}</li>{% endfor %}</ol>{% endif %}
+  {% if analysis.root_cause_evidence %}<h3 class="t-caps">Evidence</h3><ul class="evidence">{% for item in analysis.root_cause_evidence %}<li>{{ item }}</li>{% endfor %}</ul>{% endif %}
+  {% else %}
+  <p class="t-small t-muted">The reply could not be read as a diagnosis. See Model I/O.</p>
+  {% endif %}
+  <h3 class="t-caps">Repair</h3>
+  <p class="t-small">
+    {% if a.repair_method == "ast" %}{{ STRATEGY_LABELS[analysis.action_taken.repair_strategy.value] }} on the syntax tree (ts-morph)
+    {% elif a.repair_method == "text" %}Applied as a text edit
+    {% elif a.outcome == "app_defect" %}No change: the test was left as it is
+    {% elif a.outcome == "not_applied" %}The code to replace wasn't in the file
+    {% else %}No fix was applied{% endif %}
+  </p>
+  <h3 class="t-caps">Verification</h3>
+  {% if a.rerun and a.outcome == "healed" %}<p class="ok-line">{{ icon("check", 14) }} Re-run passed in {{ a.rerun.duration_ms | duration }}</p>
+  {% elif a.rerun %}<p class="fail-line">{{ icon("x", 14) }} Re-run failed: {{ a.rerun.error_message | first_line }}</p>
+  {% else %}<p class="t-small t-faint">Not re-run</p>{% endif %}
+  {% if p %}
+  <div class="meta-foot">
+    <dl class="kv"><dt>Model</dt><dd>{{ p.model }} · {{ PROVIDER_LABELS.get(p.provider, p.provider) }}</dd></dl>
+    <dl class="kv"><dt>Prompt</dt><dd>{{ p.prompt_name }} v{{ p.prompt_version }} · {{ p.prompt_hash[:7] }}</dd></dl>
+    <dl class="kv"><dt>Tokens</dt><dd>{{ "{:,}".format(p.input_tokens) }} in · {{ "{:,}".format(p.output_tokens) }} out</dd></dl>
+    <dl class="kv"><dt>LLM latency</dt><dd>{{ p.latency_ms | duration }}</dd></dl>
+    {% if p.provider == "demo" %}<p class="t-small t-faint">Answers replayed from samples/recordings — not a live model.</p>{% endif %}
+  </div>
+  {% endif %}
+</aside>
