@@ -10,7 +10,7 @@ from workbench.models.generate import GenerateReport
 from workbench.models.heal import HealReport
 from workbench.reports import report_path
 from workbench.web.pages import page_context
-from workbench.web.results import heal_context, load_or_none
+from workbench.web.results import generate_context, heal_context, load_or_none
 from workbench.web.templating import templates
 
 router = APIRouter()
@@ -89,4 +89,14 @@ def report_page(
         context = page_context(request, "heal")
         context["result"] = heal_context(report, attempt=attempt, tab=tab)
         return templates.TemplateResponse(request, "heal.html", context)
+    if isinstance(report, GenerateReport):
+        context = page_context(request, "generate")
+        context["examples"] = {}
+        context["result"] = generate_context(report)
+        context["form"] = {
+            "url": report.url,
+            "scenario": report.scenario,
+            "run_after": True,
+        }
+        return templates.TemplateResponse(request, "generate.html", context)
     return not_found(request)

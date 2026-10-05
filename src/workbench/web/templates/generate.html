@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Generate · Playwright Workbench{% endblock %}
+{% block model %}{% include "partials/model_pill.html" %}{% endblock %}
+{% block sidebar_label %}Generate a test{% endblock %}
+{% block sidebar %}
+{% set locked = busy or not model.ready or not browsers_ok %}
+<div class="stack stack--tight">
+  <h1 class="t-page">Generate a test</h1>
+  <p class="t-muted">Describe a user flow. The page opens in Chromium and its accessibility tree steers the model toward role-based locators.</p>
+</div>
+<form class="stack stack--loose" hx-post="/generate" hx-target="#main" hx-disabled-elt="find button[type=submit]">
+  <div class="field">
+    <label class="field__label" for="target-url">Target URL</label>
+    <input class="input input--mono" id="target-url" name="url" value="{{ form.url or '' }}" placeholder="{{ base_url }}/sample-site/" aria-describedby="url-error">
+    <p class="field__error" id="url-error" role="alert"></p>
+  </div>
+  <div class="field">
+    <label class="field__label" for="scenario">Scenario</label>
+    <textarea class="textarea" id="scenario" name="scenario" aria-describedby="scenario-error">{{ form.scenario or '' }}</textarea>
+    <p class="field__error" id="scenario-error" role="alert"></p>
+  </div>
+  <label class="check"><input type="checkbox" name="run_after" value="1"{% if form.get("run_after", True) %} checked{% endif %}> Run the test after generating</label>
+  <button class="btn btn--primary btn--block" type="submit"{% if locked %} disabled{% endif %}>Generate test</button>
+  {% if not model.ready %}<p class="t-small t-faint">Connect a model to run this.</p>{% endif %}
+</form>
+{% if examples %}
+<div class="stack stack--tight">
+  <h2 class="t-caps">Examples</h2>
+  <div class="row">{% for key, example in examples.items() %}<a class="chip chip--example" href="/generate?example={{ key }}">{{ example[0] }}</a>{% endfor %}</div>
+</div>
+{% endif %}
+<p class="sidebar__foot t-small t-faint">If a generated test fails, open it in Heal with one click.</p>
+{% endblock %}
+{% block main %}
+{% if not browsers_ok %}{% include "partials/browsers_missing.html" %}{% endif %}
+{% if result %}{% include "partials/generate_result.html" %}
+{% elif active and active.kind == "generate" %}{% set run = active %}{% include "partials/run_view.html" %}
+{% elif not model.ready %}{% include "partials/unreachable.html" %}
+{% else %}{% include "partials/generate_idle.html" %}{% endif %}
+{% endblock %}

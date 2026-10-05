@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 from workbench.ids import new_run_id
+from workbench.models.generate import ContextSummary, GenerateReport
 from workbench.models.heal import (
     Attempt,
     FailureEvidence,
@@ -259,10 +260,76 @@ HEAL_STATES: dict[str, Callable[[], HealReport]] = {
 }
 
 
+GENERATED = """import { test, expect } from '@playwright/test';
+
+test('A user can send the contact form', async ({ page }) => {
+  await page.goto('http://127.0.0.1:7860/sample-site/');
+  await page.getByLabel('Name').fill('Ada Lovelace');
+  await page.getByRole('button', { name: 'Submit' }).click();
+  await expect(page.getByRole('status')).toHaveText('Submitted');
+});
+"""
+
+
+def _generated(name: str, status: str, **fields: Any) -> GenerateReport:
+    values: dict[str, Any] = {
+        "id": new_run_id("generate", name),
+        "url": "http://127.0.0.1:7860/sample-site/",
+        "scenario": "A user can send the contact form",
+        "status": status,
+        "spec_name": "a-user-can-send-the-contact-form.spec.ts",
+        "code": GENERATED,
+        "context": ContextSummary(
+            url="http://127.0.0.1:7860/sample-site/",
+            snapshot_lines=42,
+            locator_candidates=["getByRole('button', { name: 'Submit' })"] * 18,
+        ),
+        "exchange": exchange(),
+        "duration_ms": 8400,
+    }
+    values.update(fields)
+    return GenerateReport(**values)
+
+
+def generate_passed() -> GenerateReport:
+    return _generated("passed", "passed", run=run_result("passed", duration_ms=2200))
+
+
+def generate_failed() -> GenerateReport:
+    return _generated("failed", "failed", run=run_result("failed"))
+
+
+def generate_not_run() -> GenerateReport:
+    return _generated("not-run", "not_run")
+
+
+def generate_error() -> GenerateReport:
+    return _generated(
+        "error",
+        "error",
+        spec_name="",
+        code="",
+        exchange=None,
+        error_message="The model call failed: Ollama at http://localhost:11434/v1 did not answer within 300 seconds.",
+    )
+
+
+GENERATE_STATES: dict[str, Callable[[], GenerateReport]] = {
+    "generate_passed": generate_passed,
+    "generate_failed": generate_failed,
+    "generate_not_run": generate_not_run,
+    "generate_error": generate_error,
+}
+
+
 def write_all() -> dict[str, str]:
     """Save one report per state; returns state name → report id."""
     ids = {}
-    for name, build in HEAL_STATES.items():
+    states: dict[str, Callable[[], HealReport | GenerateReport]] = {
+        **HEAL_STATES,
+        **GENERATE_STATES,
+    }
+    for name, build in states.items():
         report = build()
         save_report(report)
         ids[name] = report.id

@@ -52,12 +52,14 @@ def busy_notice(request: Request, active: Run) -> HTMLResponse:
     )
 
 
-def refuse_in_notice(request: Request, message: str) -> HTMLResponse:
+def refuse_in_notice(
+    request: Request, message: str, title: str = "Can't heal that test"
+) -> HTMLResponse:
     """A 422 shown in the notice area, which every page has."""
     return templates.TemplateResponse(
         request,
         "partials/notice_fail.html",
-        {"message": message},
+        {"message": message, "title": title},
         status_code=422,
         headers={"HX-Retarget": "#notice", "HX-Reswap": "innerHTML"},
     )

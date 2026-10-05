@@ -2,10 +2,18 @@
 
 from typing import Any, Literal
 
+from workbench.models.generate import GenerateReport
 from workbench.models.heal import Attempt, HealReport
 from workbench.models.web import StepbarItem
 from workbench.reports import Report, load_report
-from workbench.web.views import HEAL_BADGES, diff_counts, diff_rows, format_duration
+from workbench.web.views import (
+    GENERATE_BADGES,
+    HEAL_BADGES,
+    diff_counts,
+    diff_rows,
+    format_duration,
+    locators_in,
+)
 
 Tab = Literal["diff", "video", "log", "model"]
 TAB_LABELS: dict[str, str] = {
@@ -109,4 +117,24 @@ def heal_context(
         "model_failed": report.status == "error"
         and report.error_message.startswith("The model call failed"),
         "stepbar": _stepbar(report, selected),
+    }
+
+
+def generate_context(report: GenerateReport) -> dict[str, Any]:
+    """Everything the generate result templates need."""
+    exchange = report.exchange
+    parts = []
+    if exchange is not None:
+        parts.append(f"Generated in {format_duration(exchange.provenance.latency_ms)}")
+    if report.run is not None:
+        parts.append(f"ran in {format_duration(report.run.duration_ms)}")
+    return {
+        "report": report,
+        "badge": GENERATE_BADGES[report.status],
+        "meta": " · ".join(parts),
+        "locators": locators_in(report.code),
+        "lines": len(report.code.splitlines()),
+        "demo": exchange is not None and exchange.provenance.provider == "demo",
+        "model_failed": report.status == "error"
+        and report.error_message.startswith("The model call failed"),
     }

@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from workbench import config
 from workbench.runs import RunRegistry
 from workbench.web.model_state import ModelState
+from workbench.web.routes import generate as generate_routes
 from workbench.web.routes import heal as heal_routes
 from workbench.web.routes import model as model_routes
 from workbench.web.routes import reports as reports_routes
@@ -26,6 +27,7 @@ def create_app(services: Services | None = None, *, port: int | None = None) -> 
     app.include_router(model_routes.router)
     app.include_router(run_routes.router)
     app.include_router(heal_routes.router)
+    app.include_router(generate_routes.router)
     app.include_router(reports_routes.router)
     app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
     app.mount(

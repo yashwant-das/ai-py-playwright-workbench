@@ -1,0 +1,35 @@
+{% from "partials/icons.html" import icon %}
+{% from "partials/banner.html" import banner %}
+{% set report = result.report %}
+<section aria-labelledby="result-title">
+  <div class="result-head">
+    <span class="pill pill--{{ result.badge.variant }}">{{ result.badge.label }}</span>
+    {% if result.demo %}<span class="pill pill--warn">Demo</span>{% endif %}
+    <h1 class="result-head__name" id="result-title">{{ report.spec_name or "No test written" }}</h1>
+    <span class="result-head__meta">{{ result.meta }}</span>
+    <div class="result-head__actions">
+      {% if report.code %}
+      <button class="btn btn--secondary" type="button" data-code="{{ report.code }}" onclick="navigator.clipboard.writeText(this.dataset.code); this.textContent = 'Copied'">{{ icon("copy", 14) }} Copy</button>
+      {% endif %}
+      {% if report.status == "not_run" %}
+      <form hx-post="/generate/run" hx-target="#main"><input type="hidden" name="report" value="{{ report.id }}"><button class="btn btn--primary" type="submit"{% if busy or not browsers_ok %} disabled{% endif %}>{{ icon("play", 14) }} Run test</button></form>
+      {% elif report.status == "failed" %}
+      <form hx-post="/heal" hx-target="#main"><input type="hidden" name="action" value="generated"><input type="hidden" name="generated" value="{{ report.id }}"><input type="hidden" name="max_attempts" value="3"><button class="btn btn--primary" type="submit"{% if busy or not model.ready or not browsers_ok %} disabled{% endif %}>Heal this test</button></form>
+      {% elif report.code %}
+      <a class="btn btn--primary" href="/reports/{{ report.id }}/spec" download>{{ icon("download", 14) }} Download spec</a>
+      {% endif %}
+    </div>
+  </div>
+  {% include "partials/warnings.html" %}
+  {% if report.status == "error" %}
+    {% if result.model_failed %}{{ banner("fail", "Model unreachable", report.error_message) }}
+    {% else %}{{ banner("fail", "The generation stopped with an error", report.error_message) }}{% endif %}
+  {% elif report.status == "cancelled" %}{{ banner("info", "Cancelled", "The generation stopped before it finished.") }}
+  {% endif %}
+  {% if report.code %}
+  <div class="result-grid">
+    {% with title="workspace/specs/" ~ report.spec_name, code=report.code, meta=result.lines ~ " lines" %}{% include "partials/code_pane.html" %}{% endwith %}
+    {% include "partials/context_card.html" %}
+  </div>
+  {% endif %}
+</section>
