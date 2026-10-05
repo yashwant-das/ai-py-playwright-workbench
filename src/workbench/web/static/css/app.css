@@ -717,6 +717,7 @@ p {
   background: var(--bg-subtle);
 }
 .meter__fill {
+  display: block;
   height: 100%;
   background: var(--status-pass);
 }

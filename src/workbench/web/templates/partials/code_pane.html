@@ -1,6 +1,5 @@
 {% from "partials/icons.html" import icon %}
 <section class="code" aria-label="{{ title }}">
   <div class="code__head">{{ icon("file", 14) }} {{ title }}<span class="code__head-meta">{{ meta }}</span></div>
-  <pre class="code__body">{% for line in views.highlight_lines(code) %}<span class="code__line"><span class="code__num">{{ loop.index }}</span><span>{{ line | safe }}</span></span>
-{% endfor %}</pre>
+  <pre class="code__body">{% for line in views.highlight_lines(code) %}<span class="code__line"><span class="code__num">{{ loop.index }}</span><span>{{ line | safe }}</span></span>{%- endfor %}</pre>
 </section>

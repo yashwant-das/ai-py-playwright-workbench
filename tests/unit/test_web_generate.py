@@ -1,5 +1,6 @@
 """The Generate page, starting a generation, the result states, Run test and Heal this test."""
 
+import re
 import threading
 from typing import Any
 
@@ -156,6 +157,15 @@ def test_error_result_says_model_unreachable() -> None:
     save_report(report)
     html = make_client().get(f"/reports/{report.id}").text
     assert "Model unreachable" in html and "did not answer within 300 seconds" in html
+
+
+def test_generated_code_lines_have_no_whitespace_between_them() -> None:
+    report = fx.generate_passed()
+    save_report(report)
+    html = make_client().get(f"/reports/{report.id}").text
+    count = html.count('<span class="code__line')
+    assert count > 3
+    assert len(re.findall(r'</span></span><span class="code__line', html)) == count - 1
 
 
 def test_run_test_runs_the_saved_spec_and_updates_the_report() -> None:

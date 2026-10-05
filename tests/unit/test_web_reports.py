@@ -1,5 +1,7 @@
 """Every heal result state renders from its saved report."""
 
+import re
+
 import pytest
 
 from tests.unit import report_fixtures as fx
@@ -52,6 +54,29 @@ def test_execution_log_and_video_tabs() -> None:
     assert "TimeoutError: locator.click" in _page(fx.healed, "?tab=log")
     video = _page(fx.healed, "?tab=video")
     assert '<video class="video" controls' in video and "/video?attempt=1" in video
+
+
+def _between_lines(html: str) -> list[str]:
+    """The text between consecutive line elements; any of it renders as a blank line."""
+    return re.findall(r"</span></span>(\s*)<span class=\"code__line", html)
+
+
+def test_code_and_diff_lines_have_no_whitespace_between_them() -> None:
+    diff = _page(fx.healed)
+    assert 'class="code__line code__line--diff' in diff
+    assert diff.count('<span class="code__line') > 3
+    assert _between_lines(diff) == [""] * (diff.count('<span class="code__line') - 1)
+    model = _page(fx.healed, "?tab=model")
+    assert 'class="code__line"' in model
+    assert set(_between_lines(model)) <= {""}
+
+
+def test_execution_log_has_no_template_whitespace() -> None:
+    html = _page(fx.healed, "?tab=log")
+    body = html.split('<div class="log__body">')[1].split("</section>")[0]
+    assert not body[0].isspace()
+    assert not re.search(r">\s+<", body)
+    assert "TimeoutError: locator.click" in body
 
 
 def test_not_healed_lists_every_attempt() -> None:

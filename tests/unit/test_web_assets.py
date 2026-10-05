@@ -103,3 +103,9 @@ def test_icon_macro_renders_decorative_and_labelled_icons() -> None:
     assert 'aria-hidden="true"' in decorative
     assert 'role="img" aria-label="Failed"' in labelled
     assert 'width="20"' in labelled
+
+
+def test_meter_fill_is_a_block_so_its_width_applies() -> None:
+    rule = re.search(r"\.meter__fill\s*\{([^}]*)\}", _css("app.css"))
+    assert rule is not None
+    assert re.search(r"display:\s*block", rule.group(1))
