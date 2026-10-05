@@ -91,7 +91,8 @@ def test_a_sample_is_installed_and_healed() -> None:
     client = make_client(heal=fake)
     response = _start(client, fake, action="sample:selector-drift", max_attempts="2")
     assert response.status_code == 200
-    assert "sse-connect=" in response.text
+    assert response.headers["HX-Redirect"] == "/heal"
+    assert response.text == ""
     request = fake.calls[0]
     assert request.spec_path == specs_dir() / "samples" / "contact-form.spec.ts"
     assert request.max_attempts == 2
@@ -111,6 +112,7 @@ def test_an_upload_is_copied_into_the_workspace() -> None:
         },
     )
     assert response.status_code == 200
+    assert response.headers["HX-Redirect"] == "/heal"
     client.app.state.runs.active() and client.app.state.runs.active().wait(5)  # type: ignore[attr-defined]
     path = specs_dir() / "uploads" / "my-test.spec.ts"
     assert fake.calls[0].spec_path == path
@@ -197,11 +199,16 @@ def test_second_start_is_refused_with_409() -> None:
 def test_heal_page_resumes_the_active_run() -> None:
     gate = threading.Event()
     client = make_client(heal=FakeHeal(gate))
-    client.post("/heal", data={"action": "sample:selector-drift", "max_attempts": "3"})
+    started = client.post(
+        "/heal", data={"action": "sample:selector-drift", "max_attempts": "3"}
+    )
+    assert started.headers["HX-Redirect"] == "/heal"
     run = client.app.state.runs.active()  # type: ignore[attr-defined]
     html = client.get("/heal").text
     assert f'sse-connect="/runs/{run.id}/events"' in html
     assert 'value="sample:app-bug" disabled' in html
+    assert 'value="sample:selector-drift" disabled' in html
+    assert 'value="upload" disabled' in html
     gate.set()
     run.wait(5)
 
@@ -219,12 +226,22 @@ def test_a_failed_generated_test_can_be_healed() -> None:
     save_report(report)
     fake = FakeHeal()
     client = make_client(heal=fake)
-    _start(client, fake, action="generated", generated=report.id)
+    started = _start(client, fake, action="generated", generated=report.id)
+    assert started.headers["HX-Redirect"] == "/heal"
     assert fake.calls[0].spec_path == spec
     refused = client.post(
         "/heal", data={"action": "generated", "generated": "nope", "max_attempts": "3"}
     )
     assert refused.status_code == 422
+    assert refused.headers["HX-Retarget"] == "#notice"
+    assert "no longer exists" in refused.text
+    spec.unlink()
+    gone = client.post(
+        "/heal",
+        data={"action": "generated", "generated": report.id, "max_attempts": "3"},
+    )
+    assert gone.status_code == 422
+    assert gone.headers["HX-Retarget"] == "#notice"
 
 
 def test_a_model_that_went_down_shows_the_unreachable_card_instead_of_running() -> None:

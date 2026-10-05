@@ -52,6 +52,17 @@ def busy_notice(request: Request, active: Run) -> HTMLResponse:
     )
 
 
+def refuse_in_notice(request: Request, message: str) -> HTMLResponse:
+    """A 422 shown in the notice area, which every page has."""
+    return templates.TemplateResponse(
+        request,
+        "partials/notice_fail.html",
+        {"message": message},
+        status_code=422,
+        headers={"HX-Retarget": "#notice", "HX-Reswap": "innerHTML"},
+    )
+
+
 @router.get("/heal", response_class=HTMLResponse)
 def heal_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
@@ -82,16 +93,14 @@ def _spec_for(
         try:
             report = load_report(generated)
         except (ValueError, FileNotFoundError) as exc:
-            raise _Refused(
-                "sample-error", "That generated test no longer exists."
-            ) from exc
+            raise _Refused("notice", "That generated test no longer exists.") from exc
         path = (
             specs_dir() / report.spec_name
             if isinstance(report, GenerateReport)
             else None
         )
         if path is None or not report.spec_name or not path.is_file():
-            raise _Refused("sample-error", "That generated test no longer exists.")
+            raise _Refused("notice", "That generated test no longer exists.")
         return path
     raise _Refused("sample-error", "Choose a sample or a file to heal.")
 
@@ -123,6 +132,8 @@ def start_heal(
     try:
         path = _spec_for(request, action, spec, generated)
     except _Refused as exc:
+        if exc.target == "notice":
+            return refuse_in_notice(request, str(exc))
         return refuse(exc.target, str(exc))
 
     services: Services = request.app.state.services
@@ -137,7 +148,7 @@ def start_heal(
         )
 
     try:
-        run = runs.start(
+        runs.start(
             "heal",
             path.name,
             job,
@@ -146,4 +157,5 @@ def start_heal(
         )
     except RunInProgress as exc:
         return busy_notice(request, exc.active)
-    return templates.TemplateResponse(request, "partials/run_view.html", {"run": run})
+    # Reload so the page renders the run and its locked start buttons.
+    return HTMLResponse("", headers={"HX-Redirect": "/heal"})
