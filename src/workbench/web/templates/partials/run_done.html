@@ -1,0 +1,6 @@
+{% from "partials/icons.html" import icon %}
+{% if run.report_id %}
+<div hx-get="/runs/{{ run.id }}/result" hx-trigger="load"></div>
+{% else %}
+<div class="banner banner--fail" role="alert">{{ icon("x") }}<div><p class="banner__title">The run stopped unexpectedly</p><p>{{ run.error or "No report was written." }}</p><p><a href="/{{ run.kind }}">Start again</a></p></div></div>
+{% endif %}

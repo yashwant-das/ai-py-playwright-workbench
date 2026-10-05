@@ -1,0 +1,21 @@
+{% from "partials/icons.html" import icon %}
+<section class="run" sse-connect="/runs/{{ run.id }}/events" sse-close="done" aria-labelledby="run-title">
+  <div class="result-head">
+    <span class="pill pill--run">{{ "Healing" if run.kind == "heal" else "Generating" }}</span>
+    <h1 class="result-head__name" id="run-title">{{ run.label }}</h1>
+    <span class="result-head__meta" sse-swap="clock">{{ run.model_label }}</span>
+    <div class="result-head__actions">
+      <button class="btn btn--secondary" type="button" hx-post="/runs/{{ run.id }}/cancel" hx-swap="outerHTML">Cancel</button>
+    </div>
+  </div>
+  <div class="run-grid">
+    <ol class="steps" aria-label="Progress">
+      {% for name in run.steps %}{% set info = views.STEP_INFO[name] %}{% include "partials/step_row.html" %}{% endfor %}
+    </ol>
+    <section class="code" aria-label="Live log">
+      <div class="code__head">{{ icon("file", 14) }} Live log <span class="code__head-meta">streaming</span></div>
+      <div class="log__body" role="log" aria-live="polite" sse-swap="log" hx-swap="beforeend"></div>
+    </section>
+  </div>
+  <div sse-swap="done" hx-swap="outerHTML"></div>
+</section>

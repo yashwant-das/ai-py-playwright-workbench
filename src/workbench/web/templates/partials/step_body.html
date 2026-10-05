@@ -1,0 +1,8 @@
+{% from "partials/icons.html" import icon %}
+{% set glyph = {"done": "check", "failed": "x", "active": "spinner"}.get(state, "circle-dashed") %}
+{% set said = {"done": "Done", "failed": "Failed", "active": "In progress", "skipped": "Skipped"}.get(state, "Not started") %}
+<div class="step step--{{ state }}">
+  <span class="step__icon">{{ icon(glyph, 14, said) }}</span>
+  <div><p class="step__title">{{ info.title }}</p><p class="step__detail">{{ detail }}</p></div>
+  <span class="step__time">{{ time or "–" }}</span>
+</div>
