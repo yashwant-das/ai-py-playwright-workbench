@@ -114,6 +114,17 @@ class RunRegistry:
         with self._lock:
             return self._active()
 
+    def stop(self, timeout: float = 0.0) -> bool:
+        """Cancel the active run and wait up to ``timeout`` seconds for it to end.
+
+        True when no run is left going. The app calls this as it shuts down.
+        """
+        run = self.active()
+        if run is None:
+            return True
+        run.cancel.set()
+        return run.wait(timeout)
+
     def _active(self) -> Run | None:
         return next((r for r in self._runs.values() if not r.finished), None)
 

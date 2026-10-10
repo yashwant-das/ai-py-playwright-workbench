@@ -97,3 +97,48 @@ def test_unknown_runs_are_none_and_old_runs_are_dropped() -> None:
     assert registry.get("nope") is None
     assert registry.get(runs[0].id) is None
     assert registry.get(runs[2].id) is runs[2]
+
+
+def test_stop_cancels_the_active_run_and_waits_for_it() -> None:
+    registry = RunRegistry()
+    seen = threading.Event()
+    saw_cancel: list[bool] = []
+
+    def waits_for_cancel(emit, cancel):  # type: ignore[no-untyped-def]
+        seen.set()
+        saw_cancel.append(cancel.wait(5))
+        return _report()
+
+    run = registry.start("heal", "a.spec.ts", waits_for_cancel)
+    assert seen.wait(5)
+    assert registry.stop(5) is True
+    assert run.finished
+    assert saw_cancel == [True]
+
+
+def test_stop_gives_up_on_a_run_that_does_not_end() -> None:
+    registry = RunRegistry()
+    release = threading.Event()
+
+    def ignores_cancel(emit, cancel):  # type: ignore[no-untyped-def]
+        release.wait(5)
+        return _report()
+
+    run = registry.start("heal", "a.spec.ts", ignores_cancel)
+    try:
+        assert registry.stop(0.05) is False
+        assert run.cancel.is_set()
+        assert not run.finished
+        assert registry.stop() is False  # no timeout: asks, does not wait
+    finally:
+        release.set()
+        assert run.wait(5)
+
+
+def test_stop_with_nothing_running_does_nothing() -> None:
+    registry = RunRegistry()
+    assert registry.stop(5) is True
+    run = registry.start("generate", "x", _quick_job)
+    assert run.wait(5)
+    assert registry.stop(5) is True
+    assert not run.cancel.is_set()

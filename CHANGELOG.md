@@ -71,6 +71,7 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   into a different call; fixes that change more than the selector are applied
   as written.
 - Cancelling a run now stops it at once, even while the model is answering.
+- Ctrl+C now stops the app during a run and cancels the run first.
 
 ### Security
 
