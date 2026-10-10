@@ -35,10 +35,10 @@ src/workbench/          the Python package
 ├── heal/               pipeline.py (heal), evidence, planner, repair (+ ast_repair.js), classifier
 ├── generate/           pipeline.py (generate)
 ├── context/            page context: aria snapshot, console, page errors, requests
-├── llm/                chat.py (ChatModel), client.py (LM Studio, Ollama), demo.py, providers.py, parsing, prompts
+├── llm/                chat.py (ChatModel), client.py (LM Studio, Ollama), demo.py, providers.py, cancellable.py (a model call a cancel can abandon), parsing, prompts
 ├── settings.py         the saved model choice: workspace/settings.json
 ├── samples.py          the bundled samples; install_sample()
-├── models/             Pydantic contracts: reports, events, model output
+├── models/             Pydantic contracts: reports, events, model output, what the templates show (web.py)
 ├── prompts/            prompt files and manifest.json
 ├── validation.py       input checks
 └── text.py             clean_ansi_codes()

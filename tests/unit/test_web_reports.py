@@ -143,3 +143,78 @@ def test_unknown_reports_are_404(report_id: str) -> None:
     response = make_client().get(f"/reports/{report_id}")
     assert response.status_code == 404
     assert "No such report" in response.text
+
+
+@pytest.mark.parametrize(
+    ("message", "title"),
+    [
+        (
+            "Could not reach Ollama at http://localhost:11434/v1. Is it running?",
+            "Model unreachable",
+        ),
+        (
+            "Ollama at http://localhost:11434/v1 did not answer within 300 seconds.",
+            "Model timed out",
+        ),
+        (
+            "Demo only covers the bundled samples. Choose LM Studio or Ollama in the model menu to heal other tests.",
+            "The model call failed",
+        ),
+        (
+            "Ollama at http://localhost:11434/v1 has no model named 'x'. Load it or pick another model.",
+            "The model call failed",
+        ),
+        (
+            "LM Studio at http://localhost:1234/v1 answered HTTP 400: context length exceeded",
+            "The model call failed",
+        ),
+        (
+            "LM Studio at http://localhost:1234/v1 did not return a chat completion.",
+            "The model call failed",
+        ),
+    ],
+)
+def test_a_model_failure_is_named_for_what_happened(message: str, title: str) -> None:
+    report = fx.model_error().model_copy(
+        update={"error_message": f"The model call failed: {message}"}
+    )
+    save_report(report)
+    html = make_client().get(f"/reports/{report.id}").text
+    assert re.findall(r'<p class="banner__title">([^<]*)</p>', html) == [title]
+
+
+def test_every_heal_result_offers_the_report_download() -> None:
+    for build in fx.HEAL_STATES.values():
+        report = build()
+        save_report(report)
+        html = make_client().get(f"/reports/{report.id}").text
+        assert f'href="/reports/{report.id}.json" download>Download report</a>' in html
+    healed = _page(fx.healed)
+    assert "Download fixed spec" in healed and "Copy diff" in healed
+
+
+ODD_LINE_BREAKS = " ", " ", "\f", "\v", "\x1c", "\x1d", "\x1e", "\x85"
+
+
+def test_a_spec_with_unusual_line_break_characters_still_renders() -> None:
+    # str.splitlines() breaks on all of these; a source line only ends at a newline.
+    odd = "".join(ODD_LINE_BREAKS)
+    original = fx.ORIGINAL.replace("Ada Lovelace", f"Ada{odd}Lovelace")
+    assert original != fx.ORIGINAL
+    fixed = original.replace("#submit-btn", "#send-btn")
+    report = fx.healed().model_copy(
+        update={"original_code": original, "final_code": fixed}
+    )
+    save_report(report)
+    client = make_client()
+    diff = client.get(f"/reports/{report.id}?tab=diff")
+    assert diff.status_code == 200
+    lines = len(fx.ORIGINAL.splitlines())
+    assert diff.text.count('<span class="code__line') == lines + 1
+    assert 'class="diffstat--add">+1<' in diff.text
+    assert 'class="diffstat--del">-1<' in diff.text
+    numbers = re.findall(
+        r'<span class="code__num">(\d*)</span><span class="code__num">(\d*)</span>',
+        diff.text,
+    )
+    assert numbers[-1] == (str(lines), str(lines))

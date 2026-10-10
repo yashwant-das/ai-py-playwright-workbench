@@ -86,3 +86,36 @@ def test_every_step_has_a_title() -> None:
         "verify",
     ]
     assert [s.name for s in views.GENERATE_STEPS] == ["context", "model", "execute"]
+
+
+# str.splitlines() treats every one of these as a line break; a spec line does not end there.
+ODD_BREAKS = "  \f\v\x1c\x1d\x1e\x85"
+
+
+def test_only_a_newline_ends_a_line() -> None:
+    code = f"const a = '{ODD_BREAKS}';\r\nconst b = 2;\rconst c = 3;\n"
+    assert views.split_lines(code) == [
+        f"const a = '{ODD_BREAKS}';",
+        "const b = 2;",
+        "const c = 3;",
+    ]
+    assert views.split_lines("") == []
+    assert views.split_lines("a") == ["a"]
+    assert views.split_lines("\na\n\n") == ["", "a", ""]
+    highlighted = views.highlight_lines(code)
+    assert len(highlighted) == 3
+    assert "const" in highlighted[1] and "2" in highlighted[1]
+
+
+def test_diff_rows_stay_aligned_around_unusual_line_break_characters() -> None:
+    old = f"a\nconst s = '{ODD_BREAKS}';\nb\nc\n"
+    rows = views.diff_rows(old, old.replace("b\n", "B\n"))
+    assert [(r.kind, r.old_no, r.new_no) for r in rows] == [
+        ("same", 1, 1),
+        ("same", 2, 2),
+        ("del", 3, None),
+        ("add", None, 3),
+        ("same", 4, 4),
+    ]
+    assert [r.html for r in rows[2:]] == ["b", "B", "c"]
+    assert views.diff_counts(rows) == (1, 1)

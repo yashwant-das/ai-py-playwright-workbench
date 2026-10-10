@@ -109,6 +109,18 @@ def _css_class(tokens: list[Token], index: int) -> str:
     return ""
 
 
+def split_lines(text: str) -> list[str]:
+    """The lines of a source file: only a newline ends one.
+
+    ``str.splitlines`` also breaks on form feeds, U+2028 and other characters
+    that can sit inside a string literal, which would shift every later line.
+    """
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    if not lines[-1]:
+        lines.pop()
+    return lines
+
+
 def highlight_lines(code: str) -> list[str]:
     """One escaped HTML string per source line, with ``tok-*`` spans."""
     if not code:
@@ -125,14 +137,14 @@ def highlight_lines(code: str) -> list[str]:
                 lines[-1].append(
                     f'<span class="tok-{css}">{text}</span>' if css else text
                 )
-    return ["".join(parts) for parts in lines[: len(code.splitlines())]]
+    return ["".join(parts) for parts in lines[: len(split_lines(code))]]
 
 
 def diff_rows(old: str, new: str) -> list[DiffRow]:
     """The whole file with removed and added lines in place, numbered on both sides."""
     old_html, new_html = highlight_lines(old), highlight_lines(new)
     matcher = difflib.SequenceMatcher(
-        a=old.splitlines(), b=new.splitlines(), autojunk=False
+        a=split_lines(old), b=split_lines(new), autojunk=False
     )
     rows: list[DiffRow] = []
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():

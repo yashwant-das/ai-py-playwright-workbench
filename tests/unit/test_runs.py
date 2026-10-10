@@ -142,3 +142,46 @@ def test_stop_with_nothing_running_does_nothing() -> None:
     assert run.wait(5)
     assert registry.stop(5) is True
     assert not run.cancel.is_set()
+
+
+def test_latest_finished_is_the_newest_run_of_that_kind_with_a_report() -> None:
+    registry = RunRegistry()
+    assert registry.latest_finished("heal") is None
+
+    def reports(report_id: str):  # type: ignore[no-untyped-def]
+        return lambda emit, cancel: _report(report_id)
+
+    def crashes(emit, cancel):  # type: ignore[no-untyped-def]
+        raise OSError("disk full")
+
+    for kind, job in (
+        ("heal", reports("20261004-120000-heal-first")),
+        ("heal", reports("20261004-120001-heal-second")),
+        ("generate", reports("20261004-120002-generate-only")),
+        ("heal", crashes),
+    ):
+        assert registry.start(kind, "x", job).wait(5)  # type: ignore[arg-type]
+    heal, generated = (
+        registry.latest_finished("heal"),
+        registry.latest_finished("generate"),
+    )
+    assert heal is not None and heal.report_id == "20261004-120001-heal-second"
+    assert generated is not None
+    assert generated.report_id == "20261004-120002-generate-only"
+
+
+def test_latest_finished_ignores_a_run_that_is_still_going() -> None:
+    registry = RunRegistry()
+    release = threading.Event()
+
+    def slow(emit, cancel):  # type: ignore[no-untyped-def]
+        release.wait(5)
+        return _report()
+
+    run = registry.start("heal", "a.spec.ts", slow)
+    try:
+        assert registry.latest_finished("heal") is None
+    finally:
+        release.set()
+        assert run.wait(5)
+    assert registry.latest_finished("heal") is run

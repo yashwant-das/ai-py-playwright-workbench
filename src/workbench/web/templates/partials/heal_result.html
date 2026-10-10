@@ -10,10 +10,12 @@
     <div class="result-head__actions">
       {% if report.status == "healed" %}
       <button class="btn btn--secondary" type="button" data-diff="{{ report.diff }}" onclick="navigator.clipboard.writeText(this.dataset.diff); this.textContent = 'Copied'">{{ icon("copy", 14) }} Copy diff</button>
-      <a class="btn btn--primary" href="/reports/{{ report.id }}/spec" download>{{ icon("download", 14) }} Download fixed spec</a>
       {% else %}
       <a class="btn btn--secondary" href="/heal">Heal again</a>
+      {% endif %}
       <a class="btn btn--secondary" href="/reports/{{ report.id }}.json" download>Download report</a>
+      {% if report.status == "healed" %}
+      <a class="btn btn--primary" href="/reports/{{ report.id }}/spec" download>{{ icon("download", 14) }} Download fixed spec</a>
       {% endif %}
     </div>
   </div>

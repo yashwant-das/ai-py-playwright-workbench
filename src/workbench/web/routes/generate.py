@@ -25,7 +25,7 @@ from workbench.web.templating import templates
 
 router = APIRouter()
 
-# label, page under /sample-site/, scenario. Demo can only answer the first.
+# label, page under /sample-site/, scenario.
 EXAMPLES: dict[str, tuple[str, str, str]] = {
     "contact-form": ("Contact form", "", GENERATE_SCENARIO),
     "checkout": (
@@ -34,6 +34,8 @@ EXAMPLES: dict[str, tuple[str, str, str]] = {
         "A shopper enters their email and places an order",
     ),
 }
+# Demo replays recorded answers, and only has one for this example.
+DEMO_EXAMPLES = ("contact-form",)
 GENERATE_STEP_NAMES = ("context", "model", "execute")
 RUN_NOTICE_TITLE = "Can't run that test"
 
@@ -41,9 +43,12 @@ RUN_NOTICE_TITLE = "Can't run that test"
 @router.get("/generate", response_class=HTMLResponse)
 def generate_page(request: Request, example: str = "") -> HTMLResponse:
     context = page_context(request, "generate")
-    context["examples"] = EXAMPLES
-    if example in EXAMPLES:
-        _, page, scenario = EXAMPLES[example]
+    offered = EXAMPLES
+    if context["model"].provider == "demo":
+        offered = {key: EXAMPLES[key] for key in DEMO_EXAMPLES}
+    context["examples"] = offered
+    if example in offered:
+        _, page, scenario = offered[example]
         url = f"{request.app.state.base_url}/sample-site/{page}"
         context["form"] = {"url": url, "scenario": scenario, "run_after": True}
     return templates.TemplateResponse(request, "generate.html", context)

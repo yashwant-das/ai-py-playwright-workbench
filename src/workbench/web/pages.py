@@ -23,11 +23,15 @@ def page_context(request: Request, page: Literal["heal", "generate"]) -> dict[st
     shown = runs.get(request.query_params.get("run", ""))
     if shown is None or shown.kind != page:
         shown = running
+    # With no run of this page on screen, link the last one: it may have
+    # finished while no tab was watching.
+    on_screen = shown is not None and shown.kind == page
     return {
         "page": page,
         "model": request.app.state.model.view(),
         "active": shown,
         "busy": running is not None,
+        "last_run": None if on_screen else runs.latest_finished(page),
         "browsers_ok": browsers_ready(request),
         "samples": list(SAMPLES.values()),
         "base_url": request.app.state.base_url,

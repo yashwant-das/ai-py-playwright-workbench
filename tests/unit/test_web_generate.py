@@ -303,3 +303,100 @@ def test_cancelling_run_test_leaves_the_report_runnable() -> None:
     html = client.get(f"/reports/{report.id}").text
     assert "Not run" in html and 'hx-post="/generate/run"' in html
     assert "stopped before it finished" not in html
+
+
+def test_the_idle_page_links_the_last_finished_generation() -> None:
+    fake = FakeGenerate()
+    client = make_client(generate=fake)
+    assert "Last run" not in client.get("/generate").text
+    started = client.post(
+        "/generate",
+        data={
+            "url": "http://127.0.0.1:7860/sample-site/",
+            "scenario": "A user can send the contact form",
+        },
+    )
+    run = started_run(client, started, "generate")
+    assert run.wait(5) and run.report_id
+    html = client.get("/generate").text
+    assert "Your test will appear here" in html
+    assert "Last run: A user can send the contact form" in html
+    assert f'<a href="/reports/{run.report_id}">View result</a>' in html
+    assert "Last run" not in client.get("/heal").text
+
+
+MODEL_FAILURES = [
+    (
+        "Could not reach Ollama at http://localhost:11434/v1. Is it running?",
+        "Model unreachable",
+    ),
+    (
+        "Ollama at http://localhost:11434/v1 did not answer within 300 seconds.",
+        "Model timed out",
+    ),
+    (
+        "Demo only covers the bundled samples. Choose LM Studio or Ollama in the model menu to generate other tests.",
+        "The model call failed",
+    ),
+    (
+        "Ollama at http://localhost:11434/v1 has no model named 'x'. Load it or pick another model.",
+        "The model call failed",
+    ),
+    (
+        "LM Studio at http://localhost:1234/v1 answered HTTP 400: context length exceeded",
+        "The model call failed",
+    ),
+    (
+        "LM Studio at http://localhost:1234/v1 did not return a chat completion.",
+        "The model call failed",
+    ),
+]
+
+
+@pytest.mark.parametrize(("message", "title"), MODEL_FAILURES)
+def test_a_model_failure_is_named_for_what_happened(message: str, title: str) -> None:
+    report = fx.generate_error().model_copy(
+        update={"error_message": f"The model call failed: {message}"}
+    )
+    save_report(report)
+    html = make_client().get(f"/reports/{report.id}").text
+    titles = re.findall(r'<p class="banner__title">([^<]*)</p>', html)
+    assert titles == [title]
+    assert message.split(".")[0].replace("'", "&#39;") in html
+
+
+def test_demo_is_only_offered_the_example_it_can_answer() -> None:
+    html = make_client().get("/generate").text
+    assert 'href="/generate?example=contact-form"' in html
+    assert "example=checkout" not in html and "Checkout" not in html
+    prefilled = make_client().get("/generate?example=checkout").text
+    assert "checkout.html" not in prefilled
+
+
+def test_a_real_model_is_offered_both_examples() -> None:
+    save_settings(
+        ModelSettings(
+            provider="ollama", base_url="http://localhost:11434/v1", model="m"
+        )
+    )
+    html = make_client().get("/generate").text
+    assert 'href="/generate?example=contact-form"' in html
+    assert 'href="/generate?example=checkout"' in html
+    prefilled = make_client().get("/generate?example=checkout").text
+    assert 'value="http://127.0.0.1:7860/sample-site/checkout.html"' in prefilled
+
+
+def test_every_generate_result_offers_the_report_download() -> None:
+    for build in (
+        fx.generate_passed,
+        fx.generate_failed,
+        fx.generate_not_run,
+        fx.generate_error,
+    ):
+        report = build()
+        save_report(report)
+        html = make_client().get(f"/reports/{report.id}").text
+        assert f'href="/reports/{report.id}.json" download>Download report</a>' in html
+    passed = fx.generate_passed()
+    save_report(passed)
+    assert "Download spec" in make_client().get(f"/reports/{passed.id}").text

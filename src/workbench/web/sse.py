@@ -4,6 +4,7 @@ HTMX's SSE extension swaps each fragment into the element whose ``sse-swap``
 names the event, so the browser keeps no state of its own.
 """
 
+from html import escape
 from typing import Any
 
 from workbench.models.events import RunEvent
@@ -65,7 +66,7 @@ class RunStream:
             )
             line = _render(
                 "partials/log_line.html",
-                tone=_TONES[event.state],
+                tone=_TONES.get(event.state, ""),
                 text=f"[{event.step}] {event.detail or info.title}",
             )
             return [sse_message(f"step-{event.step}", body), sse_message("log", line)]
@@ -87,7 +88,11 @@ class RunStream:
         return []  # the pipeline's own "done": the stream sends its own when the run ends
 
     def clock(self) -> str:
-        """The run header's meta text: attempt, elapsed time, and a thinking hint."""
+        """The run header's meta, as escaped HTML: attempt, elapsed time, hint, model.
+
+        The model's name comes from the model server, and the browser swaps
+        this in as markup.
+        """
         parts = []
         if self.run.kind == "heal" and "evidence" in self._started:
             parts.append(f"Attempt {self._attempts + 1}")
@@ -99,7 +104,7 @@ class RunStream:
                 parts.append("the model is still thinking")
         if self.run.model_label:
             parts.append(self.run.model_label)
-        return " · ".join(parts)
+        return escape(" · ".join(parts), quote=False)
 
     def done(self) -> str:
         return sse_message("done", _render("partials/run_done.html", run=self.run))

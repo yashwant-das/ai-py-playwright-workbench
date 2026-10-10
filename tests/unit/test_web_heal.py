@@ -273,3 +273,25 @@ def test_a_run_that_finished_before_the_reload_is_still_shown() -> None:
 def test_an_unknown_run_id_shows_the_idle_page() -> None:
     html = make_client().get("/heal?run=nope").text
     assert "sse-connect=" not in html
+
+
+def test_the_idle_page_links_the_last_finished_heal() -> None:
+    fake = FakeHeal()
+    client = make_client(heal=fake)
+    assert "Last run" not in client.get("/heal").text
+    started = _start(client, fake, action="sample:selector-drift", max_attempts="3")
+    run = started_run(client, started, "heal")
+    assert run.finished and run.report_id
+    html = client.get("/heal").text
+    assert "Pick a sample or upload a spec" in html
+    assert "Last run: contact-form.spec.ts" in html
+    assert f'<a href="/reports/{run.report_id}">View result</a>' in html
+    assert "Last run" not in client.get("/generate").text
+
+
+def test_a_run_on_screen_is_not_also_linked_as_the_last_run() -> None:
+    fake = FakeHeal()
+    client = make_client(heal=fake)
+    started = _start(client, fake, action="sample:selector-drift", max_attempts="3")
+    run = started_run(client, started, "heal")
+    assert "Last run" not in client.get(f"/heal?run={run.id}").text

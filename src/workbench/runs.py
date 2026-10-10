@@ -114,6 +114,18 @@ class RunRegistry:
         with self._lock:
             return self._active()
 
+    def latest_finished(self, kind: RunKind) -> Run | None:
+        """The most recent finished run of that kind that saved a report."""
+        with self._lock:
+            return next(
+                (
+                    run
+                    for run in reversed(self._runs.values())
+                    if run.kind == kind and run.finished and run.report_id
+                ),
+                None,
+            )
+
     def stop(self, timeout: float = 0.0) -> bool:
         """Cancel the active run and wait up to ``timeout`` seconds for it to end.
 

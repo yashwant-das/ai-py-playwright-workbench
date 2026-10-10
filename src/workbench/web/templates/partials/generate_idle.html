@@ -1,6 +1,9 @@
 {% from "partials/icons.html" import icon %}
+<div class="stack">
 <section class="card empty" aria-labelledby="idle-title">
   <span class="empty__icon">{{ icon("code", 18) }}</span>
   <h1 class="t-section" id="idle-title">Your test will appear here</h1>
   <p class="t-small">Enter a URL and describe the flow. The page's accessibility tree and locator candidates are collected first, then the model writes the spec.</p>
 </section>
+{% include "partials/last_run.html" %}
+</div>

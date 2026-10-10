@@ -139,3 +139,67 @@ def test_clock_says_the_model_is_still_thinking() -> None:
     stream.pending()
     run.elapsed_ms = lambda: 45_000  # type: ignore[method-assign]
     assert "the model is still thinking" in stream.clock()
+
+
+MARKUP = "<img src=x onerror=alert(1)>"
+
+
+def test_the_clock_escapes_the_names_it_shows() -> None:
+    run = Run("heal", MARKUP, f"{MARKUP} · Ollama")
+    clock = RunStream(run).clock()
+    assert "<" not in clock
+    assert "&lt;img src=x onerror=alert(1)&gt; · Ollama" in clock
+
+
+def test_the_stream_and_the_page_never_send_a_run_or_model_name_as_markup() -> None:
+    client = make_client()
+    gate = threading.Event()
+    run = client.app.state.runs.start(  # type: ignore[attr-defined]
+        "heal",
+        MARKUP,
+        heal_job(heal_report(), gate=gate),
+        model_label=f"{MARKUP} · Ollama",
+        steps=("run",),
+    )
+
+    async def receive() -> dict[str, str]:
+        await asyncio.Event().wait()  # a tab that stays connected and sends nothing
+        return {}
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": f"/runs/{run.id}/events",
+            "headers": [],
+            "query_string": b"",
+            "app": client.app,
+        },
+        receive,
+    )
+
+    async def first_message() -> str:
+        response = await run_events(run.id, request)
+        try:
+            return str(await anext(aiter(response.body_iterator)))
+        finally:
+            await response.body_iterator.aclose()  # type: ignore[attr-defined]
+
+    try:
+        clock = asyncio.run(asyncio.wait_for(first_message(), timeout=2))
+        page = client.get(f"/heal?run={run.id}").text
+    finally:
+        gate.set()
+        assert run.wait(5)
+    assert clock.startswith("event: clock\n")
+    assert "<img" not in clock and "&lt;img src=x onerror=alert(1)&gt;" in clock
+    assert "<img src=x" not in page
+    assert page.count("&lt;img src=x onerror=alert(1)&gt;") == 2
+
+
+def test_a_step_that_is_reported_as_pending_renders() -> None:
+    run = Run("heal", "contact-form.spec.ts")
+    EventSink("r", run.add).step("verify", "pending")
+    step, log = RunStream(run).pending()
+    assert step.startswith("event: step-verify\n") and "step--pending" in step
+    assert log.startswith("event: log\n") and "[verify] Verify" in log

@@ -13,6 +13,7 @@ from workbench.web.views import (
     diff_rows,
     format_duration,
     locators_in,
+    split_lines,
 )
 
 Tab = Literal["diff", "video", "log", "model"]
@@ -39,10 +40,12 @@ def _model_failed(report: HealReport | GenerateReport) -> bool:
 
 
 def _model_failure_title(report: HealReport | GenerateReport) -> str:
-    """A slow model is not an unreachable one: the server answered the connection."""
+    """Names the failure for what happened; only a failed connection is "unreachable"."""
+    if "Could not reach" in report.error_message:
+        return "Model unreachable"
     if "did not answer within" in report.error_message:
         return "Model timed out"
-    return "Model unreachable"
+    return "The model call failed"
 
 
 def _tabs(report: HealReport) -> list[str]:
@@ -146,7 +149,7 @@ def generate_context(report: GenerateReport) -> dict[str, Any]:
         "badge": GENERATE_BADGES[report.status],
         "meta": " · ".join(parts),
         "locators": locators_in(report.code),
-        "lines": len(report.code.splitlines()),
+        "lines": len(split_lines(report.code)),
         "demo": exchange is not None and exchange.provenance.provider == "demo",
         "model_failed": _model_failed(report),
         "model_failure_title": _model_failure_title(report),
