@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 
 from workbench import config
 from workbench.runs import RunRegistry
+from workbench.web.guard import RequestGuard
 from workbench.web.model_state import ModelState
 from workbench.web.routes import generate as generate_routes
 from workbench.web.routes import heal as heal_routes
@@ -24,6 +25,8 @@ def create_app(services: Services | None = None, *, port: int | None = None) -> 
     app.state.base_url = config.base_url(port)
     app.state.model = ModelState(app.state.services)
     app.state.runs = RunRegistry()
+    # Before every route and mount: see workbench.web.guard.
+    app.add_middleware(RequestGuard)
     app.include_router(model_routes.router)
     app.include_router(run_routes.router)
     app.include_router(heal_routes.router)

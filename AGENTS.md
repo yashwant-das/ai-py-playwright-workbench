@@ -25,7 +25,7 @@ src/workbench/          the Python package
 ├── __main__.py         launcher: `uv run workbench` serves http://127.0.0.1:7860 and opens it
 ├── app.py              create_app(services): the FastAPI app factory
 ├── runs.py             RunRegistry: one background run at a time, with replayable events
-├── web/                routes/, templates/, static/ (tokens.css, app.css, fonts, vendored htmx), views, SSE
+├── web/                routes/, templates/, static/ (tokens.css, app.css, fonts, vendored htmx), views, SSE, guard.py (Host and Origin checks)
 ├── ids.py              run ids and slugs
 ├── runner.py           runs one spec; result from Playwright's JSON report
 ├── playwright_report.py  JSON report → RunResult
@@ -79,6 +79,7 @@ npm run type-check                         # TypeScript
 - No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
 - UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension.
 - Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
+- The app answers only requests addressed to 127.0.0.1 or localhost, and refuses state-changing requests from other origins (`workbench.web.guard`); new POST routes need no extra code, but must not be exempted.
 
 ## Commits
 

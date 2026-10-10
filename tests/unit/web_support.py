@@ -16,6 +16,9 @@ from workbench.reports import save_report
 from workbench.runs import Job, Run
 from workbench.web.services import Services
 
+# The app only answers requests addressed to itself; TestClient's default is "testserver".
+BASE_URL = "http://127.0.0.1:7860"
+
 
 def _reachable(provider: str, base_url: str = "") -> ConnectionStatus:
     models = [DEMO_MODEL] if provider == "demo" else ["test-model"]
@@ -32,7 +35,7 @@ def make_client(**overrides: Any) -> TestClient:
         "browsers_ready": lambda: True,
     }
     services = replace(Services(), **{**fakes, **overrides})
-    return TestClient(create_app(services))
+    return TestClient(create_app(services), base_url=BASE_URL)
 
 
 def heal_report(**fields: Any) -> HealReport:

@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.unit.web_support import BASE_URL
 from workbench import config
 from workbench.app import create_app
 from workbench.models.settings import (
@@ -70,7 +71,7 @@ def _client(servers: FakeServers) -> TestClient:
     services = replace(
         Services(), check_connection=servers.check, detect=servers.detect
     )
-    return TestClient(create_app(services))
+    return TestClient(create_app(services), base_url=BASE_URL)
 
 
 def test_menu_lists_the_saved_servers_models(servers: FakeServers) -> None:

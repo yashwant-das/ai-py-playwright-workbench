@@ -72,6 +72,11 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   as written.
 - Cancelling a run now stops it at once, even while the model is answering.
 
+### Security
+
+- The app refuses requests from other sites and hosts, so a web page cannot
+  start runs or change the model.
+
 ## [1.0.0] - 2026-09-28
 
 The Gradio workbench: generation, healing and vision pipelines, benchmarks
