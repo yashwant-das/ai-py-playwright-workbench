@@ -33,7 +33,6 @@ the same commit as the work it describes.
 - Heal: record a failed model call as an attempt with its `ModelExchange` (an outcome such as `model_error`, sections built before the call) so the Model I/O view shows it.
 - Generate: guard unexpected exceptions after the spec is written (end the active step, save an error report) and reject a reply with no `test(` block as an invalid reply.
 - Generate: make spec names and report ids collision-safe under concurrent runs (Phase 4).
-- Cancel an in-flight model call; today a cancel takes effect when the model answers (calls time out after 5 minutes).
 - Warn when a prompt may not fit the model's context window; Ollama silently drops the start of a prompt that is too long.
 - Heal: review the `role_argument` and `timeout_adjust` AST strategies, which extract values from `fixed_code` as loosely as `selector_replace` did.
 - Write down the security model in the README: local only, Host and Origin checked, uploaded and generated specs are code the app runs.
