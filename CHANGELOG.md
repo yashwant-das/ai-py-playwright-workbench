@@ -47,6 +47,7 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 ### Changed
 
+- The README now explains how to install, start and try the v2 app.
 - Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
   same version) and Node 24.
 - The code is now the installable `workbench` package under `src/`, with all
