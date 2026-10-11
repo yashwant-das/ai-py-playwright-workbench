@@ -13,6 +13,7 @@ on the `v2` branch:
 - Design: [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
 - Progress: [ROADMAP.md](ROADMAP.md)
 - Plans: [docs/superpowers/plans/](docs/superpowers/plans/)
+- Docs: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [development](docs/development.md)
 
 Read the spec before changing behaviour. If a change is not in the spec or the
 current phase's plan, add it to `ROADMAP.md` under "Later" instead of building it.
@@ -48,6 +49,7 @@ samples/recordings/     the Demo provider's recorded answers
 tests/unit/             default pytest run: no model, no browser, no network
 tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
 tests/ui/               Playwright Test (TypeScript) against the real app with Demo; serve.py starts it
+docs/                   architecture.md, decisions.md, development.md; assets/ holds the README's GIF and screenshots
 workspace/              runtime output (git-ignored): specs/, runs/, reports/, settings.json
 playwright.workspace.config.ts  the config the runner uses for every spec
 playwright.ui.config.ts         the UI suite's config
@@ -61,6 +63,7 @@ uv run workbench                           # start the app on http://127.0.0.1:7
 uv run python -m pytest                    # unit tests
 uv run python -m pytest tests/integration  # integration tests
 npm run test:ui                            # UI tests: real app, Chromium, Demo model
+npm run docs:capture                       # rebuild the README's GIF and screenshots
 uv run ruff check . && uv run ruff format .
 uv run mypy
 npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint

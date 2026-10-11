@@ -33,7 +33,6 @@ Nothing is queued after Phase 6.
 - Generate: make spec names and report ids collision-safe under concurrent runs (Phase 4).
 - Warn when a prompt may not fit the model's context window; Ollama silently drops the start of a prompt that is too long.
 - Heal: review the `role_argument` and `timeout_adjust` AST strategies, which extract values from `fixed_code` as loosely as `selector_replace` did.
-- Write down the security model in the README: local only, Host and Origin checked, uploaded and generated specs are code the app runs.
 - Give reports a typed model-failure kind instead of matching message text.
 
 ## Done

@@ -6,23 +6,25 @@ covered by tests.
 ## Set up
 
 ```bash
-uv sync --group dev
+uv sync
 npm ci
 npx playwright install chromium
 ```
 
 The unit tests need no model, no browser and no network.
+[docs/development.md](docs/development.md) explains the test levels and the
+quality gates.
 
 ## Before you open a pull request
 
 Run the checks CI runs:
 
 ```bash
-uv run python -m pytest                    # unit tests
+uv run python -m pytest --cov              # unit tests; fails under 85% coverage
 uv run python -m pytest tests/integration  # integration tests
-npm run lint                               # ESLint, Ruff, mypy, markdownlint
+npm run test:ui                            # UI tests
+npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
 npm run type-check                         # TypeScript
-uv run ruff format .                       # format Python
 ```
 
 The Husky pre-commit hook formats and lints staged files for you.

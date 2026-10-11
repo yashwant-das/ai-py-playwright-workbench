@@ -104,3 +104,28 @@ def test_readme_shows_the_gif_before_the_first_section_and_every_screenshot() ->
 
 def test_readme_says_the_recording_uses_the_demo_model() -> None:
     assert "Demo model" in _read("README.md").split("\n## ")[0]
+
+
+def test_contributing_lists_every_check_ci_runs() -> None:
+    text = _read("CONTRIBUTING.md")
+    for command in (
+        "uv run python -m pytest",
+        "tests/integration",
+        "npm run test:ui",
+        "npm run lint",
+        "npm run type-check",
+    ):
+        assert command in text
+
+
+def test_security_policy_describes_how_the_app_protects_itself() -> None:
+    text = _read("SECURITY.md")
+    for phrase in ("127.0.0.1", "`Host`", "`Origin`", "monthly"):
+        assert phrase in text
+    assert "weekly update" not in text
+
+
+def test_agent_guide_points_at_the_documents() -> None:
+    text = _read("AGENTS.md")
+    for name in ("docs/architecture.md", "docs/decisions.md", "docs/development.md"):
+        assert name in text
