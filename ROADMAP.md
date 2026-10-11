@@ -23,6 +23,8 @@ Nothing is queued. v2 is complete; ideas for later are below.
 - A benchmark built from a deliberately mutated sample app.
 - Comparing heals with Playwright's own healer agent.
 - Dark mode.
+- Heal, idle screen: show the "How healing works" card from the Figma file (five steps and three chips) instead of the plain empty card.
+- Generate, run failed: show the banner from the Figma file that names the failing line and points to "Heal this test".
 - Renaming the repository.
 - Heal: send Playwright's marked "Test source" block from `error-context.md` to the planner as its own prompt section (spec E2; currently the whole file plus file:line:col is sent).
 - Heal: record a failed model call as an attempt with its `ModelExchange` (an outcome such as `model_error`, sections built before the call) so the Model I/O view shows it.
