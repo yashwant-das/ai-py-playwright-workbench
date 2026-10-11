@@ -47,8 +47,10 @@ samples/specs/          sample specs with a {{BASE_URL}} placeholder
 samples/recordings/     the Demo provider's recorded answers
 tests/unit/             default pytest run: no model, no browser, no network
 tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
+tests/ui/               Playwright Test (TypeScript) against the real app with Demo; serve.py starts it
 workspace/              runtime output (git-ignored): specs/, runs/, reports/, settings.json
 playwright.workspace.config.ts  the config the runner uses for every spec
+playwright.ui.config.ts         the UI suite's config
 ```
 
 ## Commands
@@ -58,6 +60,7 @@ uv sync --group dev && npm ci && npx playwright install chromium
 uv run workbench                           # start the app on http://127.0.0.1:7860
 uv run python -m pytest                    # unit tests
 uv run python -m pytest tests/integration  # integration tests
+npm run test:ui                            # UI tests: real app, Chromium, Demo model
 uv run ruff check . && uv run ruff format .
 uv run mypy
 npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
@@ -79,6 +82,7 @@ npm run type-check                         # TypeScript
 - No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
 - UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension.
 - Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
+- UI tests get their app from the fixture in `tests/ui/support/app.ts` (free port, temporary workspace). Never point them at port 7860 or `workspace/`.
 - The app answers only requests addressed to 127.0.0.1 or localhost, and refuses state-changing requests from other origins (`workbench.web.guard`); new POST routes need no extra code, but must not be exempted.
 
 ## Commits

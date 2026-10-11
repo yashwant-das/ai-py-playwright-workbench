@@ -18,6 +18,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - A model menu that tests a server, lists its models and saves the choice.
 - Downloads for the report JSON, the fixed or generated spec, and the video.
 - `ROADMAP.md` and this changelog.
+- A UI test suite (`npm run test:ui`) that drives the real app in Chromium with
+  the Demo model.
 - The engine records every model exchange (sections sent, raw reply, validity,
   provenance) and writes one JSON report per run to `workspace/reports/`.
 - Healing evidence comes from Playwright's `error-context.md`: the page as it

@@ -106,6 +106,7 @@ Delete `workspace/` to start fresh.
 ```bash
 uv run python -m pytest                    # unit tests: no model, no browser
 uv run python -m pytest tests/integration  # real Chromium, fake model
+npm run test:ui                            # UI tests: real app, Chromium, Demo model
 npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
 npm run type-check                         # TypeScript
 ```

@@ -36,6 +36,15 @@ module.exports = tseslint.config(
     },
   },
   {
+    files: ['tests/ui/**/*.spec.ts'],
+    rules: {
+      'playwright/expect-expect': [
+        'warn',
+        { assertFunctionNames: ['expectResult', 'expectNoSeriousViolations'] },
+      ],
+    },
+  },
+  {
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'warn',
