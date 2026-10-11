@@ -53,6 +53,7 @@ test('choosing Demo heals the selector-drift sample', async ({ page }) => {
   const menu = await openModelMenu(page);
   await menu.locator('label', { hasText: 'Demo' }).click();
   await expect(menu.getByText('Replays recorded model answers')).toBeVisible();
+  await expectNoSeriousViolations(page);
   await menu.getByRole('button', { name: 'Save' }).click();
 
   await expect(page.getByRole('button', { name: /Change the model/ })).toContainText(
