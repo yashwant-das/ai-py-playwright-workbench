@@ -9,14 +9,12 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🚧 In progress | 5 | [Phase 5](docs/superpowers/plans/2026-10-11-v2-phase-5-quality-gates.md) |
+| README, GIF, architecture and decision docs, 2.0.0 release | 🔭 Planned | 6 | Phase 6 plan (to be written) |
 | Figma file: the four §5.3 changes, and four contrast values (text/tertiary #6c6c73, status/pass #147d3b, status/warn #b15209, code/muted #8c8c93); the app already has them | 🚧 Blocked: Figma MCP call limit | 4 | Phase 4 Task 12 |
 
 ## Next
 
-| Item | Status | Phase |
-| --- | --- | --- |
-| README, GIF, architecture and decision docs, 2.0.0 release | 🔭 Planned | 6 |
+Nothing is queued after Phase 6.
 
 ## Later
 
@@ -42,6 +40,7 @@ the same commit as the work it describes.
 
 | Item | Phase | Plan |
 | --- | --- | --- |
+| Quality gates: strict types, 85% coverage, UI suite with axe, four-job CI | 5 | [Phase 5](docs/superpowers/plans/2026-10-11-v2-phase-5-quality-gates.md) |
 | FastAPI + HTMX web UI matching the Figma design | 4 | [Phase 4](docs/superpowers/plans/2026-10-04-v2-phase-4-web-ui.md) |
 | LM Studio, Ollama and Demo providers; the choice is saved in the workspace (the UI arrives in Phase 4); no `.env` | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
 | Bundled samples: selector drift and app bug | 3 | [Phase 3](docs/superpowers/plans/2026-10-04-v2-phase-3-providers-and-samples.md) |
