@@ -9,7 +9,7 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| README, GIF, architecture and decision docs, 2.0.0 release | 🔭 Planned | 6 | [Phase 6](docs/superpowers/plans/2026-10-11-v2-phase-6-showcase.md) |
+| README, GIF, architecture and decision docs, 2.0.0 release | 🚧 In progress | 6 | [Phase 6](docs/superpowers/plans/2026-10-11-v2-phase-6-showcase.md) |
 | Figma file: the four §5.3 changes, and four contrast values (text/tertiary #6c6c73, status/pass #147d3b, status/warn #b15209, code/muted #8c8c93); the app already has them | 🚧 Blocked: Figma MCP call limit | 4 | Phase 4 Task 12 |
 
 ## Next

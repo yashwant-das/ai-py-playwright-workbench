@@ -59,3 +59,10 @@ def test_dependabot_checks_three_ecosystems_monthly() -> None:
     ecosystems = re.findall(r"package-ecosystem: ([\w-]+)", text)
     assert ecosystems == ["uv", "npm", "github-actions"]
     assert re.findall(r"interval: (\w+)", text) == ["monthly"] * 3
+
+
+def test_ci_reports_coverage_in_the_job_summary_only() -> None:
+    text = (WORKFLOWS / "ci.yml").read_text(encoding="utf-8")
+    assert "codecov" not in text.lower()
+    assert "--cov-report=xml" not in text
+    assert "--cov-report=markdown-append" in text

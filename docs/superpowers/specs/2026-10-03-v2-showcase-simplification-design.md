@@ -344,8 +344,9 @@ RunEvent        run_id, seq, kind(step | log | attempt | done), step?, state?, d
 | Security | CodeQL (Python, JS/TS, Actions), ruff `S` rules | CI, weekly | no new alerts |
 | Dependencies | Dependabot (uv, npm, Actions), monthly, grouped | GitHub | reviewed PRs |
 
-CI runs four jobs: `lint`, `unit`, `integration`, `ui`. Codecov keeps receiving coverage. The README shows three
-badges: CI, coverage, license.
+CI runs four jobs: `lint`, `unit`, `integration`, `ui`. Coverage is printed in the unit job's summary and the job
+fails under 85%. The README shows two badges: CI and license. (Amended 2026-10-11: `main` removed Codecov in PR #18
+before v2 merged, and v2 follows it.)
 
 ### Testing approach
 

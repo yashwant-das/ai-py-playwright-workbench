@@ -43,6 +43,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - The vision pipeline and its prompt.
 - The JSONL tracer, benchmarks, mutation engine and intent validation.
 - The Docker image and its workflow.
+- The Codecov upload. Coverage is printed in the CI job summary, and the build
+  fails under 85%.
 - The 1.0 heal loop, decision artifacts, CDP accessibility code, custom
   console and network listeners, and the Playwright report re-run configs.
 - The LLM router, model registry, retry policies, `python-dotenv` and

@@ -83,14 +83,7 @@ jobs:
       # Fails under 85% line and branch coverage (pyproject.toml).
       - name: Unit tests with coverage
         run: |
-          uv run python -m pytest -q --cov --cov-report=term --cov-report=xml --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          files: coverage.xml
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: false
+          uv run python -m pytest -q --cov --cov-report=term --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
 
   integration:
     name: Integration (real Chromium, Demo and fake models)
