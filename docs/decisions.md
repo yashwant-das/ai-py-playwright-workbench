@@ -34,7 +34,7 @@ The second lists decisions made while building it. The last section keeps the
 | Starting a run redirects to the same page with the run's id | The page then renders the run from the server's state: start buttons are locked, and a run that finishes before the reload is still shown. |
 | A finished run redirects to its report page | The live view and a later visit render the same saved report, so there is one way to show a result. |
 | The result views are links, not ARIA tabs | Each view is a page load. Links with `aria-current` are correct and work from the keyboard without script. |
-| Four colours differ from the Figma file | Muted text, pass green, warning amber and muted code text did not meet WCAG AA contrast. The app has the corrected values; the Figma file is to follow. |
+| Four colours were changed for contrast | Muted text, pass green, warning amber and muted code text did not meet WCAG AA contrast. The app and the Figma file both have the corrected values. |
 | States the Demo model cannot produce are tested from saved reports | "Healed after retries" or "invalid model reply" need a model that misbehaves. The UI suite renders them from report files instead of scripting a fake conversation. |
 | Coverage is not uploaded to a third party | It is printed in the CI job summary, and the build fails under 85%. |
 

@@ -9,6 +9,8 @@ All notable changes to this project are documented here. The format follows
 ### Changed
 
 - `AGENTS.md` no longer describes v2 as work in progress on a branch.
+- The Figma file matches the app again: two samples, the likely-app-bug state,
+  the Re-run video tab, the popover footnote and the four contrast colours.
 
 ## [2.0.0] - 2026-10-11
 
