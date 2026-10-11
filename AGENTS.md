@@ -60,7 +60,7 @@ uv run python -m pytest                    # unit tests
 uv run python -m pytest tests/integration  # integration tests
 uv run ruff check . && uv run ruff format .
 uv run mypy
-npm run lint                               # ESLint, Ruff, mypy, markdownlint
+npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
 npm run type-check                         # TypeScript
 ```
 

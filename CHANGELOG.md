@@ -48,6 +48,10 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 ### Changed
 
 - The README now explains how to install, start and try the v2 app.
+- Type checking is strict for the whole package, and the unit suite fails under
+  85% line and branch coverage.
+- `npm run lint` now checks formatting and no longer checks files the app
+  writes to `workspace/`.
 - Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
   same version) and Node 24.
 - The code is now the installable `workbench` package under `src/`, with all

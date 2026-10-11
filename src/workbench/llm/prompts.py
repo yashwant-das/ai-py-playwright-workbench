@@ -12,15 +12,16 @@ from file content by get_prompt_hash().
 
 import hashlib
 import json
+from typing import Any
 
 from workbench.config import PROMPTS_DIR
 from workbench.models.shared import PromptSection
 
 _MANIFEST_PATH = PROMPTS_DIR / "manifest.json"
-_manifest_cache: dict | None = None
+_manifest_cache: dict[str, Any] | None = None
 
 
-def _load_manifest() -> dict:
+def _load_manifest() -> dict[str, Any]:
     """Load (and cache) the prompts/manifest.json registry."""
     global _manifest_cache
     if _manifest_cache is None:

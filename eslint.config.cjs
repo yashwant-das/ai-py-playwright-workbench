@@ -21,6 +21,7 @@ module.exports = tseslint.config(
       'test-results/',
       'playwright-report/',
       'reports/',
+      'workspace/',
       'eslint.config.cjs',
       'src/workbench/web/static/vendor/',
     ],

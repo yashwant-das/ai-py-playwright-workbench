@@ -16,6 +16,7 @@
     "tests/artifacts",
     "test-results",
     "playwright-report",
+    "workspace",
     "improvements",
     ".superpowers",
   ],

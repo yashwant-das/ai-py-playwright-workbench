@@ -94,16 +94,13 @@ source = ["src/workbench"]
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+fail_under = 85
 
 [tool.mypy]
 python_version = "3.13"
 files = ["src/workbench"]
 plugins = ["pydantic.mypy"]
-check_untyped_defs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_return_any = true
-strict_equality = true
+strict = true
 
 [[tool.mypy.overrides]]
 # Pygments ships no type information.

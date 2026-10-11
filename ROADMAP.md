@@ -9,7 +9,7 @@ the same commit as the work it describes.
 
 | Item | Status | Phase | Plan |
 | --- | --- | --- | --- |
-| Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🔭 Planned | 5 | [Phase 5](docs/superpowers/plans/2026-10-11-v2-phase-5-quality-gates.md) |
+| Integration and UI suites, axe, coverage gate, strict mypy, CI rework | 🚧 In progress | 5 | [Phase 5](docs/superpowers/plans/2026-10-11-v2-phase-5-quality-gates.md) |
 | Figma file: the four §5.3 changes (the templates already implement them) | 🚧 Blocked: Figma MCP call limit | 4 | Phase 4 Task 12 |
 
 ## Next

@@ -3,6 +3,8 @@ dist
 build
 .venv
 tests/artifacts
+tests/fixtures
 test-results
-*.spec.ts
+samples/specs
+workspace
 src/workbench/web/static/vendor/

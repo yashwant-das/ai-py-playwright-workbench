@@ -11,13 +11,14 @@ Public API:
 import logging
 
 from bs4 import BeautifulSoup
+from playwright.sync_api import Page
 
 logger = logging.getLogger(__name__)
 
 _STRIP_TAGS = ["script", "style", "svg", "path", "meta", "link", "noscript"]
 
 
-def collect_dom(page, max_chars: int = 30000) -> str:
+def collect_dom(page: Page, max_chars: int = 30000) -> str:
     """Collect and clean the HTML body from a Playwright page.
 
     Args:
