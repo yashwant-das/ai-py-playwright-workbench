@@ -74,7 +74,7 @@ def test_code_and_diff_lines_have_no_whitespace_between_them() -> None:
 
 def test_execution_log_has_no_template_whitespace() -> None:
     html = _page(fx.healed, "?tab=log")
-    body = html.split('<div class="log__body">')[1].split("</section>")[0]
+    body = html.split('<div class="log__body" tabindex="0">')[1].split("</section>")[0]
     assert not body[0].isspace()
     assert not re.search(r">\s+<", body)
     assert "TimeoutError: locator.click" in body
@@ -219,3 +219,11 @@ def test_a_spec_with_unusual_line_break_characters_still_renders() -> None:
         diff.text,
     )
     assert numbers[-1] == (str(lines), str(lines))
+
+
+def test_scrolling_panes_can_be_reached_from_the_keyboard() -> None:
+    # A pane that scrolls needs focus, or keyboard users cannot read all of it.
+    assert '<pre class="code__body" tabindex="0">' in _page(fx.healed)
+    assert '<div class="log__body" tabindex="0">' in _page(fx.healed, "?tab=log")
+    assert '<pre class="code__body" tabindex="0">' in _page(fx.healed, "?tab=model")
+    assert '<pre class="code__body" tabindex="0">' in _page(fx.generate_passed)

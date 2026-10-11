@@ -77,6 +77,7 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 ### Fixed
 
+- The code, diff and log panes can be focused, so they scroll from the keyboard.
 - The runner uses Playwright's test outcomes (skipped tests, `test.fail()`,
   "No tests found") and stops at the first failure.
 - The syntax-tree selector repair no longer rewrites a model's locator fix

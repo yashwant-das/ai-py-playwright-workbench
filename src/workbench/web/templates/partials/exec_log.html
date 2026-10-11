@@ -2,7 +2,7 @@
 {% set report = result.report %}
 <section class="code" aria-label="Execution log">
   <div class="code__head">{{ icon("file", 14) }} Execution log</div>
-  <div class="log__body">
+  <div class="log__body" tabindex="0">
     {#- pre-wrap: whitespace between these elements would render as blank lines, so every tag trims it -#}
     <div class="log__line--muted">$ npx playwright test {{ report.spec_name }}</div>
     {%- if report.initial_run %}<div>{{ report.initial_run.output | ansi }}</div>{% endif -%}

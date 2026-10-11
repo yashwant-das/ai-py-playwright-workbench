@@ -232,6 +232,7 @@ def test_generate_page_resumes_an_active_generation() -> None:
     run = started_run(client, started, "generate")
     html = client.get("/generate").text
     assert f'sse-connect="/runs/{run.id}/events"' in html
+    assert 'class="log__body" tabindex="0" role="log"' in html
     button = html.split("Generate test</button>")[0].rsplit("<button", 1)[1]
     assert "disabled" in button
     gate.set()

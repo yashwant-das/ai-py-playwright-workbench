@@ -591,6 +591,13 @@ p {
   color: var(--code-muted);
 }
 
+/* The default focus ring is dark and would be clipped by the pane's rounded frame. */
+.code__body:focus-visible,
+.log__body:focus-visible {
+  outline: 2px solid var(--code-string);
+  outline-offset: -2px;
+}
+
 /* Tabs */
 .tabs {
   display: flex;

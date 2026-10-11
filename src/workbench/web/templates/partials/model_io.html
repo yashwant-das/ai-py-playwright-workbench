@@ -17,7 +17,7 @@
       <span class="code__head-meta">{{ exchange.provenance.output_tokens }} tokens · {{ exchange.provenance.latency_ms | duration }} ·
         {% if exchange.valid %}<span class="diffstat--add">valid HealingAnalysis</span>{% else %}<span class="diffstat--del">invalid: {{ exchange.validation_error or "did not match the schema" }}</span>{% endif %}</span>
     </div>
-    <pre class="code__body">{% for line in exchange.raw_response.splitlines() %}<span class="code__line"><span class="code__num">{{ loop.index }}</span><span>{{ line }}</span></span>{%- endfor %}</pre>
+    <pre class="code__body" tabindex="0">{% for line in exchange.raw_response.splitlines() %}<span class="code__line"><span class="code__num">{{ loop.index }}</span><span>{{ line }}</span></span>{%- endfor %}</pre>
   </section>
 </div>
 {% else %}
