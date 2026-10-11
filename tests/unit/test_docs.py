@@ -1,5 +1,8 @@
 """The documentation set in the v2 spec (section 9) exists, and what it points at is real."""
 
+import json
+import re
+
 import pytest
 
 from workbench.config import PROJECT_ROOT
@@ -31,3 +34,40 @@ def test_screenshots_exist_and_are_not_huge(name: str) -> None:
     data = (ASSETS / name).read_bytes()
     assert data[:8] == b"\x89PNG\r\n\x1a\n"
     assert len(data) < 1.5 * MB
+
+
+DOCS = [
+    "README.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "AGENTS.md",
+    "docs/architecture.md",
+    "docs/decisions.md",
+    "docs/development.md",
+]
+_FENCE = re.compile(r"^(`{3,})[^\n]*\n.*?^\1[ \t]*$", re.MULTILINE | re.DOTALL)
+_LINK = re.compile(r"!?\[[^\]]*\]\(<?([^)\s>]+)>?[^)]*\)")
+_NPM_SCRIPT = re.compile(r"npm run ([a-z][\w:-]*)")
+_ELSEWHERE = ("http://", "https://", "mailto:", "#")
+
+
+def _prose(name: str) -> str:
+    """The document without its fenced code blocks."""
+    return _FENCE.sub("", _read(name))
+
+
+@pytest.mark.parametrize("name", DOCS)
+def test_relative_links_resolve(name: str) -> None:
+    folder = (PROJECT_ROOT / name).parent
+    targets = [t for t in _LINK.findall(_prose(name)) if not t.startswith(_ELSEWHERE)]
+    missing = [t for t in targets if not (folder / t.split("#")[0]).exists()]
+    assert missing == []
+
+
+@pytest.mark.parametrize("name", DOCS)
+def test_npm_commands_in_the_docs_exist(name: str) -> None:
+    scripts = json.loads(_read("package.json"))["scripts"]
+    unknown = sorted(set(_NPM_SCRIPT.findall(_read(name))) - set(scripts))
+    assert unknown == []
