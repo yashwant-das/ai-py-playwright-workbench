@@ -6,7 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
+## [2.0.0] - 2026-10-11
+
+The workbench was rebuilt as a small local web app: two features (Heal and
+Generate), one heal loop and one report per run. The 1.0 Gradio UI, vision
+pipeline, benchmarks, tracer, CLI and Docker image are gone. The reasoning is
+in the [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
+and [docs/decisions.md](docs/decisions.md).
 
 ### Added
 
@@ -21,6 +27,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - A UI test suite (`npm run test:ui`) that drives the real app in Chromium with
   the Demo model.
 - Accessibility checks with axe on every page state in the UI suite.
+- A README with a recording of a heal, screenshots and a comparison with
+  Playwright Test Agents; architecture, decisions and development documents.
 - The engine records every model exchange (sections sent, raw reply, validity,
   provenance) and writes one JSON report per run to `workspace/reports/`.
 - Healing evidence comes from Playwright's `error-context.md`: the page as it
@@ -52,7 +60,6 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 
 ### Changed
 
-- The README now explains how to install, start and try the v2 app.
 - Type checking is strict for the whole package, and the unit suite fails under
   85% line and branch coverage.
 - `npm run lint` now checks formatting and no longer checks files the app

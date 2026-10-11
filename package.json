@@ -1,6 +1,6 @@
 {
   "name": "ai-py-playwright-workbench",
-  "version": "2.0.0-dev.0",
+  "version": "2.0.0",
   "description": "Generates Playwright tests and heals failing ones with local LLMs",
   "scripts": {
     "test": "npm run test:unit",
