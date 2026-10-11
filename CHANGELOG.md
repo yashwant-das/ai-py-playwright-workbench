@@ -102,6 +102,8 @@ and [docs/decisions.md](docs/decisions.md).
 
 - The app refuses requests from other sites and hosts, so a web page cannot
   start runs or change the model.
+- A report's file path is checked a second time to stay inside
+  `workspace/reports/`, independent of the report id pattern.
 
 ## [1.0.0] - 2026-09-28
 

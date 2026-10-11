@@ -7,7 +7,13 @@ import pytest
 from workbench.models.generate import ContextSummary, GenerateReport
 from workbench.models.heal import Attempt, FailureEvidence, HealReport
 from workbench.models.shared import ModelExchange, PromptSection, RunResult
-from workbench.reports import list_report_ids, load_report, report_path, save_report
+from workbench.reports import (
+    inside,
+    list_report_ids,
+    load_report,
+    report_path,
+    save_report,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -77,3 +83,15 @@ def test_load_report_rejects_path_traversal(bad_id: str) -> None:
 def test_unknown_report_is_not_found() -> None:
     with pytest.raises(FileNotFoundError):
         load_report("20261003-140509-heal-missing")
+
+
+@pytest.mark.parametrize("name", ["../x.json", "a/../../x.json", "/etc/passwd", ".."])
+def test_inside_refuses_a_name_that_leaves_the_folder(
+    tmp_path: Path, name: str
+) -> None:
+    with pytest.raises(ValueError, match="outside"):
+        inside(tmp_path, name)
+
+
+def test_inside_returns_the_path_of_a_plain_name(tmp_path: Path) -> None:
+    assert inside(tmp_path, "report.json") == tmp_path / "report.json"
