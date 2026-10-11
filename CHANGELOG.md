@@ -59,6 +59,8 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   WCAG AA contrast.
 - The result views (Diff, Re-run video, Execution log, Model I/O) are plain
   links, so they work as expected with a keyboard and a screen reader.
+- CI runs four jobs (lint, unit, integration, UI) with actions pinned to
+  commits, and Dependabot checks monthly.
 - Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
   same version) and Node 24.
 - The code is now the installable `workbench` package under `src/`, with all
