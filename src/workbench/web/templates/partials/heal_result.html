@@ -47,12 +47,12 @@
       {% if report.status == "not_healed" %}
       <div class="stack" style="margin-bottom: 20px">{% for a in report.attempts %}{% include "partials/attempt_card.html" %}{% endfor %}</div>
       {% endif %}
-      <nav class="tabs" role="tablist" aria-label="Result views">
+      <nav class="tabs" aria-label="Result views">
         {% for name, label in result.tabs %}
-        <a class="tab" role="tab" href="/reports/{{ report.id }}?{% if result.attempt %}attempt={{ result.attempt.number }}&{% endif %}tab={{ name }}" aria-selected="{{ 'true' if name == result.tab else 'false' }}">{{ label }}</a>
+        <a class="tab" href="/reports/{{ report.id }}?{% if result.attempt %}attempt={{ result.attempt.number }}&{% endif %}tab={{ name }}"{% if name == result.tab %} aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
       </nav>
-      <div role="tabpanel">
+      <div>
         {% if result.tab == "diff" %}{% include "partials/diff_pane.html" %}
         {% elif result.tab == "video" %}{% include "partials/video_pane.html" %}
         {% elif result.tab == "log" %}{% include "partials/exec_log.html" %}

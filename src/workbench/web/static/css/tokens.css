@@ -1,5 +1,6 @@
 /* Design tokens: one custom property per Figma variable (bg/canvas → --bg-canvas).
-   Figma file eL5DUZmc85ESpusNSmxDkA. Change a value in Figma first, then here. */
+   Figma file eL5DUZmc85ESpusNSmxDkA. Four values are darker (or, on code, lighter) than the file
+   for WCAG AA contrast; ROADMAP.md tracks bringing the file in line. */
 
 @font-face {
   font-family: 'Inter';
@@ -31,24 +32,24 @@
   --accent-primary: #18181b;
   --text-primary: #18181b;
   --text-secondary: #52525b;
-  --text-tertiary: #8a8a93;
+  --text-tertiary: #6c6c73;
   --text-inverse: #ffffff;
   --bg-canvas: #f7f7f5;
   --bg-surface: #ffffff;
   --bg-subtle: #f1f1ee;
   --border-default: #e4e4df;
   --border-strong: #d1d1cb;
-  --status-pass: #15803d;
+  --status-pass: #147d3b;
   --status-pass-bg: #e7f4eb;
   --status-fail: #b91c1c;
   --status-fail-bg: #fbeaea;
   --status-run: #1d4ed8;
   --status-run-bg: #e8eefd;
-  --status-warn: #b45309;
+  --status-warn: #b15209;
   --status-warn-bg: #fcf1e1;
   --code-bg: #111113;
   --code-text: #e4e4e7;
-  --code-muted: #71717a;
+  --code-muted: #8c8c93;
   --code-gutter: #18181b;
   --code-border: #27272a;
   --code-string: #a5d6ff;

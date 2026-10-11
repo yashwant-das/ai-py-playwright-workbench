@@ -26,7 +26,8 @@ def test_healed_shows_the_diff_diagnosis_and_downloads() -> None:
     assert 'class="diffstat--add">+1<' in html and 'class="diffstat--del">-1<' in html
     for label in ("Diff", "Re-run video", "Execution log", "Model I/O"):
         assert f">{label}</a>" in html
-    assert 'aria-selected="true">Diff</a>' in html
+    assert 'aria-current="page">Diff</a>' in html
+    assert 'role="tab"' not in html and 'role="tabpanel"' not in html
     assert "LOCATOR_DRIFT" in html and "0.90" in html
     assert "Selector replaced on the syntax tree" in html
     assert "Re-run passed in 2.1s" in html
@@ -135,7 +136,7 @@ def test_warnings_become_banners() -> None:
 
 def test_an_unavailable_tab_falls_back_to_the_first() -> None:
     html = _page(fx.not_healed, "?tab=diff")
-    assert 'aria-selected="true">Execution log</a>' in html
+    assert 'aria-current="page">Execution log</a>' in html
 
 
 @pytest.mark.parametrize("report_id", ["nope", "20261004-120000-heal-missing"])

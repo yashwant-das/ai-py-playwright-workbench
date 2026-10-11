@@ -10,24 +10,24 @@ FIGMA_COLOURS = {
     "accent-primary": "#18181b",
     "text-primary": "#18181b",
     "text-secondary": "#52525b",
-    "text-tertiary": "#8a8a93",
+    "text-tertiary": "#6c6c73",
     "text-inverse": "#ffffff",
     "bg-canvas": "#f7f7f5",
     "bg-surface": "#ffffff",
     "bg-subtle": "#f1f1ee",
     "border-default": "#e4e4df",
     "border-strong": "#d1d1cb",
-    "status-pass": "#15803d",
+    "status-pass": "#147d3b",
     "status-pass-bg": "#e7f4eb",
     "status-fail": "#b91c1c",
     "status-fail-bg": "#fbeaea",
     "status-run": "#1d4ed8",
     "status-run-bg": "#e8eefd",
-    "status-warn": "#b45309",
+    "status-warn": "#b15209",
     "status-warn-bg": "#fcf1e1",
     "code-bg": "#111113",
     "code-text": "#e4e4e7",
-    "code-muted": "#71717a",
+    "code-muted": "#8c8c93",
     "code-gutter": "#18181b",
     "code-border": "#27272a",
     "code-string": "#a5d6ff",
@@ -109,3 +109,49 @@ def test_meter_fill_is_a_block_so_its_width_applies() -> None:
     rule = re.search(r"\.meter__fill\s*\{([^}]*)\}", _css("app.css"))
     assert rule is not None
     assert re.search(r"display:\s*block", rule.group(1))
+
+
+def _luminance(colour: str) -> float:
+    channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    linear = [
+        c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels
+    ]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast(text: str, background: str) -> float:
+    lighter, darker = sorted(
+        (_luminance(FIGMA_COLOURS[text]), _luminance(FIGMA_COLOURS[background])),
+        reverse=True,
+    )
+    return (lighter + 0.05) / (darker + 0.05)
+
+
+# Every text colour on every background it is used on.
+TEXT_ON_BACKGROUND = [
+    ("text-primary", "bg-canvas"),
+    ("text-secondary", "bg-subtle"),
+    ("text-tertiary", "bg-surface"),
+    ("text-tertiary", "bg-canvas"),
+    ("text-tertiary", "bg-subtle"),
+    ("status-pass", "status-pass-bg"),
+    ("status-fail", "status-fail-bg"),
+    ("status-run", "status-run-bg"),
+    ("status-warn", "status-warn-bg"),
+    ("code-text", "code-bg"),
+    ("code-muted", "code-bg"),
+    ("code-muted", "code-gutter"),
+    ("code-muted", "diff-add-bg"),
+    ("code-muted", "diff-del-bg"),
+    ("diff-add-text", "diff-add-bg"),
+    ("diff-del-text", "diff-del-bg"),
+]
+
+
+def test_text_colours_meet_wcag_aa_contrast() -> None:
+    low = {
+        f"{text} on {background}": round(_contrast(text, background), 2)
+        for text, background in TEXT_ON_BACKGROUND
+        if _contrast(text, background) < 4.5
+    }
+    assert low == {}

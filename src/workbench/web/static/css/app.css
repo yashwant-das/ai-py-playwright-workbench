@@ -606,7 +606,7 @@ p {
   color: var(--text-secondary);
   text-decoration: none;
 }
-.tab[aria-selected='true'] {
+.tab[aria-current='page'] {
   border-bottom-color: var(--accent-primary);
   color: var(--text-primary);
   font-weight: 500;

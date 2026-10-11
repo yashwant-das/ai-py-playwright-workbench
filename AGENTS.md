@@ -80,7 +80,7 @@ npm run type-check                         # TypeScript
 - Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
 - No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
-- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension.
+- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension. Four values differ from the Figma file for contrast; ROADMAP.md lists them.
 - Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
 - UI tests get their app from the fixture in `tests/ui/support/app.ts` (free port, temporary workspace). Never point them at port 7860 or `workspace/`.
 - The app answers only requests addressed to 127.0.0.1 or localhost, and refuses state-changing requests from other origins (`workbench.web.guard`); new POST routes need no extra code, but must not be exempted.

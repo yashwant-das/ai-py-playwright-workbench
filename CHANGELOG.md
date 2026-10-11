@@ -20,6 +20,7 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
 - `ROADMAP.md` and this changelog.
 - A UI test suite (`npm run test:ui`) that drives the real app in Chromium with
   the Demo model.
+- Accessibility checks with axe on every page state in the UI suite.
 - The engine records every model exchange (sections sent, raw reply, validity,
   provenance) and writes one JSON report per run to `workspace/reports/`.
 - Healing evidence comes from Playwright's `error-context.md`: the page as it
@@ -54,6 +55,10 @@ Work towards 2.0.0, tracked in [ROADMAP.md](ROADMAP.md).
   85% line and branch coverage.
 - `npm run lint` now checks formatting and no longer checks files the app
   writes to `workspace/`.
+- Muted text and the pass and warning colours are darker, so all text meets
+  WCAG AA contrast.
+- The result views (Diff, Re-run video, Execution log, Model I/O) are plain
+  links, so they work as expected with a keyboard and a screen reader.
 - Python 3.13, Playwright 1.63.0 (the Python and npm packages pinned to the
   same version) and Node 24.
 - The code is now the installable `workbench` package under `src/`, with all

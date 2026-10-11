@@ -14,7 +14,11 @@ export async function expectResult(page: Page, status: string): Promise<void> {
   await expect(page).toHaveURL(/\/reports\//);
 }
 
-/** Opens the model menu and waits until the server has filled it in. */
+/**
+ * Opens the model menu and waits until the server has filled it in.
+ * Use it once per page load: every reopening fetches the menu again, which
+ * replaces anything typed into it in the meantime.
+ */
 export async function openModelMenu(page: Page): Promise<Locator> {
   await page.getByRole('button', { name: /Change the model/ }).click();
   const menu = page.locator('#model-menu');

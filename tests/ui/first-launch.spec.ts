@@ -1,4 +1,5 @@
 import { expect, test } from './support/app';
+import { expectNoSeriousViolations } from './support/axe';
 import { expectResult, openModelMenu } from './support/page';
 
 // S1: a first-time visitor with no model installed heals the sample.
@@ -18,11 +19,10 @@ test('a fresh workspace has no model and says how to get one', async ({ page, ap
   );
   await expect(page.getByRole('button', { name: 'Heal the Selector drift sample' })).toBeDisabled();
   await expect(page.getByText('Connect a model to run this.')).toBeVisible();
+  await expectNoSeriousViolations(page);
 });
 
-test('the model menu works from the keyboard and will not save a server that is down', async ({
-  page,
-}) => {
+test('the model menu opens and closes from the keyboard', async ({ page }) => {
   await page.goto('/heal');
   const pill = page.getByRole('button', { name: /Change the model/ });
   const menu = page.locator('#model-menu');
@@ -33,14 +33,19 @@ test('the model menu works from the keyboard and will not save a server that is 
   await page.keyboard.press('Escape');
   await expect(menu).toBeHidden();
   await expect(pill).toBeFocused();
+});
 
-  await openModelMenu(page);
+test('the model menu will not save a server that is down', async ({ page }) => {
+  await page.goto('/heal');
+  const menu = await openModelMenu(page);
   await menu.getByLabel('Server').fill('http://127.0.0.1:9/v1');
   await menu.getByRole('button', { name: 'Retry' }).click();
 
   await expect(menu.getByText('Unreachable', { exact: true })).toBeVisible();
+  await expect(menu.getByLabel('Server')).toHaveValue('http://127.0.0.1:9/v1');
   await expect(menu.getByLabel('Server')).toHaveAttribute('aria-invalid', 'true');
   await expect(menu.getByRole('button', { name: 'Save' })).toBeDisabled();
+  await expectNoSeriousViolations(page);
 });
 
 test('choosing Demo heals the selector-drift sample', async ({ page }) => {
