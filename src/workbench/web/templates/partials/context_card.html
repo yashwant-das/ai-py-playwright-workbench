@@ -1,0 +1,28 @@
+{% from "partials/icons.html" import icon %}
+{% set report = result.report %}
+{% set p = report.exchange.provenance if report.exchange else None %}
+<aside class="card side-card" aria-labelledby="context-title">
+  <h2 class="t-caps" id="context-title">Page context used</h2>
+  {% if report.context %}
+  <dl class="kv kv--plain"><dt>Snapshot lines</dt><dd>{{ report.context.snapshot_lines }}</dd></dl>
+  <dl class="kv kv--plain"><dt>Locator candidates</dt><dd>{{ report.context.locator_candidates | length }}</dd></dl>
+  <dl class="kv kv--plain"><dt>Console errors</dt><dd>{{ report.context.console_errors }}</dd></dl>
+  <dl class="kv kv--plain"><dt>Failed requests</dt><dd>{{ report.context.failed_requests }}</dd></dl>
+  {% endif %}
+  {% if result.locators %}
+  <h3 class="t-caps">Locators in the test</h3>
+  <ul class="evidence">{% for locator in result.locators %}<li>{{ locator }}</li>{% endfor %}</ul>
+  {% endif %}
+  <h3 class="t-caps">Run</h3>
+  {% if report.run and report.run.passed %}<p class="ok-line">{{ icon("check", 14) }} Passed in Chromium · {{ report.run.duration_ms | duration }}</p>
+  {% elif report.run %}<p class="fail-line">{{ icon("x", 14) }} {{ report.run.error_message | first_line or report.run.status }}</p>
+  {% else %}<p class="t-small t-faint">Not run</p>{% endif %}
+  {% if p %}
+  <div class="meta-foot">
+    <dl class="kv"><dt>Model</dt><dd>{{ p.model }} · {{ PROVIDER_LABELS.get(p.provider, p.provider) }}</dd></dl>
+    <dl class="kv"><dt>Prompt</dt><dd>{{ p.prompt_name }} v{{ p.prompt_version }} · {{ p.prompt_hash[:7] }}</dd></dl>
+    <dl class="kv"><dt>Tokens</dt><dd>{{ "{:,}".format(p.input_tokens) }} in · {{ "{:,}".format(p.output_tokens) }} out</dd></dl>
+    {% if p.provider == "demo" %}<p class="t-small t-faint">Answers replayed from samples/recordings — not a live model.</p>{% endif %}
+  </div>
+  {% endif %}
+</aside>

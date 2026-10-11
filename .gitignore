@@ -50,23 +50,12 @@ playwright/.cache/
 .env.local
 .env.*.local
 
-# Logs
-*.log
-logs/
-!logs/.gitkeep
-
 # OS
 .DS_Store
 Thumbs.db
 
 # Project Specific
-tests/screenshots/*.png
-tests/artifacts/
-# Specs the workbench generates at runtime
-tests/generated/*.spec.ts
-benchmarks/reports/*.json
+# v2 runtime output (Phase 2 onwards)
+workspace/
 
-# Gradio
-flagged/
-gradio_queue.db
 coverage.xml

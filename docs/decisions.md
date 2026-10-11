@@ -1,390 +1,80 @@
-# Architecture Decision Records
-
-> ADR format: Context → Decision → Alternatives → Consequences.
-> Every major technical decision must be recorded here before implementation.
-
----
-
-## ADR-001: Pydantic over dataclasses for schemas
-
-**Date:** 2026-06-06
-**Status:** DECIDED
-
-### Context
-
-`src/models/healing_model.py` uses Python `@dataclass` for `HealingDecision`, `Evidence`, `HealingAction`, and `ExecutionTimeline`. Dataclasses provide no runtime validation, no schema export, and no integration with structured output tools.
-
-### Decision
-
-Replace all `@dataclass` models with Pydantic `BaseModel` subclasses, housed in a new top-level `schemas/` directory.
-
-### Alternatives Considered
-
-- **Keep dataclasses + add manual validation:** More code, no schema export, still no retry-on-parse-failure.
-- **attrs:** Validation via validators, but no JSON schema generation, less OpenAI tool_call integration.
-- **msgspec:** Fastest option, but less ecosystem support and no native OpenAI schema integration.
-- **Pydantic v2:** Native JSON schema generation, OpenAI `response_format` integration, field validators, coercion. Already installed as a transitive dependency.
-
-### Consequences
-
-- **Positive:** Schema enforcement at parse time; retry on validation failure; JSON schema exportable for OpenAI `response_format`; IDE completions.
-- **Negative:** Slight performance overhead (irrelevant at this scale); Pydantic v2 API requires learning validators and `model_config`.
-- **Migration:** Existing artifact JSON files remain valid; Pydantic will parse them. Unit tests will need minor updates to use `model_validate()` instead of constructor.
-
----
-
-## ADR-002: LiteLLM for provider routing
-
-**Date:** 2026-06-06
-**Status:** SUPERSEDED by ADR-007
-
-See ADR-007 for the implemented decision.
-
----
-
-## ADR-003: AST tool selection for TypeScript repair
-
-**Date:** 2026-06-06
-**Status:** DECIDED
-
-### Context
-
-`apply_fix()` in `src/healing/repair.py` repairs tests using string replacement with
-sliding-window indentation normalization. Structural repairs (add import, rename locator
-across file, change test structure) are not possible without AST access.
-
-### Decision
-
-**Use ts-morph** via Node.js subprocess with a typed JSON stdin/stdout protocol.
-
-### Rationale
-
-- **TypeScript-native:** Built on the TypeScript compiler API — full TypeScript understanding
-  including generics, decorators, and template literals.
-- **Read/write AST:** Node replacement, insertion, deletion — formatting-preserving.
-- **Zero new runtime deps beyond what Playwright already requires:** Node.js is already
-  present; `typescript` is already a devDependency. Only `ts-morph` is new.
-- **Subprocess isolation:** The AST script runs in a separate Node.js process. Any crash
-  or timeout in the script does not affect the Python healing pipeline.
-- **Typed JSON protocol:** Python sends `{ strategy, source, original_code, fixed_code }`
-  on stdin; Node.js returns `{ success, source, changes }` on stdout.
-
-### Alternatives Rejected
-
-- **Babel:** TypeScript support is second-class (strips types); adds dependencies on top
-  of `typescript` which is already installed.
-- **tree-sitter:** Read-only parse trees; mutations are still string-based; Python native
-  bindings add build complexity.
-- **SWC:** Designed for compilation/bundling; programmatic mutation API is experimental
-  Rust-only.
-
-### Consequences
-
-- **Positive:** Structural repairs (add import, multi-site selector rename, timeout
-  adjustment, assertion swap) all become possible without regex fragility.
-- **Negative:** Node.js subprocess adds ~50ms latency per repair call. Acceptable given
-  healing sessions take seconds to minutes.
-- **Fallback retained:** String replacement remains the default; AST is tried first when
-  `repair_strategy` is set to a non-`string_replace` value. String fallback fires if AST
-  produces no changes.
-- **Revisit trigger:** If Playwright drops Node.js as a dependency (extremely unlikely).
-
----
-
-## ADR-004: Observability tool selection
-
-**Date:** 2026-06-06
-**Status:** DECIDED
-
-### Context
-
-No observability exists. Token usage, latency, retry counts, and failure patterns are invisible. Running a healing session produces JSON artifacts but no queryable traces.
-
-### Decision
-
-**Custom JSONL Tracer** (`src/observability/`) — zero new dependencies.
-
-Span types: `TraceMetadata` (LLM call), `SubprocessSpan` (Playwright subprocess),
-`SessionSpan` (end-to-end healing/generation session). All spans written to
-`logs/traces.jsonl` as newline-delimited JSON, queryable with `jq`.
-
-### Rationale
-
-- `LLMRouter` already captures all required signals in `LLMResponse`. The tracer
-  only needs to persist and link them.
-- Adding `opentelemetry-sdk` (~5 MB) violates "prefer deletion over addition".
-- Langfuse self-hosted requires Docker — incompatible with single-command startup.
-- JSONL + `jq` satisfies all query needs for a single-engineer project.
-
-### Alternatives Rejected
-
-- **OpenTelemetry SDK:** Appropriate if multiple exporters or backend integration is
-  needed. Revisit when the project gains a second engineer.
-- **Langfuse self-hosted:** Revisit when a web trace UI becomes a priority.
-- **Langfuse cloud:** Rejected — data exfiltration risk for test code.
-
-### Consequences
-
-- **Positive:** Zero new dependencies; local-first; human-readable; queryable with jq.
-- **Negative:** No web UI; no alerting; no cost aggregation dashboard.
-- **Upgrade path:** Span schemas designed to be compatible with OTEL semantic
-  conventions. Swap `TraceWriter` for a `LangfuseExporter` to migrate without
-  changing the tracer API.
-- **Revisit trigger:** Project gains a second engineer, or web-based trace UI
-  becomes a requirement.
-
----
-
-## ADR-005: Keep prompts as external markdown files
-
-**Date:** 2026-06-06
-**Status:** DECIDED
-
-### Context
-
-Prompts live in `prompts/*.md` and are loaded at runtime by `prompt_loader.py`. Some systems embed prompts as Python string constants.
-
-### Decision
-
-Keep external markdown files. Add versioning via a `prompts/manifest.json` that maps prompt names to version strings and content hashes.
-
-### Alternatives Considered
-
-- **Inline string constants:** Harder to edit (requires Python syntax awareness), no diffing, no version history separate from code.
-- **Database-backed prompts:** Over-engineered for single-engineer project.
-- **External service (Langfuse prompt management):** Good option once Langfuse is integrated; deferred to Phase 8.
-
-### Consequences
-
-- **Positive:** Prompts remain diffable, human-editable, independently versioned.
-- **Negative:** File I/O on every call (mitigated by caching in prompt_loader).
-- **Resolved (Phase 9):** `prompts/manifest.json` implemented with version and hash fields. `prompt_loader.py` exposes `get_prompt_version()` and `get_prompt_hash()`. Both recorded in every `HealingDecision` artifact.
-
----
-
-## ADR-006: Service layer between UI and agents
-
-**Date:** 2026-06-06
-**Status:** DECIDED
-
-### Context
-
-`src/app.py` currently imports agent internals directly and reimplements orchestration logic. This makes the agents untestable in isolation from the UI.
-
-### Decision
-
-Introduce `src/services/` as the boundary between UI and agents. The UI imports only from `src/services/`. Services import from agents. No agent imports in `app.py`.
-
-### Alternatives Considered
-
-- **Wire UI directly to agent module public APIs:** Simpler, but `app.py` still becomes coupling point for streaming callbacks.
-- **Event bus / message queue:** Over-engineered; adds complexity without benefit at this scale.
-- **Service layer with async generators:** Allows progressive streaming; matches Gradio's `yield`-based progress model.
-
-### Consequences
-
-- **Positive:** `app.py` shrinks dramatically; agents testable independently; streaming logic centralized in services.
-- **Negative:** One additional layer of indirection.
-- **Implementation Note:** Services use Python generator functions (yield) to provide streaming progress events to Gradio.
-
----
-
-## ADR-007: OpenAI SDK wrapper instead of LiteLLM
-
-**Date:** 2026-06-06
-**Status:** DECIDED (supersedes ADR-002)
-
-### Context
-
-ADR-002 proposed LiteLLM as the routing layer. Phase 2 was the implementation point.
-The project uses exactly two providers: LM Studio and Ollama. Both expose an
-OpenAI-compatible REST API at a configurable `base_url`.
-
-### Decision
-
-Implement the LLM layer as a thin wrapper around the existing `openai` SDK
-(`src/llm/` package) rather than adding LiteLLM.
-
-### Rationale
-
-- **LiteLLM's value is provider abstraction.** It normalises APIs from OpenAI, Anthropic,
-  Cohere, Bedrock, etc. This project uses only OpenAI-compatible local endpoints.
-  LiteLLM's abstraction adds nothing that `openai.OpenAI(base_url=...)` doesn't already do.
-- **Dependency weight.** LiteLLM is a large package (40 MB+) with its own transitive
-  dependency tree (httpx, aiohttp, pydantic, anthropic, …). Adding it violates the
-  "prefer deletion over addition" principle.
-- **Retry and fallback are simple.** The retry loop is ~30 lines. Fallback is a second
-  `OpenAI` client. This does not justify a 40 MB dependency.
-- **Testability.** The custom `LLMRouter` is easily unit-tested by mocking
-  `LLMClientFactory.create`. LiteLLM's global state makes mocking harder.
-
-### What was built instead
-
-```text
-src/llm/
-├── client.py     — ProviderConfig (Pydantic) + LLMClientFactory (static, no side effects)
-├── registry.py   — ModelCapabilities + ModelRegistry (capability metadata)
-├── policies.py   — RetryPolicy + TimeoutPolicy (Pydantic config models)
-├── router.py     — LLMRequest + LLMResponse (Pydantic) + LLMRouter (retry + fallback)
-└── __init__.py   — public API + get_default_router() lazy singleton
-```
-
-### Alternatives Considered
-
-- **LiteLLM:** Appropriate if the project ever needs to route to Anthropic, Bedrock, or
-  other non-OpenAI-compatible providers. Should be revisited if that requirement arises.
-- **Direct httpx:** Maximum control, but reimplements streaming and error handling already
-  covered by the OpenAI SDK.
-- **LangChain:** Over-engineered for this scope.
-
-### Consequences
-
-- **Positive:** No new dependencies; full control over retry/fallback/logging;
-  all router logic unit-tested without mocking a third-party library.
-- **Negative:** If a non-OpenAI-compatible provider is needed in the future,
-  the router will need a new client backend. LiteLLM remains the right choice for that case.
-- **Revisit trigger:** A third provider with a non-OpenAI-compatible API.
-
----
-
-## ADR-008: Single browser session for context collection
-
-**Date:** 2026-06-06
-**Status:** DECIDED (Phase 6)
-
-### Context
-
-`src/context/` collects 6 types of page context for healing and generation: DOM, accessibility tree, locator candidates, console errors, network errors, and screenshot. A naive implementation launches a Playwright browser once per context type.
-
-### Decision
-
-Open exactly one Playwright browser session in `collect_context()` and pass the `page` object to all sub-collectors. Close the session after all collectors complete.
-
-### Rationale
-
-- **Browser startup is expensive** (~300–500ms per browser launch). Collecting 6 context types sequentially with separate launches adds ~2s to every healing session.
-- **Consistent page state.** If the page is loaded once and all context is collected from the same DOM snapshot, the accessibility tree and DOM are guaranteed to be consistent with each other.
-- **Simpler cleanup.** One `async with` block owns the browser lifetime — no risk of leaked browsers if a sub-collector raises.
-
-### Alternatives Rejected
-
-- **One browser per collector:** Each collector fetches a fresh page state. Adds latency and risks inconsistent snapshots across context types.
-- **Parallel collectors:** Would require multiple browser sessions or careful sharing of a single Playwright page across async tasks. No meaningful latency benefit since context collection is I/O-bound sequentially.
-
-### Consequences
-
-- **Positive:** ~300ms per healing session saved. Consistent snapshots. Easier to mock in tests (one `page` mock, not one per collector).
-- **Negative:** If one collector hangs, all subsequent collectors are blocked. Mitigated by per-collector timeouts.
-- **Testability:** All collector functions accept a `page: Page` argument — tests inject a `MagicMock()` without launching a browser.
-
----
-
-## ADR-009: Evaluation framework design
-
-**Date:** 2026-06-06
-**Status:** DECIDED (Phase 7)
-
-### Context
-
-The evaluation framework must answer "did this change improve results?" without requiring a live LLM, live browser, or network access. The framework must be runnable in CI.
-
-### Decision
-
-Three design principles:
-
-1. **Pure evaluator functions** — no I/O, no LLM, no side effects. Inputs are the benchmark case and the output to evaluate. Output is an `EvaluationResult` Pydantic model.
-2. **Classification-only as the default benchmark** — heuristic classification is deterministic and LLM-free. The classification benchmark runs in <1s.
-3. **Injectable generator/healer functions** — LLM-dependent benchmarks accept a `generator_fn` argument so tests can inject a mock and run without a live LLM.
-
-### Rationale
-
-- Pure evaluators can be unit-tested trivially. A test that calls `evaluate_healing_case(case, output)` is deterministic and fast.
-- The classification benchmark validates the heuristic classifier without any LLM dependency — CI can run it in <1s.
-- Injectable functions allow future LLM benchmarks to be tested with mocked generators in CI, while production runs use real generators.
-
-### Alternatives Rejected
-
-- **Evaluators call the LLM to score outputs (LLM-as-judge):** Non-deterministic, expensive, requires credentials in CI.
-- **Evaluators check runtime behaviour (spawn a browser to verify the repaired test passes):** Very slow, requires a running web server, not feasible in lightweight CI.
-
-### Consequences
-
-- **Positive:** Every evaluator is unit-testable. Classification benchmark runs in CI without credentials.
-- **Negative:** Lexical checks (must_contain, must_import) are necessary simplifications. They do not validate semantic correctness.
-- **Revisit trigger:** When LLM-as-judge is needed for semantic evaluation, add it as an optional `scorer_fn` argument to runners, not as a change to existing evaluators.
-
----
-
-## ADR-010: Thread-local session isolation for Gradio
-
-**Date:** 2026-06-06
-**Status:** DECIDED (Phase 8)
-
-### Context
-
-Gradio runs each UI event handler in its own thread. The observability tracer must maintain one active session per healing/generation run. A global `session` variable would cause race conditions when two users trigger healing simultaneously.
-
-### Decision
-
-Use `threading.local()` to store the active `TracerSession` object. Each thread has its own `_thread_local.session` attribute. The tracer reads and writes only the session for the current thread.
-
-### Rationale
-
-- Gradio's threading model is one-thread-per-event-handler — `threading.local()` is the standard Python mechanism for this pattern.
-- The alternative (asyncio) would require Gradio to support async handlers, which it does but with different semantics that complicate testing.
-- Thread-local storage is zero-dependency and has no runtime overhead.
-
-### Alternatives Rejected
-
-- **Global session with a lock:** Serializes all healing sessions — unacceptable latency.
-- **Session ID passed explicitly through every function:** Would require changing every pipeline function signature.
-- **asyncio + contextvars:** More semantically correct for async code, but Gradio's event system uses threads, not coroutines.
-
-### Consequences
-
-- **Positive:** Complete isolation between concurrent healing sessions. No lock contention.
-- **Negative:** Thread-local state is not visible across threads — if a session spawns a worker thread, that worker cannot see the tracer session. Currently not an issue since the pipeline is single-threaded per healing run.
-- **Testability:** Tests that call `start_session()` must reset `_thread_local.session = None` in `tearDown` to avoid state leakage between tests running in the same thread.
-
----
-
-## ADR-011: Healer decomposition into 7 modules
-
-**Date:** 2026-06-06
-**Status:** DECIDED (Phase 4)
-
-### Context
-
-The original `src/agents/healer.py` was a god module: 600+ lines mixing failure classification, evidence gathering, LLM prompt construction, LLM response parsing, AST repair, string repair, verification, and artifact persistence.
-
-### Decision
-
-Decompose `src/agents/healer.py` into 7 focused modules in `src/healing/`:
-
-| Module              | Single Responsibility                         |
-| ------------------- | --------------------------------------------- |
-| `classifier.py`     | Heuristic failure classification              |
-| `evidence.py`       | Evidence → HealingDecision field extraction   |
-| `planner.py`        | LLM prompt construction and response parsing  |
-| `repair.py`         | AST and string repair dispatch                |
-| `verifier.py`       | Playwright test re-run and result parsing     |
-| `artifact_store.py` | JSON artifact persistence                     |
-| `runner.py`         | Orchestration — calls the 6 above in sequence |
-
-### Rationale
-
-- Each module is independently testable. `classifier.py` tests need no mocks. `planner.py` tests mock only the LLM router. `repair.py` tests mock only the subprocess.
-- The single-responsibility boundary makes it clear where to add a new capability: new failure pattern → `classifier.py`; new repair strategy → `repair.py`; new provenance field → `planner.py` and `artifact_store.py`.
-- `runner.py` becomes the only module that knows the full healing sequence. It is thin — no business logic, only sequencing.
-
-### Alternatives Rejected
-
-- **Keep god module, add tests:** The test surface is the full 600-line module — every test must mock everything.
-- **2-module split (classifier + healer):** Still leaves planner, repair, and verifier mixed — the most complex code stays in one place.
-
-### Consequences
-
-- **Positive:** 556 unit tests, with test files per module. Adding a repair strategy requires touching `repair.py` and `ast_repair.js` only. Architecture matches the documentation.
-- **Negative:** One additional import hop — callers import from `src.healing.runner`, not `src.agents.healer`. Old import paths were updated across the codebase.
-- **Revisit trigger:** None planned.
-- **Revisit trigger:** A third provider with a non-OpenAI-compatible API.
+# Decisions
+
+Why the workbench is built the way it is. The first table is the v2 redesign
+([spec](superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)).
+The second lists decisions made while building it. The last section keeps the
+1.0 decisions that still hold.
+
+## The v2 redesign
+
+| ID | Decision | Why |
+| --- | --- | --- |
+| D1 | Web UI only; no CLI and no `.env` | The user picks the provider and model in the UI. Fewer entry points and no setup file make the project easier to run and to explain. |
+| D2 | FastAPI, Jinja, HTMX and server-sent events; no front-end build | Full control of the look without a second app or toolchain. Live progress maps directly onto server-sent events. |
+| D3 | One report per run (`HealReport`, `GenerateReport`) | It replaces decision artifacts, timelines, traces and provenance records that overlapped. The UI, the downloads and the tests read the same object. |
+| D4 | Providers: LM Studio, Ollama and Demo | Both local servers speak the OpenAI API, so one client covers both. Demo replays recorded answers, so the app works without a model. |
+| D5 | Evidence comes from Playwright's `error-context.md` and the failing run's own output folder | Playwright already snapshots the page at the moment of failure. Re-opening the start page described the wrong state for any multi-step test. |
+| D6 | `page.aria_snapshot(mode="ai")` and Playwright's own console, page-error and request collections | Public, maintained APIs replace custom CDP code and listeners. `mode="ai"` is the format Playwright itself writes into `error-context.md`, so Generate and Heal show the model the same thing. |
+| D7 | Ask the model for JSON-schema output, then validate with Pydantic | It makes "structured output" true. If a server rejects the schema, the call is retried once without it and validation still applies. |
+| D8 | The app-defect guard | A `POTENTIAL_APP_DEFECT` diagnosis with confidence 0.7 or more stops the heal without editing the test. One rule, and it answers the main criticism of self-healing: hiding real bugs. |
+| D9 | Keep this project's own engine; compare it with Playwright Test Agents in the README | Test Agents are instructions and MCP tools run inside a coding assistant. This project is a standalone pipeline for local models with constrained, auditable fixes. Replacing the engine would leave nothing to show. |
+| D10 | The package is `workbench` under `src/` | `from src.healing import …` used `src` as a package name. A proper src layout fixes imports and packaging. |
+| D11 | All runtime output goes to one git-ignored `workspace/` folder | It replaces five scattered output folders. |
+| D12 | pytest-style tests in `tests/unit`, `tests/integration` and `tests/ui` | Clear levels: nothing external, real browser, whole app. |
+| D13 | Python 3.13, Playwright 1.63.0 (Python and npm pinned to the same version), Node 24 | Current, supported versions. Matching pins keep the Python library and the test runner on the same browser builds. |
+| D14 | The runner reads Playwright's JSON report, not terminal output | The report gives each test's status, error and location, and the exact paths of its screenshot and `error-context.md`. It replaces parsing stdout and searching for files. |
+| D15 | Verification re-runs are recorded as video with each action captioned | Visible proof that the fix works. Only verification runs are recorded, to keep the workspace small. |
+
+## Decisions made while building v2
+
+| Decision | Why |
+| --- | --- |
+| The app checks `Host` and `Origin` on every request | A local app still receives requests from pages open in the same browser. Without the check, another site could have posted a spec and had it run. |
+| A model call can be abandoned | A local model can take minutes. Cancel returns at once by leaving the call to finish on its own thread; the run ends as cancelled. |
+| Starting a run redirects to the same page with the run's id | The page then renders the run from the server's state: start buttons are locked, and a run that finishes before the reload is still shown. |
+| A finished run redirects to its report page | The live view and a later visit render the same saved report, so there is one way to show a result. |
+| The result views are links, not ARIA tabs | Each view is a page load. Links with `aria-current` are correct and work from the keyboard without script. |
+| Four colours differ from the Figma file | Muted text, pass green, warning amber and muted code text did not meet WCAG AA contrast. The app has the corrected values; the Figma file is to follow. |
+| States the Demo model cannot produce are tested from saved reports | "Healed after retries" or "invalid model reply" need a model that misbehaves. The UI suite renders them from report files instead of scripting a fake conversation. |
+| Coverage is not uploaded to a third party | It is printed in the CI job summary, and the build fails under 85%. |
+
+## Decisions kept from 1.0
+
+### Pydantic models for every data shape
+
+Model output, reports, events and settings are Pydantic models in
+`src/workbench/models/`. Validation happens when the data is parsed, the same
+classes produce the JSON schema sent to the model, and a report on disk is just
+a model dumped as JSON. Dataclasses with hand-written validation, `attrs` and
+`msgspec` were considered; none gives validation, schema export and wide
+support together.
+
+### ts-morph for syntax-tree repair, in a Node subprocess
+
+A fix such as "replace this locator" is applied to the TypeScript syntax tree,
+so formatting and everything around the change are untouched. ts-morph is
+built on the TypeScript compiler, and Node is already required by Playwright.
+Python sends the source and the change on stdin and reads the result on
+stdout; a crash or timeout in the script cannot take the pipeline down, and
+the fix then falls back to an exact text replacement. Regular expressions
+(too fragile) and tree-sitter (reads trees well, awkward for edits) were
+rejected.
+
+### Prompts are files with a version manifest
+
+The prompts live in `src/workbench/prompts/*.md`, not in Python strings, so a
+prompt change is a readable diff. `manifest.json` holds a version for each
+prompt, bumped by hand when its content changes; a content hash is computed at
+run time. Every report records the prompt's name, version and hash.
+
+### One browser session per context collection
+
+The page context (accessibility snapshot, locator candidates, console and
+network errors) is collected in a single visit to the page. Separate visits
+per collector were slower and could each see a different page.
+
+### The OpenAI SDK instead of a routing library
+
+Both supported servers expose the OpenAI API, so `openai.OpenAI(base_url=…)`
+is all the abstraction needed. A general routing library would add a large
+dependency for providers this project does not use.

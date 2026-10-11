@@ -1,0 +1,18 @@
+{% set outcome = OUTCOME_BADGES[a.outcome] %}
+{% set action = a.analysis.action_taken if a.analysis else None %}
+<article class="attempt" aria-label="Attempt {{ a.number }}">
+  <div class="attempt__head">
+    <span class="t-label">{{ outcome.title }}</span>
+    {% if action %}<span class="tag">{{ STRATEGY_LABELS[action.repair_strategy.value] }}</span>{% endif %}
+    <span class="pill pill--{{ outcome.variant }}">{{ outcome.label }}</span>
+  </div>
+  {% if action and (action.original_code or action.fixed_code) %}<p class="snippet">{{ action.original_code }} → {{ action.fixed_code }}</p>{% endif %}
+  <p class="t-small t-muted">
+    {% if a.outcome == "healed" %}Re-run passed in {{ a.rerun.duration_ms | duration }}.
+    {% elif a.outcome == "rerun_failed" %}The fix was applied but the test still failed: {{ a.rerun.error_message | first_line }}
+    {% elif a.outcome == "not_applied" %}The code the model wanted to replace isn't in the file, so nothing was changed. The next attempt starts from the same code.
+    {% elif a.outcome == "invalid_reply" %}The response didn't match the HealingAnalysis schema. See Model I/O for the raw text.
+    {% elif a.outcome == "app_defect" %}The model thinks the app is broken, so the test was left as it is.
+    {% else %}Stopped before the fix was applied.{% endif %}
+  </p>
+</article>

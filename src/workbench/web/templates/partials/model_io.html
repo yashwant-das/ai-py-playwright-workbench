@@ -1,0 +1,25 @@
+{% from "partials/icons.html" import icon %}
+{% set exchange = result.attempt.exchange if result.attempt else None %}
+{% if exchange %}
+<div class="stack">
+  <div class="card" style="padding: 0">
+    <table class="io-table">
+      <thead><tr><th scope="col">Sent to the model</th><th scope="col">Size</th><th scope="col">Note</th></tr></thead>
+      <tbody>
+        {% for section in exchange.sections %}
+        <tr><td>{{ section.name }}</td><td class="t-mono">{{ section.chars | size }}</td><td class="t-faint">{% if section.truncated %}cut from {{ section.original_chars | size }}{% else %}whole{% endif %}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <section class="code" aria-label="Model reply">
+    <div class="code__head">{{ icon("code", 14) }} Received · response.json
+      <span class="code__head-meta">{{ exchange.provenance.output_tokens }} tokens · {{ exchange.provenance.latency_ms | duration }} ·
+        {% if exchange.valid %}<span class="diffstat--add">valid HealingAnalysis</span>{% else %}<span class="diffstat--del">invalid: {{ exchange.validation_error or "did not match the schema" }}</span>{% endif %}</span>
+    </div>
+    <pre class="code__body" tabindex="0">{% for line in exchange.raw_response.splitlines() %}<span class="code__line"><span class="code__num">{{ loop.index }}</span><span>{{ line }}</span></span>{%- endfor %}</pre>
+  </section>
+</div>
+{% else %}
+<p class="card t-small t-muted">No model call was made.</p>
+{% endif %}

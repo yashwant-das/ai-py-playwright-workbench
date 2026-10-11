@@ -1,0 +1,28 @@
+{
+  "kind": "heal",
+  "sample": "app-bug",
+  "match": "test('Checkout places an order'",
+  "reply": {
+    "failure_type": "POTENTIAL_APP_DEFECT",
+    "failure_summary": "After Place order, the page says \"Something went wrong\" instead of \"Order placed\".",
+    "hypothesis": "The test does what a customer does and expects the right outcome. The order request fails, so the app is broken, not the test.",
+    "confidence_score": 0.9,
+    "confidence_rationale": "Every step of the test succeeded; only the outcome differs, and the page itself reports an error.",
+    "reasoning_steps": [
+      "The email was filled in and the Place order button was clicked without errors.",
+      "The status then reads \"Something went wrong. Please try again.\"",
+      "That is an error message from the app, not a changed label or a slow page.",
+      "Changing the assertion would hide a broken checkout, so the test should stay as it is."
+    ],
+    "root_cause_evidence": [
+      "status \"Something went wrong. Please try again.\" in the page snapshot at the failure",
+      "Expected \"Order placed\""
+    ],
+    "action_taken": {
+      "original_code": "",
+      "fixed_code": "",
+      "description": "No change: the test is right and the checkout is broken.",
+      "repair_strategy": "string_replace"
+    }
+  }
+}

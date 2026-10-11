@@ -1,0 +1,42 @@
+{% from "partials/icons.html" import icon %}
+<form class="stack" hx-post="/model" hx-target="this" hx-swap="outerHTML">
+  <div class="row">
+    <h2 class="t-section">Model</h2>
+    {% if menu.provider == "demo" %}<span class="pill pill--warn ml-auto">Demo</span>
+    {% elif menu.status.reachable %}<span class="pill pill--pass ml-auto">Connected</span>
+    {% else %}<span class="pill pill--fail ml-auto">Unreachable</span>{% endif %}
+  </div>
+  <fieldset class="fieldset stack stack--tight">
+    <legend class="field__label">Provider</legend>
+    <div class="seg" hx-post="/model/test" hx-trigger="change" hx-include="closest form" hx-target="closest form" hx-swap="outerHTML">
+      {% for value, label in menu.providers %}
+      <label><input type="radio" name="provider" value="{{ value }}"{% if value == menu.provider %} checked{% endif %}>{{ label }}</label>
+      {% endfor %}
+    </div>
+  </fieldset>
+  {% if menu.provider != "demo" %}
+  <div class="field">
+    <div class="row">
+      <label class="field__label" for="model-server">Server</label>
+      <button type="button" class="btn btn--ghost btn--small ml-auto" hx-post="/model/test" hx-include="closest form" hx-target="closest form" hx-swap="outerHTML">{{ icon("refresh", 14) }} Retry</button>
+    </div>
+    <input class="input input--mono" id="model-server" name="base_url" value="{{ menu.base_url }}"{% if not menu.status.reachable %} aria-invalid="true" aria-describedby="model-server-error"{% endif %}>
+    {% if not menu.status.reachable and menu.status.error %}<p class="field__error" id="model-server-error">{{ menu.status.error }}</p>{% endif %}
+  </div>
+  <div class="field">
+    <label class="field__label" for="model-name">Model</label>
+    {% if menu.status.reachable and menu.status.models %}
+    <select class="select input--mono" id="model-name" name="model">
+      {% for name in menu.status.models %}<option value="{{ name }}"{% if name == menu.selected %} selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+    {% else %}
+    <select class="select" id="model-name" disabled><option>Available once connected</option></select>
+    {% endif %}
+  </div>
+  {% else %}
+  <p class="t-small t-muted">Replays recorded model answers for the bundled samples, so you can see the whole flow without a model. Runs are labelled "Demo".</p>
+  {% endif %}
+  {% if menu.error %}<p class="field__error" role="alert">{{ menu.error }}</p>{% endif %}
+  <button class="btn btn--primary btn--block" type="submit"{% if menu.provider != "demo" and not menu.status.reachable %} disabled{% endif %}>Save</button>
+  <p class="popover__foot">Saved on this machine.</p>
+</form>

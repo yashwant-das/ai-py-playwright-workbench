@@ -1,182 +1,95 @@
 # Repository Guidelines
 
-> Instructions for AI assistants (Claude, Codex, etc.) working in this codebase.
-> Verified against the current codebase as of 2026-06-06.
+Instructions for AI assistants (Claude, Codex and others) working in this
+repository. Keep this file accurate: update it in the same commit as any change
+to the layout, commands or conventions.
 
----
+## What this project is
 
-## What This Project Is
+A tool that generates Playwright tests and heals failing ones with local LLMs
+(LM Studio or Ollama), rebuilt as a local web app in v2. It is being redesigned
+on the `v2` branch:
 
-A reference AI Systems Engineering project — not a SaaS product. It implements
-Playwright test generation and self-healing using local LLMs with structured outputs,
-evaluation, observability, and AST-based repair. The goal is a reference-quality
-implementation of the patterns described in `docs/ai-systems-engineering.md`.
+- Design: [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
+- Progress: [ROADMAP.md](ROADMAP.md)
+- Plans: [docs/superpowers/plans/](docs/superpowers/plans/)
+- Docs: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [development](docs/development.md)
 
----
+Read the spec before changing behaviour. If a change is not in the spec or the
+current phase's plan, add it to `ROADMAP.md` under "Later" instead of building it.
 
-## Module Structure
+## Layout
 
 ```text
-src/
-├── app.py                # Gradio UI — 8-tab workbench, wiring only
-├── agents/               # Pipeline entry points and public API
-│   ├── generator.py      # Orchestrates context collection + LLM call → generated test
-│   └── healer.py         # CLI entrypoint + re-exports src/healing public API
-├── services/             # Service layer — the boundary between UI and pipelines
-│   ├── generation_service.py
-│   ├── healing_service.py
-│   ├── vision_service.py
-│   └── workbench_service.py
-├── healing/              # Healing pipeline — 7 single-responsibility modules
-│   ├── classifier.py     # Heuristic failure classification (pure function)
-│   ├── planner.py        # LLM reasoning → HealingDecision
-│   ├── repair.py         # AST-first code repair + string fallback
-│   ├── runner.py         # Playwright subprocess management
-│   ├── evidence.py       # Evidence gathering
-│   ├── verifier.py       # Post-repair verification
-│   └── artifact_store.py # JSON artifact persistence
-├── context/              # Browser context collection (single Playwright session)
-│   ├── collector.py      # Unified ContextSnapshot builder
-│   ├── dom.py, accessibility.py, locator_candidates.py
-│   ├── console.py, network.py, screenshot.py
-├── llm/                  # LLM routing layer
-│   ├── router.py         # LLMRouter with retry and fallback
-│   ├── client.py         # LLMClientFactory (no module-level side effects)
-│   ├── registry.py       # Model capability metadata
-│   └── policies.py       # RetryPolicy, TimeoutPolicy
-├── observability/        # JSONL trace writer
-│   ├── tracer.py         # Tracer (thread-local) + NullTracer
-│   ├── writer.py         # Thread-safe JSONL appender
-│   └── schemas.py        # Span models
-└── utils/
-    ├── llm.py            # parse_llm_response(), extract_json_block(), extract_code_block()
-    ├── prompt_loader.py  # load_prompt(), get_prompt_hash(), get_prompt_version()
-    ├── browser.py        # extract_domain() — URL → clean domain name for filenames
-    ├── formatting.py     # clean_ansi_codes(), format_test_result()
-    └── validation.py     # Input validation
-
-schemas/                  # Pydantic data contracts (source of truth for all data shapes)
-├── healing.py            # HealingAnalysis, HealingDecision, Evidence, HealingAction
-├── generation.py         # GenerationResult, GenerationDecision, VisionDecision
-├── evaluation.py         # BenchmarkRun, BenchmarkRunConfig, EvaluationResult
-├── artifacts.py          # ContextSnapshot, TraceMetadata
-└── shared.py             # FailureType, RunResult, ProvenanceRecord, LLMConfig
-
-benchmarks/               # Evaluation framework
-scripts/
-└── ast_repair.js         # ts-morph AST repair script (Node.js subprocess)
-prompts/                  # LLM system prompts (external markdown files)
+src/workbench/          the Python package
+├── config.py           every path; workspace_dir() / runs_dir() / reports_dir() / specs_dir()
+├── __main__.py         launcher: `uv run workbench` serves http://127.0.0.1:7860 and opens it
+├── app.py              create_app(services): the FastAPI app factory
+├── runs.py             RunRegistry: one background run at a time, with replayable events
+├── web/                routes/, templates/, static/ (tokens.css, app.css, fonts, vendored htmx), views, SSE, guard.py (Host and Origin checks)
+├── ids.py              run ids and slugs
+├── runner.py           runs one spec; result from Playwright's JSON report
+├── playwright_report.py  JSON report → RunResult
+├── environment.py      Node.js and Chromium checks
+├── events.py           EventSink: numbered progress events
+├── reports.py          save / load / list run reports
+├── heal/               pipeline.py (heal), evidence, planner, repair (+ ast_repair.js), classifier
+├── generate/           pipeline.py (generate)
+├── context/            page context: aria snapshot, console, page errors, requests
+├── llm/                chat.py (ChatModel), client.py (LM Studio, Ollama), demo.py, providers.py, cancellable.py (a model call a cancel can abandon), parsing, prompts
+├── settings.py         the saved model choice: workspace/settings.json
+├── samples.py          the bundled samples; install_sample()
+├── models/             Pydantic contracts: reports, events, model output, what the templates show (web.py)
+├── prompts/            prompt files and manifest.json
+├── validation.py       input checks
+└── text.py             clean_ansi_codes()
+samples/site/           sample web app the samples run against
+samples/specs/          sample specs with a {{BASE_URL}} placeholder
+samples/recordings/     the Demo provider's recorded answers
+tests/unit/             default pytest run: no model, no browser, no network
+tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
+tests/ui/               Playwright Test (TypeScript) against the real app with Demo; serve.py starts it
+docs/                   architecture.md, decisions.md, development.md; assets/ holds the README's GIF and screenshots
+workspace/              runtime output (git-ignored): specs/, runs/, reports/, settings.json
+playwright.workspace.config.ts  the config the runner uses for every spec
+playwright.ui.config.ts         the UI suite's config
 ```
 
----
-
-## Where to Add New Code
-
-| What you're adding                 | Where it goes                                                                                                                  |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| New LLM provider                   | `src/llm/client.py` + `src/llm/registry.py` (see `docs/development/adding-models.md`)                                          |
-| New repair strategy                | `src/healing/repair.py` + `schemas/healing.py` + `scripts/ast_repair.js` (see `docs/development/adding-healing-strategies.md`) |
-| New benchmark                      | `benchmarks/<type>/` + dataset JSON (see `docs/development/adding-benchmarks.md`)                                              |
-| New failure classification pattern | `src/healing/classifier.py` + `benchmarks/healing/fixtures/repair_scenarios.json`                                              |
-| New UI tab                         | `src/services/` first, then wire in `src/app.py`                                                                               |
-| New data contract                  | `schemas/` as a Pydantic `BaseModel`                                                                                           |
-| New context collector              | `src/context/` + register in `src/context/collector.py`                                                                        |
-
-**Do not add logic to `src/agents/`.** This package contains the public pipeline entry
-points (`generator.py`, `healer.py`) and the CLI interface for the healer. New pipeline
-logic belongs in `src/healing/`, `src/context/`, `src/services/`, or `src/llm/`.
-
----
-
-## Build, Test, and Development Commands
+## Commands
 
 ```bash
-# Install Python dependencies
-uv sync
-
-# Install Node.js + Playwright browsers
-npm install && npx playwright install
-
-# Run all Python unit tests (no live LLM or browser required — 556 tests)
-uv run python -m pytest tests/unit_test_*.py -q
-
-# Run the classification benchmark (deterministic, no LLM)
-uv run python -c "
-from benchmarks.healing.runner import run_healing_benchmark
-from schemas.evaluation import BenchmarkRunConfig
-from pathlib import Path
-config = BenchmarkRunConfig(
-    model='heuristic', provider='local',
-    prompt_name='n/a', prompt_version='1', prompt_hash='n/a',
-    temperature=0.0, dataset_version='1.0.0', benchmark_type='healing-classification',
-)
-run = run_healing_benchmark(Path('benchmarks/healing/fixtures/repair_scenarios.json'), Path('.'), config)
-print(f'{run.passed}/{run.total} passed')
-"
-
-# Lint (JS + Python + mypy + Markdown)
-npm run lint
-
-# Format Python
-uv run ruff format .
-
-# Launch the workbench (requires LLM for generation/healing tabs)
-uv run python src/app.py
-# Open http://127.0.0.1:7860
-
-# Run the Playwright tests the workbench generated into tests/generated/
-npm run test:generated
+uv sync --group dev && npm ci && npx playwright install chromium
+uv run workbench                           # start the app on http://127.0.0.1:7860
+uv run python -m pytest                    # unit tests
+uv run python -m pytest tests/integration  # integration tests
+npm run test:ui                            # UI tests: real app, Chromium, Demo model
+npm run docs:capture                       # rebuild the README's GIF and screenshots
+uv run ruff check . && uv run ruff format .
+uv run mypy
+npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
+npm run type-check                         # TypeScript
 ```
 
----
+## Rules
 
-## Testing Guidelines
+- All LLM output is parsed into a Pydantic model (`workbench.llm.parsing.parse_llm_response`), never `json.loads` alone.
+- New data shapes are Pydantic models in `workbench/models/`.
+- Paths come from `workbench.config`.
+- Talk to models only through `workbench.llm.chat.ChatModel`.
+- `heal()` must leave the spec unchanged unless the status is `healed`.
+- Prompt changes go in `src/workbench/prompts/` and bump the version in `src/workbench/prompts/manifest.json`.
+- Subprocesses use argument lists, never `shell=True`.
+- Tests never need a live model, browser or network unless they live in `tests/integration/`.
+- Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
+- `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
+- No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
+- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension. Four values differ from the Figma file for contrast; ROADMAP.md lists them.
+- Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
+- UI tests get their app from the fixture in `tests/ui/support/app.ts` (free port, temporary workspace). Never point them at port 7860 or `workspace/`.
+- The app answers only requests addressed to 127.0.0.1 or localhost, and refuses state-changing requests from other origins (`workbench.web.guard`); new POST routes need no extra code, but must not be exempted.
 
-- All Python tests are in `tests/unit_test_*.py`. Use `unittest.TestCase`.
-- Tests must NOT require a live LLM, live browser, or network connection.
-- Mock the LLM router with `@patch("src.healing.planner.get_default_router")`.
-- Mock the Playwright page with `MagicMock()` for context collector tests.
-- The `model_used` attribute on mock `LLMResponse` objects must be a string (not a `MagicMock`).
-- See `docs/development/testing.md` for full patterns.
+## Commits
 
----
-
-## Coding Style
-
-- Python: Ruff (88-char lines, double quotes; rule set in `pyproject.toml`) and mypy. Run `uv run ruff format .` and `uv run mypy` before committing.
-- TypeScript: Prettier with 2-space indentation. Run `npm run format` before committing.
-- Markdown: must pass `markdownlint-cli2`. Run `npm run lint:md` to check.
-- All LLM responses must be parsed via `parse_llm_response(raw, ModelClass)` — never `json.loads()` directly.
-- All new data contracts must be Pydantic `BaseModel` subclasses in `schemas/`.
-
----
-
-## Commit Guidelines
-
-- Use Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`.
-- Include before/after artifacts when healing logic changes.
-- Run `npm run lint` and `uv run python -m pytest tests/unit_test_*.py -q` before committing.
-
----
-
-## Documentation
-
-Active documentation lives in:
-
-- `README.md` — entry point, architecture overview, quick start
-- `AGENTS.md` — this file (AI assistant context)
-- `docs/decisions.md` — all Architecture Decision Records (ADR-001 through ADR-011)
-- `docs/architecture/` — per-subsystem architecture docs
-- `docs/development/` — contributor guides
-- `docs/evaluation/` — benchmark and evaluation methodology
-- `docs/prompts/` — prompt engineering documentation
-- `docs/env-variables.md` — all environment variables with defaults
-- `docs/docker.md` — Docker setup and deployment
-
----
-
-## Security
-
-- Do not commit `.env` files or real API keys.
-- All subprocess calls use list arguments — no shell injection risk.
-- Prompt changes go in `prompts/`; increment the version in `prompts/manifest.json`.
+- Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`).
+- Update `ROADMAP.md` and `CHANGELOG.md` in the same commit as the work.
+- Run the unit tests, ruff, mypy and `npm run lint` before committing; the Husky hook formats staged files.

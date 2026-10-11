@@ -1,0 +1,10 @@
+{% set rerun = result.attempt.rerun if result.attempt else None %}
+{% if rerun and rerun.video_path %}
+<figure class="stack">
+  <video class="video" controls preload="metadata" src="/reports/{{ result.report.id }}/video?attempt={{ result.attempt.number }}"></video>
+  <figcaption class="row t-small t-muted">Verification re-run of attempt {{ result.attempt.number }}, with each action captioned · {{ rerun.duration_ms | duration }}
+    <a class="ml-auto" href="/reports/{{ result.report.id }}/video?attempt={{ result.attempt.number }}" download>Download video</a></figcaption>
+</figure>
+{% else %}
+<p class="card t-small t-muted">No video was recorded for this run.</p>
+{% endif %}

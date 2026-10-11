@@ -21,16 +21,27 @@ module.exports = tseslint.config(
       'test-results/',
       'playwright-report/',
       'reports/',
+      'workspace/',
       'eslint.config.cjs',
+      'src/workbench/web/static/vendor/',
     ],
   },
   {
-    // Node.js scripts — allow require(), process, __dirname, etc.
-    files: ['scripts/**/*.js'],
+    // Node.js scripts shipped in the package — allow require(), process, __dirname, etc.
+    files: ['src/workbench/**/*.js'],
     languageOptions: {
       globals: {
         ...globals.node,
       },
+    },
+  },
+  {
+    files: ['tests/ui/**/*.spec.ts'],
+    rules: {
+      'playwright/expect-expect': [
+        'warn',
+        { assertFunctionNames: ['expectResult', 'expectNoSeriousViolations'] },
+      ],
     },
   },
   {

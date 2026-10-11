@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "partials/icons.html" import icon %}
+{% from "partials/banner.html" import banner %}
+{% block title %}Heal · Playwright Workbench{% endblock %}
+{% block model %}{% include "partials/model_pill.html" %}{% endblock %}
+{% block sidebar_label %}Heal a test{% endblock %}
+{% block sidebar %}
+{% set locked = busy or not model.ready or not browsers_ok %}
+<div class="stack stack--tight">
+  <h1 class="t-page">Heal a failing test</h1>
+  <p class="t-muted">Runs the spec, works out why it failed, repairs the code with a syntax-tree edit, then re-runs it to prove the fix.</p>
+</div>
+<form id="heal-form" class="stack stack--loose" hx-post="/heal" hx-target="#main" hx-encoding="multipart/form-data" hx-disabled-elt="find button[type=submit]">
+  <section class="card card--sample" aria-labelledby="samples-title">
+    <h2 class="t-caps" id="samples-title">Try a sample</h2>
+    {% for sample in samples %}
+    <div class="stack stack--tight">
+      <p class="row t-label">{{ icon("file", 14) }} {{ sample.title }} <span class="t-mono t-faint">{{ sample.spec_file }}</span></p>
+      <p class="t-small t-muted">{{ sample.description }}</p>
+      <button class="btn btn--primary btn--block" type="submit" name="action" value="sample:{{ sample.name }}"{% if locked %} disabled{% endif %} aria-label="Heal the {{ sample.title }} sample">Heal sample test</button>
+    </div>
+    {% endfor %}
+    {% if not model.ready %}<p class="t-small t-faint">Connect a model to run this.</p>{% endif %}
+    <p class="field__error" id="sample-error" role="alert"></p>
+  </section>
+  <p class="divider">or upload your own</p>
+  <div class="stack stack--tight">
+    <label class="dropzone">
+      {{ icon("upload", 18) }}
+      <strong id="upload-name">Drop a .spec.ts file</strong>
+      <span>or click to browse</span>
+      <input type="file" name="spec" accept=".ts" aria-describedby="upload-error" onchange="document.getElementById('upload-name').textContent = this.files[0] ? this.files[0].name : 'Drop a .spec.ts file'">
+    </label>
+    <p class="field__error" id="upload-error" role="alert"></p>
+  </div>
+  <div class="row">
+    <div class="stack stack--tight">
+      <label class="field__label" for="max-attempts">Max repair attempts</label>
+      <span class="field__hint">Gives up after this many failed fixes</span>
+    </div>
+    <div class="stepper ml-auto">
+      <button type="button" aria-label="Fewer attempts" onclick="this.nextElementSibling.stepDown()">−</button>
+      <input id="max-attempts" name="max_attempts" type="number" min="1" max="5" value="{{ form.max_attempts or 3 }}" aria-describedby="attempts-error">
+      <button type="button" aria-label="More attempts" onclick="this.previousElementSibling.stepUp()">+</button>
+    </div>
+  </div>
+  <p class="field__error" id="attempts-error" role="alert"></p>
+  <button class="btn btn--secondary btn--block" type="submit" name="action" value="upload"{% if locked %} disabled{% endif %}>Heal uploaded file</button>
+</form>
+<p class="sidebar__foot t-small t-faint">Each run saves a report (diagnosis, evidence, diff, model) to workspace/reports/.</p>
+{% endblock %}
+{% block main %}
+{% if not browsers_ok %}{% include "partials/browsers_missing.html" %}{% endif %}
+{% if result %}{% include "partials/heal_result.html" %}
+{% elif active and active.kind == "heal" %}{% set run = active %}{% include "partials/run_view.html" %}
+{% elif not model.ready %}{% include "partials/unreachable.html" %}
+{% else %}{% include "partials/heal_idle.html" %}{% endif %}
+{% endblock %}

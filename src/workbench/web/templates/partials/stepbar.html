@@ -1,0 +1,6 @@
+{% from "partials/icons.html" import icon %}
+<ol class="stepbar" aria-label="Steps">
+  {% for item in result.stepbar %}
+  <li class="stepbar__item stepbar__item--{{ item.state }}">{{ icon({"done": "check", "failed": "x"}.get(item.state, "circle-dashed"), 14, item.state) }} {{ item.title }} {% if item.time %}<span class="t-mono t-faint">{{ item.time }}</span>{% endif %}</li>
+  {% endfor %}
+</ol>

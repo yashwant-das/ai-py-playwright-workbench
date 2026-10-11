@@ -2,76 +2,109 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    branches: [main, v2]
   pull_request:
-    branches: ['**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
-    name: Lint
+    name: Lint and types
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install Node dependencies
         run: npm ci
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: 'latest'
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Install Python dependencies
         run: uv sync --group dev
 
-      - name: Python lint (ruff)
-        run: uv run ruff check .
+      - name: Python lint and format (ruff)
+        run: npm run lint:py
 
-      - name: Python format check (ruff)
-        run: uv run ruff format --check .
+      - name: Python types (mypy, strict)
+        run: npm run lint:types
 
-      - name: Python type check (mypy)
-        run: uv run mypy
-
-      - name: Python unit tests (with coverage)
-        run: |
-          uv run python -m pytest tests/unit_test_*.py -q --cov --cov-report=term --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
-
-      - name: TypeScript type check (tsc)
+      - name: TypeScript types (tsc)
         run: npm run type-check
 
-      - name: JavaScript lint (eslint)
+      - name: JavaScript and TypeScript lint (eslint)
         run: npm run lint:js
+
+      - name: Formatting (prettier)
+        run: npm run lint:format
 
       - name: Markdown lint
         run: npm run lint:md
 
-  e2e:
-    name: End-to-end (generate + heal, stubbed LLM)
+  unit:
+    name: Unit tests and coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      # The syntax-tree repair runs through Node (ts-morph).
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      # Fails under 85% line and branch coverage (pyproject.toml).
+      - name: Unit tests with coverage
+        run: |
+          uv run python -m pytest -q --cov --cov-report=term --cov-report=markdown-append:"$GITHUB_STEP_SUMMARY"
+
+  integration:
+    name: Integration (real Chromium, Demo and fake models)
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
           cache: 'npm'
 
       - name: Install Node dependencies
         run: npm ci
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          version: 'latest'
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Install Python dependencies
         run: uv sync --group dev
@@ -80,22 +113,58 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Generate and heal specs against a real browser
-        run: uv run python -m pytest tests/e2e/e2e_test_pipeline.py -v --junitxml=reports/e2e-pytest.xml
+        env:
+          WORKBENCH_WORKSPACE: ${{ github.workspace }}/workspace
+        run: uv run python -m pytest tests/integration -v --junitxml=reports/integration-pytest.xml
 
-      - name: Re-run generated and healed specs for the report
-        run: npm run test:e2e:report
-
-      - name: Upload E2E artifacts
+      - name: Upload integration artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: e2e-report
+          name: integration-report
           path: |
             reports/
+            workspace/
+          if-no-files-found: warn
+          retention-days: 14
+
+  ui:
+    name: UI (Playwright Test, axe, Demo model)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - name: Install Python dependencies
+        run: uv sync --group dev
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Drive the app in Chromium
+        run: npm run test:ui
+
+      - name: Upload the UI report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ui-report
+          path: |
             playwright-report/
-            test-results/
-            tests/generated/
-            tests/artifacts/
-            logs/traces.jsonl
+            test-results/ui/
           if-no-files-found: warn
           retention-days: 14

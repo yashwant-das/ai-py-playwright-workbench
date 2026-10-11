@@ -1,18 +1,25 @@
 [project]
 name = "ai-py-playwright-workbench"
-version = "1.0.0"
-description = "A modular, LLM-powered QA automation agent that generates and maintains Playwright tests"
+version = "2.0.0"
+description = "Generates Playwright tests and heals failing ones with local LLMs"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "MIT"
 dependencies = [
-    "playwright==1.57.0",
-    "gradio==6.28.0",
+    "playwright==1.63.0",
     "openai==2.14.0",
     "beautifulsoup4==4.14.3",
-    "python-dotenv==1.2.3",
     "pydantic>=2.0.0",
+    "httpx==0.28.1",
+    "fastapi==0.142.2",
+    "uvicorn==0.54.0",
+    "jinja2==3.1.6",
+    "python-multipart==0.0.32",
+    "pygments==2.21.0",
 ]
+
+[project.scripts]
+workbench = "workbench.__main__:main"
 
 [dependency-groups]
 dev = [
@@ -20,14 +27,23 @@ dev = [
     "pytest>=8.0.0",
     "pytest-cov>=6.0.0",
     "mypy>=2.3.1",
+    "httpx2==2.13.1",
 ]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/workbench"]
 
 [tool.ruff]
 # Target Python version
-target-version = "py311"
+target-version = "py313"
 
 # Line length compatible with Black
 line-length = 88
+src = ["src", "tests"]
 
 # Exclude list
 exclude = [
@@ -46,7 +62,6 @@ exclude = [
 select = ["E", "F", "W", "I", "B", "UP", "S", "SIM", "C4", "PIE", "RET", "RUF"]
 ignore = [
     "E501",   # line length is left to the formatter
-    "E402",   # some modules set up sys.path before importing
     "RUF001", # en dashes in UI strings, docstrings and comments are intentional
     "RUF002",
     "RUF003",
@@ -59,8 +74,8 @@ ignore = [
 "tests/**" = ["S", "SIM117", "RUF100"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["unit_test_*.py"]
+testpaths = ["tests/unit"]
+python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-q --tb=short"
@@ -74,18 +89,20 @@ line-ending = "auto"
 [tool.coverage.run]
 branch = true
 relative_files = true
-source = ["src", "schemas", "benchmarks"]
+source = ["src/workbench"]
 
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+fail_under = 85
 
 [tool.mypy]
-python_version = "3.11"
-files = ["src", "schemas", "benchmarks"]
+python_version = "3.13"
+files = ["src/workbench"]
 plugins = ["pydantic.mypy"]
-check_untyped_defs = true
-warn_unused_ignores = true
-warn_redundant_casts = true
-warn_return_any = true
-strict_equality = true
+strict = true
+
+[[tool.mypy.overrides]]
+# Pygments ships no type information.
+module = ["pygments", "pygments.*"]
+ignore_missing_imports = true

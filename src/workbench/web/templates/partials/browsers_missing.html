@@ -1,0 +1,2 @@
+{% from "partials/banner.html" import banner %}
+{{ banner("fail", "Playwright browsers aren't installed" | safe, "The test can't run until Chromium is installed." | safe, "npx playwright install chromium") }}
