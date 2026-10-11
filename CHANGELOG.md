@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- `AGENTS.md` no longer describes v2 as work in progress on a branch.
+
 ## [2.0.0] - 2026-10-11
 
 The workbench was rebuilt as a small local web app: two features (Heal and
