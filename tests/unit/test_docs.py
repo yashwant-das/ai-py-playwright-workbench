@@ -71,3 +71,36 @@ def test_npm_commands_in_the_docs_exist(name: str) -> None:
     scripts = json.loads(_read("package.json"))["scripts"]
     unknown = sorted(set(_NPM_SCRIPT.findall(_read(name))) - set(scripts))
     assert unknown == []
+
+
+README_SECTIONS = [
+    "## Why it exists",
+    "## How it works",
+    "## Quickstart",
+    "## Using the app",
+    "## Screenshots",
+    "## How this compares to Playwright Test Agents",
+    "## Tests and quality gates",
+    "## Tech stack",
+    "## Project structure",
+    "## Documentation",
+    "## License",
+]
+
+
+def test_readme_has_the_showcase_sections_in_order() -> None:
+    readme = _read("README.md")
+    positions = [readme.find(f"\n{heading}\n") for heading in README_SECTIONS]
+    assert -1 not in positions
+    assert positions == sorted(positions)
+
+
+def test_readme_shows_the_gif_before_the_first_section_and_every_screenshot() -> None:
+    readme = _read("README.md")
+    assert "docs/assets/demo.gif" in readme.split("\n## ")[0]
+    for name in SCREENSHOTS:
+        assert f"docs/assets/{name}" in readme
+
+
+def test_readme_says_the_recording_uses_the_demo_model() -> None:
+    assert "Demo model" in _read("README.md").split("\n## ")[0]
