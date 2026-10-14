@@ -109,7 +109,9 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 def test_every_sample_spec_exists_and_has_the_placeholder() -> None:
     assert set(SAMPLES) == {"selector-drift", "app-bug"}
     for sample in SAMPLES.values():
-        source = (config.SAMPLE_SPECS_DIR / sample.spec_file).read_text(encoding="utf-8")
+        source = (config.SAMPLE_SPECS_DIR / sample.spec_file).read_text(
+            encoding="utf-8"
+        )
         assert BASE_URL_PLACEHOLDER in source
 
 
@@ -128,8 +130,9 @@ def test_install_fills_in_the_base_url() -> None:
 
 def test_install_keeps_a_base_url_path() -> None:
     path = install_sample("app-bug", "http://127.0.0.1:7860/sample-site/")
-    assert "page.goto('http://127.0.0.1:7860/sample-site/checkout.html')" in path.read_text(
-        encoding="utf-8"
+    assert (
+        "page.goto('http://127.0.0.1:7860/sample-site/checkout.html')"
+        in path.read_text(encoding="utf-8")
     )
 
 
@@ -161,7 +164,6 @@ Expected: collection error `No module named 'workbench.samples'`.
 In `src/workbench/config.py`, after `WORKSPACE_ENV = "WORKBENCH_WORKSPACE"`, add:
 
 ```python
-
 SAMPLES_DIR = PROJECT_ROOT / "samples"
 SAMPLE_SITE_DIR = SAMPLES_DIR / "site"
 SAMPLE_SPECS_DIR = SAMPLES_DIR / "specs"
@@ -482,8 +484,13 @@ from workbench.models.settings import DEMO_MODEL, ModelSettings, normalise_base_
 
 def test_bare_host_gets_the_openai_path() -> None:
     assert normalise_base_url("http://localhost:11434") == "http://localhost:11434/v1"
-    assert normalise_base_url(" http://localhost:1234/v1/ ") == "http://localhost:1234/v1"
-    assert normalise_base_url("http://gpu-box:8080/openai/v1") == "http://gpu-box:8080/openai/v1"
+    assert (
+        normalise_base_url(" http://localhost:1234/v1/ ") == "http://localhost:1234/v1"
+    )
+    assert (
+        normalise_base_url("http://gpu-box:8080/openai/v1")
+        == "http://gpu-box:8080/openai/v1"
+    )
 
 
 @pytest.mark.parametrize("url", ["localhost:1234", "ftp://host/v1", "http://", ""])
@@ -498,7 +505,9 @@ def test_server_providers_need_a_url() -> None:
 
 
 def test_saved_url_is_normalised() -> None:
-    choice = ModelSettings(provider="ollama", base_url="http://localhost:11434/", model="m")
+    choice = ModelSettings(
+        provider="ollama", base_url="http://localhost:11434/", model="m"
+    )
     assert choice.base_url == "http://localhost:11434/v1"
     assert choice.label == "Ollama"
 
@@ -561,7 +570,9 @@ def _completion(content: str | None = "ok", model: str = "m-1") -> httpx.Respons
     )
 
 
-def _model(handler: Handler, provider: ProviderName = "lm_studio") -> OpenAICompatibleModel:
+def _model(
+    handler: Handler, provider: ProviderName = "lm_studio"
+) -> OpenAICompatibleModel:
     return OpenAICompatibleModel(
         provider=provider,
         base_url=BASE,
@@ -606,7 +617,9 @@ def test_no_schema_sends_no_response_format() -> None:
 def test_rejected_schema_is_retried_once_without_it() -> None:
     def answer(request: httpx.Request) -> httpx.Response:
         if "response_format" in json.loads(request.content):
-            return httpx.Response(400, json={"error": {"message": "response_format unsupported"}})
+            return httpx.Response(
+                400, json={"error": {"message": "response_format unsupported"}}
+            )
         return _completion("plain")
 
     bodies, handler = _recorder(answer)
@@ -617,7 +630,9 @@ def test_rejected_schema_is_retried_once_without_it() -> None:
 
 def test_a_bad_request_without_a_schema_is_not_retried() -> None:
     bodies, handler = _recorder(
-        lambda _: httpx.Response(400, json={"error": {"message": "context length exceeded"}})
+        lambda _: httpx.Response(
+            400, json={"error": {"message": "context length exceeded"}}
+        )
     )
     with pytest.raises(ModelError, match="HTTP 400: context length exceeded"):
         _model(handler).chat(MESSAGES)
@@ -637,7 +652,9 @@ def test_unreachable_server_names_the_provider() -> None:
     def refuse(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("refused", request=request)
 
-    with pytest.raises(ModelError, match=r"Could not reach Ollama at http://127\.0\.0\.1:1234/v1"):
+    with pytest.raises(
+        ModelError, match=r"Could not reach Ollama at http://127\.0\.0\.1:1234/v1"
+    ):
         _model(refuse, provider="ollama").chat(MESSAGES)
 
 
@@ -651,9 +668,9 @@ def test_timeout_is_reported_as_such() -> None:
 
 def test_unknown_model_says_so() -> None:
     with pytest.raises(ModelError, match="has no model named 'm-1'"):
-        _model(lambda _: httpx.Response(404, json={"error": {"message": "not found"}})).chat(
-            MESSAGES
-        )
+        _model(
+            lambda _: httpx.Response(404, json={"error": {"message": "not found"}})
+        ).chat(MESSAGES)
 
 
 def test_empty_content_becomes_an_empty_reply() -> None:
@@ -661,7 +678,9 @@ def test_empty_content_becomes_an_empty_reply() -> None:
 
 
 def _listing(handler: Handler) -> list[str]:
-    return list_models(BASE, http_client=httpx.Client(transport=httpx.MockTransport(handler)))
+    return list_models(
+        BASE, http_client=httpx.Client(transport=httpx.MockTransport(handler))
+    )
 
 
 def test_list_models_skips_embedding_models() -> None:
@@ -1035,20 +1054,31 @@ LIMITS = {
 
 
 def _messages(user: str) -> list[dict[str, str]]:
-    return [{"role": "system", "content": "system prompt"}, {"role": "user", "content": user}]
+    return [
+        {"role": "system", "content": "system prompt"},
+        {"role": "user", "content": user},
+    ]
 
 
 def _heal_prompt(test_file: str) -> str:
-    return render_prompt([("Test file", test_file), ("Error", "TimeoutError")], LIMITS)[0]
+    return render_prompt([("Test file", test_file), ("Error", "TimeoutError")], LIMITS)[
+        0
+    ]
 
 
 def _generate_prompt(url: str, scenario: str) -> str:
-    sections = [("Target URL", url), ("Scenario", scenario), ("Page snapshot", "- button")]
+    sections = [
+        ("Target URL", url),
+        ("Scenario", scenario),
+        ("Page snapshot", "- button"),
+    ]
     return render_prompt(sections, LIMITS)[0]
 
 
 def _sample_spec(name: str) -> str:
-    return (config.SAMPLE_SPECS_DIR / SAMPLES[name].spec_file).read_text(encoding="utf-8")
+    return (config.SAMPLE_SPECS_DIR / SAMPLES[name].spec_file).read_text(
+        encoding="utf-8"
+    )
 
 
 def test_prompt_sections_round_trip() -> None:
@@ -1073,7 +1103,9 @@ def test_app_bug_sample_gets_a_confident_app_defect_diagnosis() -> None:
 
 
 def test_sample_scenario_is_generated_for_the_given_url() -> None:
-    prompt = _generate_prompt("http://127.0.0.1:4173/", "  a user can SEND the contact form ")
+    prompt = _generate_prompt(
+        "http://127.0.0.1:4173/", "  a user can SEND the contact form "
+    )
     code = extract_code_block(DemoModel().chat(_messages(prompt)).content)
     assert "page.goto('http://127.0.0.1:4173/')" in code
     assert "{{URL}}" not in code
@@ -1099,7 +1131,9 @@ def test_every_sample_has_a_heal_recording() -> None:
 
 
 def test_the_generate_recording_is_the_sample_scenario() -> None:
-    assert [r.match for r in load_recordings() if r.kind == "generate"] == [GENERATE_SCENARIO]
+    assert [r.match for r in load_recordings() if r.kind == "generate"] == [
+        GENERATE_SCENARIO
+    ]
 
 
 def test_heal_with_demo_on_an_unknown_spec_is_a_clear_error(
@@ -1138,8 +1172,6 @@ Expected: collection error `No module named 'workbench.llm.demo'`.
 Append to `src/workbench/models/samples.py`, and add `from typing import Any` and `Field` to its imports:
 
 ```python
-
-
 class Recording(BaseModel):
     """One recorded model answer that the Demo provider replays."""
 
@@ -1386,7 +1418,12 @@ from workbench.llm.chat import ModelError
 from workbench.llm.client import OpenAICompatibleModel
 from workbench.llm.demo import DemoModel
 from workbench.llm.providers import build_model, check_connection, detect_provider
-from workbench.models.settings import DEFAULT_URLS, DEMO_MODEL, ConnectionStatus, ModelSettings
+from workbench.models.settings import (
+    DEFAULT_URLS,
+    DEMO_MODEL,
+    ConnectionStatus,
+    ModelSettings,
+)
 
 LM = DEFAULT_URLS["lm_studio"]
 OLLAMA = DEFAULT_URLS["ollama"]
@@ -1408,13 +1445,17 @@ def _never(base_url: str) -> list[str]:
 
 
 def test_lm_studio_wins_when_both_answer() -> None:
-    choice = detect_provider(list_models=_servers({LM: ["qwen3-8b"], OLLAMA: ["gemma3:4b"]}))
+    choice = detect_provider(
+        list_models=_servers({LM: ["qwen3-8b"], OLLAMA: ["gemma3:4b"]})
+    )
     assert choice == ModelSettings(provider="lm_studio", base_url=LM, model="qwen3-8b")
 
 
 def test_ollama_is_used_when_lm_studio_is_down() -> None:
     choice = detect_provider(list_models=_servers({OLLAMA: ["gemma3:4b", "qwen3:8b"]}))
-    assert choice == ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
+    assert choice == ModelSettings(
+        provider="ollama", base_url=OLLAMA, model="gemma3:4b"
+    )
 
 
 def test_a_server_with_no_models_is_skipped() -> None:
@@ -1428,9 +1469,14 @@ def test_no_server_means_no_choice() -> None:
 
 def test_connection_lists_the_models() -> None:
     choice = ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
-    status = check_connection(choice, list_models=_servers({OLLAMA: ["gemma3:4b", "qwen3:8b"]}))
+    status = check_connection(
+        choice, list_models=_servers({OLLAMA: ["gemma3:4b", "qwen3:8b"]})
+    )
     assert status == ConnectionStatus(
-        provider="ollama", base_url=OLLAMA, reachable=True, models=["gemma3:4b", "qwen3:8b"]
+        provider="ollama",
+        base_url=OLLAMA,
+        reachable=True,
+        models=["gemma3:4b", "qwen3:8b"],
     )
 
 
@@ -1443,15 +1489,25 @@ def test_connection_reports_an_unreachable_server() -> None:
 
 
 def test_demo_is_always_connected() -> None:
-    status = check_connection(ModelSettings(provider="demo", model=DEMO_MODEL), list_models=_never)
+    status = check_connection(
+        ModelSettings(provider="demo", model=DEMO_MODEL), list_models=_never
+    )
     assert status.reachable and status.models == [DEMO_MODEL]
 
 
 def test_build_model_picks_the_implementation() -> None:
-    assert isinstance(build_model(ModelSettings(provider="demo", model=DEMO_MODEL)), DemoModel)
-    model = build_model(ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b"))
+    assert isinstance(
+        build_model(ModelSettings(provider="demo", model=DEMO_MODEL)), DemoModel
+    )
+    model = build_model(
+        ModelSettings(provider="ollama", base_url=OLLAMA, model="gemma3:4b")
+    )
     assert isinstance(model, OpenAICompatibleModel)
-    assert (model.provider, model.base_url, model.model) == ("ollama", OLLAMA, "gemma3:4b")
+    assert (model.provider, model.base_url, model.model) == (
+        "ollama",
+        OLLAMA,
+        "gemma3:4b",
+    )
 ```
 
 Create `tests/unit/test_settings.py`:
@@ -1465,7 +1521,12 @@ import pytest
 
 from workbench import config
 from workbench.models.settings import DEFAULT_URLS, DEMO_MODEL, ModelSettings
-from workbench.settings import load_settings, resolve_settings, save_settings, settings_path
+from workbench.settings import (
+    load_settings,
+    resolve_settings,
+    save_settings,
+    settings_path,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -1478,7 +1539,9 @@ def test_nothing_saved_means_no_choice() -> None:
 
 
 def test_saved_choice_round_trips() -> None:
-    choice = ModelSettings(provider="ollama", base_url=DEFAULT_URLS["ollama"], model="qwen3:8b")
+    choice = ModelSettings(
+        provider="ollama", base_url=DEFAULT_URLS["ollama"], model="qwen3:8b"
+    )
     path = save_settings(choice)
     assert path == settings_path() == config.workspace_dir() / "settings.json"
     assert load_settings() == choice
@@ -1517,7 +1580,9 @@ def test_resolve_prefers_the_saved_choice() -> None:
 
 
 def test_resolve_detects_when_nothing_is_saved_and_does_not_save() -> None:
-    found = ModelSettings(provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m")
+    found = ModelSettings(
+        provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"
+    )
     assert resolve_settings(detect=lambda: found) == found
     assert not settings_path().exists()
 
@@ -1847,7 +1912,9 @@ In `tests/integration/test_pipeline.py`:
 
 
   def _model(llm: FakeLLM) -> OpenAICompatibleModel:
-      return OpenAICompatibleModel(provider="lm_studio", base_url=llm.base_url, model="fake-model")
+      return OpenAICompatibleModel(
+          provider="lm_studio", base_url=llm.base_url, model="fake-model"
+      )
   ```
 
 - In both tests, replace `model=RouterChatModel(get_default_router())` with `model=_model(fake_llm)`.
@@ -1978,8 +2045,8 @@ def test_first_launch_without_a_server_heals_the_sample_with_demo(site: str) -> 
     spec = install_sample("selector-drift", site)
     report = heal(HealRequest(spec_path=spec), model=build_model(choice))
 
-    assert report.status == SAMPLES["selector-drift"].expected_status, report.model_dump_json(
-        indent=2
+    assert report.status == SAMPLES["selector-drift"].expected_status, (
+        report.model_dump_json(indent=2)
     )
     exchange = report.attempts[0].exchange
     assert exchange is not None and exchange.provenance.provider == "demo"
@@ -1993,14 +2060,18 @@ def test_app_bug_sample_stops_without_editing_the_test(site: str) -> None:
 
     report = heal(HealRequest(spec_path=spec), model=DemoModel())
 
-    assert report.status == SAMPLES["app-bug"].expected_status, report.model_dump_json(indent=2)
+    assert report.status == SAMPLES["app-bug"].expected_status, report.model_dump_json(
+        indent=2
+    )
     assert [a.outcome for a in report.attempts] == ["app_defect"]
     assert report.attempts[0].rerun is None
     assert spec.read_bytes() == original
 
 
 def test_demo_generates_a_passing_spec_for_the_sample_scenario(site: str) -> None:
-    report = generate(GenerateRequest(url=site, scenario=GENERATE_SCENARIO), model=DemoModel())
+    report = generate(
+        GenerateRequest(url=site, scenario=GENERATE_SCENARIO), model=DemoModel()
+    )
 
     assert report.status == "passed", report.model_dump_json(indent=2)
     assert site in report.code
@@ -2008,8 +2079,12 @@ def test_demo_generates_a_passing_spec_for_the_sample_scenario(site: str) -> Non
 
 def test_a_running_server_is_detected_and_used(site: str) -> None:
     with FakeLLM() as llm:
-        choice = detect_provider(urls={"lm_studio": UNREACHABLE, "ollama": llm.base_url})
-        assert choice == ModelSettings(provider="ollama", base_url=llm.base_url, model="fake-model")
+        choice = detect_provider(
+            urls={"lm_studio": UNREACHABLE, "ollama": llm.base_url}
+        )
+        assert choice == ModelSettings(
+            provider="ollama", base_url=llm.base_url, model="fake-model"
+        )
 
         status = check_connection(choice)
         assert status.reachable and status.models == ["fake-model"]

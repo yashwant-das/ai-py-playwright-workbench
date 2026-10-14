@@ -481,14 +481,10 @@ def seed_reports(port: int) -> None:
     source = (config.SAMPLE_SPECS_DIR / "contact-form.spec.ts").read_text(
         encoding="utf-8"
     )
-    code = source.replace(
-        BASE_URL_PLACEHOLDER, f"{config.base_url(port)}/sample-site/"
-    )
+    code = source.replace(BASE_URL_PLACEHOLDER, f"{config.base_url(port)}/sample-site/")
     (config.specs_dir() / failed.spec_name).write_text(code, encoding="utf-8")
     save_report(failed.model_copy(update={"code": code}))
-    (config.workspace_dir() / SEEDED_FILE).write_text(
-        json.dumps(ids), encoding="utf-8"
-    )
+    (config.workspace_dir() / SEEDED_FILE).write_text(json.dumps(ids), encoding="utf-8")
 
 
 def main() -> None:
