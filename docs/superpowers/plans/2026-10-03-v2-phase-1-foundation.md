@@ -301,10 +301,8 @@ Replace:
 with:
 
 ```python
-    logger.debug(
-        "%s exited with %s after %d ms", command, exit_code, latency_ms
-    )
-    return run_result
+logger.debug("%s exited with %s after %d ms", command, exit_code, latency_ms)
+return run_result
 ```
 
 - [ ] **Step 4: Remove the tracer from `src/llm/router.py`**
@@ -724,7 +722,9 @@ LEGACY_IMPORT = re.compile(
 
 def _python_files() -> list:
     roots = [PROJECT_ROOT / "src" / "workbench", PROJECT_ROOT / "tests"]
-    return [p for root in roots for p in root.rglob("*.py") if p.name != "test_layout.py"]
+    return [
+        p for root in roots for p in root.rglob("*.py") if p.name != "test_layout.py"
+    ]
 
 
 def test_no_module_uses_the_legacy_layout() -> None:
@@ -975,7 +975,10 @@ def rewrite(text: str) -> str:
 
 
 changed = []
-for path in [*ROOT.joinpath("src", "workbench").rglob("*.py"), *ROOT.joinpath("tests").rglob("*.py")]:
+for path in [
+    *ROOT.joinpath("src", "workbench").rglob("*.py"),
+    *ROOT.joinpath("tests").rglob("*.py"),
+]:
     before = path.read_text(encoding="utf-8")
     after = rewrite(before)
     if after != before:
