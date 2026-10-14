@@ -4,7 +4,7 @@ from typing import Any
 
 from workbench.playwright_report import parse_json_report
 
-# Fixtures follow the shape Playwright 1.63's JSON reporter writes: every test
+# Fixtures follow the shape Playwright 1.64's JSON reporter writes: every test
 # carries its outcome in a test-level "status" ("expected", "unexpected",
 # "flaky", "skipped"); each result carries the raw status of one try.
 

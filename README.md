@@ -5,7 +5,7 @@ A local web app that generates Playwright tests and heals failing ones with a lo
 [![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.63-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
+[![Playwright](https://img.shields.io/badge/Playwright-1.64-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 
 ![A heal from start to finish: the sample test is started, the steps run live, the diff and the diagnosis appear, then the Model I/O view](docs/assets/demo.gif)
 
@@ -120,7 +120,7 @@ npm run type-check                         # TypeScript
 | --- | --- | --- | --- |
 | Web app | FastAPI, Jinja, uvicorn | 0.142, 3.1, 0.54 | Server-rendered pages with no front-end build |
 | Live updates | htmx with its SSE extension (vendored) | 2.0.11, 2.2.4 | Progress maps directly onto server-sent events; no JavaScript to maintain |
-| Browser automation | Playwright (Python and Test) | 1.63.0 | Collects page context, runs specs, and snapshots the page when a test fails |
+| Browser automation | Playwright (Python and Test) | 1.64.0 | Collects page context, runs specs, and snapshots the page when a test fails |
 | Model client | OpenAI SDK | 2.14 | LM Studio and Ollama both speak the OpenAI API |
 | Structured output | Pydantic | 2 | Validates every model reply and produces the schema the model is asked to follow |
 | Code repair | ts-morph, TypeScript | 28, 5.9 | Edits the spec's syntax tree and leaves the rest of the file untouched |

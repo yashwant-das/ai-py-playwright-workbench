@@ -8,6 +8,7 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Playwright is 1.64.0 in both the Python package and npm.
 - `AGENTS.md` no longer describes v2 as work in progress on a branch.
 - The Figma file matches the app again: two samples, the likely-app-bug state,
   the Re-run video tab, the popover footnote and the four contrast colours.
