@@ -21,7 +21,7 @@ def test_playwright_python_and_npm_versions_match() -> None:
         pkg["dependencies"]["playwright"],
         pkg["dependencies"]["playwright-core"],
     }
-    assert npm_versions == {version("playwright")} == {"1.63.0"}
+    assert npm_versions == {version("playwright")} == {"1.64.0"}
 
 
 def test_the_release_version_is_the_same_everywhere() -> None:
