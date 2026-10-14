@@ -6,17 +6,16 @@ to the layout, commands or conventions.
 
 ## What this project is
 
-A tool that generates Playwright tests and heals failing ones with local LLMs
-(LM Studio or Ollama), rebuilt as a local web app in v2. It is being redesigned
-on the `v2` branch:
+A local web app that generates Playwright tests and heals failing ones with
+local LLMs (LM Studio or Ollama). Version 2.0 is released and lives on `main`:
 
 - Design: [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
 - Progress: [ROADMAP.md](ROADMAP.md)
 - Plans: [docs/superpowers/plans/](docs/superpowers/plans/)
 - Docs: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [development](docs/development.md)
 
-Read the spec before changing behaviour. If a change is not in the spec or the
-current phase's plan, add it to `ROADMAP.md` under "Later" instead of building it.
+Read the spec before changing behaviour. If a change is not in the spec, add it
+to `ROADMAP.md` under "Later" instead of building it.
 
 ## Layout
 
@@ -82,8 +81,8 @@ npm run type-check                         # TypeScript
 - Tests never need a live model, browser or network unless they live in `tests/integration/`.
 - Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
-- No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` (and, from Phase 4, `WORKBENCH_PORT`) exist for tests and CI only.
-- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension. Four values differ from the Figma file for contrast; ROADMAP.md lists them.
+- No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` and `WORKBENCH_PORT` exist for tests and CI only.
+- UI: the templates in `src/workbench/web/templates/` are the source of truth; colours and type come only from `static/css/tokens.css` (one variable per Figma variable). No JavaScript files beyond the vendored htmx and its SSE extension.
 - Routes call pipelines and the model client only through `workbench.web.services.Services`; route tests build the app with `tests/unit/web_support.make_client()` and fakes.
 - UI tests get their app from the fixture in `tests/ui/support/app.ts` (free port, temporary workspace). Never point them at port 7860 or `workspace/`.
 - The app answers only requests addressed to 127.0.0.1 or localhost, and refuses state-changing requests from other origins (`workbench.web.guard`); new POST routes need no extra code, but must not be exempted.

@@ -1,6 +1,5 @@
 /* Design tokens: one custom property per Figma variable (bg/canvas → --bg-canvas).
-   Figma file eL5DUZmc85ESpusNSmxDkA. Four values are darker (or, on code, lighter) than the file
-   for WCAG AA contrast; ROADMAP.md tracks bringing the file in line. */
+   Figma file eL5DUZmc85ESpusNSmxDkA. Change a value in Figma first, then here. */
 
 @font-face {
   font-family: 'Inter';
