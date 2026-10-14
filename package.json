@@ -51,23 +51,23 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.2",
-    "@playwright/test": "1.63.0",
-    "@types/node": "^26.6.4",
-    "@typescript-eslint/eslint-plugin": "^8.53.0",
-    "@typescript-eslint/parser": "^8.53.0",
+    "@playwright/test": "1.64.0",
+    "@types/node": "^26.6.5",
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-playwright": "^2.5.0",
+    "eslint-plugin-playwright": "^2.12.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
     "markdownlint-cli2": "^0.23.3",
-    "prettier": "^3.7.4",
+    "prettier": "^3.9.10",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.53.0"
+    "typescript-eslint": "^8.71.1"
   },
   "dependencies": {
-    "playwright": "1.63.0",
-    "playwright-core": "1.63.0",
+    "playwright": "1.64.0",
+    "playwright-core": "1.64.0",
     "ts-morph": "^28.0.0"
   }
 }
