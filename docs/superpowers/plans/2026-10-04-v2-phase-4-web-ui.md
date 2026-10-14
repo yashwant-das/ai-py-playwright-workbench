@@ -259,7 +259,6 @@ Expected: collection error `No module named 'workbench.app'`.
 In `src/workbench/config.py`, after `RECORDINGS_DIR`, add:
 
 ```python
-
 WEB_DIR = PACKAGE_DIR / "web"
 TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
@@ -389,7 +388,9 @@ from workbench.app import create_app
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(levelname)s %(name)s: %(message)s"
+    )
     try:
         port = config.port()
     except ValueError as exc:
@@ -529,7 +530,9 @@ def _css(name: str) -> str:
 
 
 def test_tokens_mirror_the_figma_colours_one_to_one() -> None:
-    declared = dict(re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-f]{6});", _css("tokens.css")))
+    declared = dict(
+        re.findall(r"--([a-z0-9-]+):\s*(#[0-9a-f]{6});", _css("tokens.css"))
+    )
     assert declared == FIGMA_COLOURS
 
 
@@ -541,7 +544,9 @@ def test_tokens_define_the_eight_type_styles() -> None:
 
 def test_fonts_are_self_hosted_woff2() -> None:
     for name in ("inter-400", "inter-500", "inter-600", "jetbrains-mono-400"):
-        assert (config.STATIC_DIR / "fonts" / f"{name}.woff2").read_bytes()[:4] == b"wOF2"
+        assert (config.STATIC_DIR / "fonts" / f"{name}.woff2").read_bytes()[
+            :4
+        ] == b"wOF2"
     assert (config.STATIC_DIR / "fonts" / "LICENSE-inter.txt").is_file()
     assert (config.STATIC_DIR / "fonts" / "LICENSE-jetbrains-mono.txt").is_file()
 
@@ -549,7 +554,9 @@ def test_fonts_are_self_hosted_woff2() -> None:
 def test_htmx_is_vendored_with_its_version_in_the_name() -> None:
     vendor = config.STATIC_DIR / "vendor"
     assert (vendor / "htmx-2.0.11.min.js").stat().st_size > 40_000
-    assert "sse-connect" in (vendor / "htmx-ext-sse-2.2.4.js").read_text(encoding="utf-8")
+    assert "sse-connect" in (vendor / "htmx-ext-sse-2.2.4.js").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_base_layout_has_landmarks_and_marks_the_current_page() -> None:
@@ -1851,7 +1858,13 @@ def test_every_status_and_outcome_has_a_badge() -> None:
 
 def test_every_step_has_a_title() -> None:
     assert set(get_args(StepName)) == set(views.STEP_INFO)
-    assert [s.name for s in views.HEAL_STEPS] == ["run", "evidence", "diagnose", "repair", "verify"]
+    assert [s.name for s in views.HEAL_STEPS] == [
+        "run",
+        "evidence",
+        "diagnose",
+        "repair",
+        "verify",
+    ]
     assert [s.name for s in views.GENERATE_STEPS] == ["context", "model", "execute"]
 ```
 
@@ -1936,7 +1949,9 @@ HEAL_STEPS: tuple[StepInfo, ...] = (
         description="Error context, screenshot and page snapshot",
     ),
     StepInfo(name="diagnose", title="Diagnose", description="Ask the model what broke"),
-    StepInfo(name="repair", title="Repair", description="Apply the fix to the syntax tree"),
+    StepInfo(
+        name="repair", title="Repair", description="Apply the fix to the syntax tree"
+    ),
     StepInfo(name="verify", title="Verify", description="Re-run the test"),
 )
 GENERATE_STEPS: tuple[StepInfo, ...] = (
@@ -1948,7 +1963,9 @@ GENERATE_STEPS: tuple[StepInfo, ...] = (
     StepInfo(name="model", title="Ask the model", description="Write the spec"),
     StepInfo(name="execute", title="Run the test", description="Runs after generation"),
 )
-STEP_INFO: dict[str, StepInfo] = {step.name: step for step in (*HEAL_STEPS, *GENERATE_STEPS)}
+STEP_INFO: dict[str, StepInfo] = {
+    step.name: step for step in (*HEAL_STEPS, *GENERATE_STEPS)
+}
 
 HEAL_BADGES: dict[str, Badge] = {
     "healed": Badge(variant="pass", label="Healed"),
@@ -1968,7 +1985,9 @@ GENERATE_BADGES: dict[str, Badge] = {
 OUTCOME_BADGES: dict[str, OutcomeBadge] = {
     "healed": OutcomeBadge(variant="pass", label="Passed", title="Healed"),
     "rerun_failed": OutcomeBadge(variant="fail", label="Failed", title="Re-run failed"),
-    "not_applied": OutcomeBadge(variant="warn", label="Not applied", title="Fix not applied"),
+    "not_applied": OutcomeBadge(
+        variant="warn", label="Not applied", title="Fix not applied"
+    ),
     "invalid_reply": OutcomeBadge(
         variant="warn", label="Invalid reply", title="Invalid model reply"
     ),
@@ -2035,7 +2054,9 @@ def highlight_lines(code: str) -> list[str]:
                 lines.append([])
             if part:
                 text = escape(part, quote=False)
-                lines[-1].append(f'<span class="tok-{css}">{text}</span>' if css else text)
+                lines[-1].append(
+                    f'<span class="tok-{css}">{text}</span>' if css else text
+                )
     return ["".join(parts) for parts in lines[: len(code.splitlines())]]
 
 
@@ -2053,8 +2074,14 @@ def diff_rows(old: str, new: str) -> list[DiffRow]:
                 for i, j in zip(range(i1, i2), range(j1, j2), strict=True)
             ]
             continue
-        rows += [DiffRow(kind="del", old_no=i + 1, new_no=None, html=old_html[i]) for i in range(i1, i2)]
-        rows += [DiffRow(kind="add", old_no=None, new_no=j + 1, html=new_html[j]) for j in range(j1, j2)]
+        rows += [
+            DiffRow(kind="del", old_no=i + 1, new_no=None, html=old_html[i])
+            for i in range(i1, i2)
+        ]
+        rows += [
+            DiffRow(kind="add", old_no=None, new_no=j + 1, html=new_html[j])
+            for j in range(j1, j2)
+        ]
     return rows
 
 
@@ -2167,7 +2194,11 @@ def _quick_job(emit, cancel):  # type: ignore[no-untyped-def]
 def test_a_run_records_its_events_and_report() -> None:
     registry = RunRegistry()
     run = registry.start(
-        "generate", "contact", _quick_job, model_label="qwen · Ollama", steps=("context",)
+        "generate",
+        "contact",
+        _quick_job,
+        model_label="qwen · Ollama",
+        steps=("context",),
     )
     assert run.wait(5)
     assert run.finished
@@ -2467,10 +2498,15 @@ class FakeServers:
     def check(self, provider: str, base_url: str = "") -> ConnectionStatus:
         self.checked.append((provider, base_url))
         if provider == "demo":
-            return ConnectionStatus(provider="demo", reachable=True, models=[DEMO_MODEL])
+            return ConnectionStatus(
+                provider="demo", reachable=True, models=[DEMO_MODEL]
+            )
         if base_url in self.models:
             return ConnectionStatus(
-                provider=provider, base_url=base_url, reachable=True, models=self.models[base_url]
+                provider=provider,
+                base_url=base_url,
+                reachable=True,
+                models=self.models[base_url],
             )
         return ConnectionStatus(
             provider=provider,
@@ -2491,7 +2527,9 @@ def servers(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FakeServers:
 
 
 def _client(servers: FakeServers) -> TestClient:
-    services = replace(Services(), check_connection=servers.check, detect=servers.detect)
+    services = replace(
+        Services(), check_connection=servers.check, detect=servers.detect
+    )
     return TestClient(create_app(services))
 
 
@@ -2500,21 +2538,30 @@ def test_menu_lists_the_saved_servers_models(servers: FakeServers) -> None:
     html = _client(servers).get("/model").text
     assert "Connected" in html
     assert '<option value="gemma3:4b" selected>' in html
-    assert '<option value="qwen3.6:35b-mlx" >' in html or '<option value="qwen3.6:35b-mlx">' in html
+    assert (
+        '<option value="qwen3.6:35b-mlx" >' in html
+        or '<option value="qwen3.6:35b-mlx">' in html
+    )
     assert "Saved on this machine." in html
 
 
 def test_switching_provider_uses_its_default_url(servers: FakeServers) -> None:
-    html = _client(servers).post(
-        "/model/test", data={"provider": "ollama", "base_url": DEFAULT_URLS["lm_studio"]}
-    ).text
+    html = (
+        _client(servers)
+        .post(
+            "/model/test",
+            data={"provider": "ollama", "base_url": DEFAULT_URLS["lm_studio"]},
+        )
+        .text
+    )
     assert servers.checked[-1] == ("ollama", OLLAMA)
     assert f'value="{OLLAMA}"' in html
 
 
 def test_a_custom_server_url_is_kept(servers: FakeServers) -> None:
     _client(servers).post(
-        "/model/test", data={"provider": "ollama", "base_url": "http://gpu-box:11434/v1"}
+        "/model/test",
+        data={"provider": "ollama", "base_url": "http://gpu-box:11434/v1"},
     )
     assert servers.checked[-1] == ("ollama", "http://gpu-box:11434/v1")
 
@@ -2522,9 +2569,14 @@ def test_a_custom_server_url_is_kept(servers: FakeServers) -> None:
 def test_an_unreachable_server_shows_its_error_and_cannot_be_saved(
     servers: FakeServers,
 ) -> None:
-    html = _client(servers).post(
-        "/model/test", data={"provider": "lm_studio", "base_url": DEFAULT_URLS["lm_studio"]}
-    ).text
+    html = (
+        _client(servers)
+        .post(
+            "/model/test",
+            data={"provider": "lm_studio", "base_url": DEFAULT_URLS["lm_studio"]},
+        )
+        .text
+    )
     assert "Unreachable" in html
     assert "Is it running?" in html
     assert "Available once connected" in html
@@ -2533,7 +2585,8 @@ def test_an_unreachable_server_shows_its_error_and_cannot_be_saved(
 
 def test_saving_writes_the_settings_and_reloads_the_page(servers: FakeServers) -> None:
     response = _client(servers).post(
-        "/model", data={"provider": "ollama", "base_url": OLLAMA, "model": "qwen3.6:35b-mlx"}
+        "/model",
+        data={"provider": "ollama", "base_url": OLLAMA, "model": "qwen3.6:35b-mlx"},
     )
     assert response.status_code == 200
     assert response.headers["HX-Refresh"] == "true"
@@ -2556,7 +2609,9 @@ def test_demo_is_saved_without_a_server(servers: FakeServers) -> None:
         {"provider": "openai", "base_url": OLLAMA, "model": "m"},
     ],
 )
-def test_bad_choices_are_refused_inline(servers: FakeServers, form: dict[str, str]) -> None:
+def test_bad_choices_are_refused_inline(
+    servers: FakeServers, form: dict[str, str]
+) -> None:
     response = _client(servers).post("/model", data=form)
     assert response.status_code == 422
     assert 'role="alert"' in response.text
@@ -2575,11 +2630,15 @@ def _pill(view: ModelView) -> str:
 
 
 def test_pill_shows_not_connected_when_the_server_is_down() -> None:
-    choice = ModelSettings(provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m")
+    choice = ModelSettings(
+        provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"
+    )
     html = _pill(
         ModelView(
             choice=choice,
-            connection=ConnectionStatus(provider="lm_studio", reachable=False, error="down"),
+            connection=ConnectionStatus(
+                provider="lm_studio", reachable=False, error="down"
+            ),
         )
     )
     assert "model-pill--off" in html and "Not connected" in html and "LM Studio" in html
@@ -2587,12 +2646,18 @@ def test_pill_shows_not_connected_when_the_server_is_down() -> None:
 
 def test_pill_shows_the_model_or_demo() -> None:
     connected = ModelView(
-        choice=ModelSettings(provider="ollama", base_url=OLLAMA, model="qwen3.6:35b-mlx"),
-        connection=ConnectionStatus(provider="ollama", reachable=True, models=["qwen3.6:35b-mlx"]),
+        choice=ModelSettings(
+            provider="ollama", base_url=OLLAMA, model="qwen3.6:35b-mlx"
+        ),
+        connection=ConnectionStatus(
+            provider="ollama", reachable=True, models=["qwen3.6:35b-mlx"]
+        ),
     )
     demo = ModelView(
         choice=ModelSettings(provider="demo", model=DEMO_MODEL),
-        connection=ConnectionStatus(provider="demo", reachable=True, models=[DEMO_MODEL]),
+        connection=ConnectionStatus(
+            provider="demo", reachable=True, models=[DEMO_MODEL]
+        ),
     )
     assert "qwen3.6:35b-mlx" in _pill(connected) and "Ollama" in _pill(connected)
     assert "model-pill--demo" in _pill(demo) and "scripted answers" in _pill(demo)
@@ -2602,7 +2667,9 @@ def test_pill_shows_the_model_or_demo() -> None:
 def test_unreachable_card_offers_demo() -> None:
     html = templates.get_template("partials/unreachable.html").render(
         model=ModelView(
-            choice=ModelSettings(provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"),
+            choice=ModelSettings(
+                provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"
+            ),
             connection=ConnectionStatus(provider="lm_studio", reachable=False),
         )
     )
@@ -2620,8 +2687,6 @@ Expected: collection error `cannot import name 'ModelView'`.
 Append to `src/workbench/models/settings.py`:
 
 ```python
-
-
 ModelReadiness = Literal["connected", "demo", "off"]
 
 
@@ -2633,7 +2698,11 @@ class ModelView(BaseModel):
 
     @property
     def state(self) -> ModelReadiness:
-        if self.choice is None or self.connection is None or not self.connection.reachable:
+        if (
+            self.choice is None
+            or self.connection is None
+            or not self.connection.reachable
+        ):
             return "off"
         return "demo" if self.choice.provider == "demo" else "connected"
 
@@ -2702,7 +2771,9 @@ class ModelState:
         choice = self.choice()
         if choice is None:
             return ModelView()
-        return ModelView(choice=choice, connection=self.probe(choice.provider, choice.base_url))
+        return ModelView(
+            choice=choice, connection=self.probe(choice.provider, choice.base_url)
+        )
 
     def probe(self, provider: ProviderName, base_url: str) -> ConnectionStatus:
         return self._services.check_connection(provider, base_url)
@@ -2788,7 +2859,11 @@ def model_menu(request: Request) -> HTMLResponse:
     status = view.connection or _state(request).probe(view.provider, view.base_url)
     selected = view.choice.model if view.choice else ""
     return _menu(
-        request, provider=view.provider, base_url=view.base_url, status=status, selected=selected
+        request,
+        provider=view.provider,
+        base_url=view.base_url,
+        status=status,
+        selected=selected,
     )
 
 
@@ -2801,7 +2876,9 @@ def test_model(
     status = _state(request).probe(chosen, url)
     current = _state(request).choice()
     selected = current.model if current and current.provider == chosen else ""
-    return _menu(request, provider=chosen, base_url=url, status=status, selected=selected)
+    return _menu(
+        request, provider=chosen, base_url=url, status=status, selected=selected
+    )
 
 
 @router.post("/model", response_model=None)
@@ -2822,8 +2899,12 @@ def save_model(
             else ModelSettings(provider=chosen, base_url=url, model=model.strip())
         )
     except (ValidationError, ValueError) as exc:
-        message = exc.errors()[0]["msg"] if isinstance(exc, ValidationError) else str(exc)
-        status = ConnectionStatus(provider=chosen or "lm_studio", base_url=url, reachable=False)
+        message = (
+            exc.errors()[0]["msg"] if isinstance(exc, ValidationError) else str(exc)
+        )
+        status = ConnectionStatus(
+            provider=chosen or "lm_studio", base_url=url, reachable=False
+        )
         return _menu(
             request,
             provider=chosen or "lm_studio",
@@ -3050,7 +3131,9 @@ from workbench.web.services import Services
 
 def _reachable(provider: str, base_url: str = "") -> ConnectionStatus:
     models = [DEMO_MODEL] if provider == "demo" else ["test-model"]
-    return ConnectionStatus(provider=provider, base_url=base_url, reachable=True, models=models)  # type: ignore[arg-type]
+    return ConnectionStatus(
+        provider=provider, base_url=base_url, reachable=True, models=models
+    )  # type: ignore[arg-type]
 
 
 def make_client(**overrides: Any) -> TestClient:
@@ -3083,7 +3166,9 @@ def heal_job(report: HealReport, *, gate: threading.Event | None = None) -> Job:
             gate.wait(5)
         events = EventSink(report.id, emit)
         events.step("run", "active", "npx playwright test contact-form.spec.ts")
-        events.step("run", "done", "TimeoutError: locator.click: Timeout 3000ms exceeded.")
+        events.step(
+            "run", "done", "TimeoutError: locator.click: Timeout 3000ms exceeded."
+        )
         events.step("evidence", "active")
         events.step("evidence", "done", "Page snapshot from error-context.md")
         events.step("diagnose", "active", "Classifier hint: TIMEOUT")
@@ -3300,9 +3385,19 @@ class RunStream:
             return [sse_message(f"step-{event.step}", body), sse_message("log", line)]
         if event.kind == "attempt":
             self._attempts += 1
-            return [sse_message("log", _render("partials/log_line.html", tone="step", text=event.detail))]
+            return [
+                sse_message(
+                    "log",
+                    _render("partials/log_line.html", tone="step", text=event.detail),
+                )
+            ]
         if event.kind == "log":
-            return [sse_message("log", _render("partials/log_line.html", tone="muted", text=event.detail))]
+            return [
+                sse_message(
+                    "log",
+                    _render("partials/log_line.html", tone="muted", text=event.detail),
+                )
+            ]
         return []  # the pipeline's own "done": the stream sends its own when the run ends
 
     def clock(self) -> str:
@@ -3395,7 +3490,9 @@ def cancel_run(run_id: str, request: Request) -> HTMLResponse:
 def run_result(run_id: str, request: Request) -> Response:
     run = _run(request, run_id)
     if run.report_id:
-        return Response(status_code=200, headers={"HX-Redirect": f"/reports/{run.report_id}"})
+        return Response(
+            status_code=200, headers={"HX-Redirect": f"/reports/{run.report_id}"}
+        )
     return templates.TemplateResponse(request, "partials/run_done.html", {"run": run})
 ```
 
@@ -3548,7 +3645,12 @@ from tests.unit.web_support import heal_job, heal_report, make_client
 from workbench.config import specs_dir, workspace_dir
 from workbench.heal import HealRequest
 from workbench.models.generate import GenerateReport
-from workbench.models.settings import DEFAULT_URLS, DEMO_MODEL, ConnectionStatus, ModelSettings
+from workbench.models.settings import (
+    DEFAULT_URLS,
+    DEMO_MODEL,
+    ConnectionStatus,
+    ModelSettings,
+)
 from workbench.reports import save_report
 from workbench.settings import save_settings
 
@@ -3562,7 +3664,9 @@ class FakeHeal:
         self.calls: list[HealRequest] = []
         self.gate = gate
 
-    def __call__(self, request: HealRequest, *, model: Any, emit: Any = None, cancel: Any = None):  # type: ignore[no-untyped-def]
+    def __call__(
+        self, request: HealRequest, *, model: Any, emit: Any = None, cancel: Any = None
+    ):  # type: ignore[no-untyped-def]
         self.calls.append(request)
         return heal_job(heal_report(), gate=self.gate)(emit, cancel)
 
@@ -3587,14 +3691,22 @@ def test_heal_page_offers_both_samples_and_an_upload() -> None:
     assert "Selector drift" in html and "App bug" in html
     assert 'name="spec"' in html and 'name="max_attempts"' in html
     assert '<a href="/heal" aria-current="page">Heal</a>' in html
-    assert "disabled" not in html.split('value="sample:selector-drift"')[1].split(">")[0]
+    assert (
+        "disabled" not in html.split('value="sample:selector-drift"')[1].split(">")[0]
+    )
 
 
-def test_without_a_model_the_page_shows_the_unreachable_card_and_locks_buttons() -> None:
+def test_without_a_model_the_page_shows_the_unreachable_card_and_locks_buttons() -> (
+    None
+):
     def down(provider: str, base_url: str = "") -> ConnectionStatus:
         return ConnectionStatus(provider=provider, base_url=base_url, reachable=False)  # type: ignore[arg-type]
 
-    save_settings(ModelSettings(provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"))
+    save_settings(
+        ModelSettings(
+            provider="lm_studio", base_url=DEFAULT_URLS["lm_studio"], model="m"
+        )
+    )
     html = make_client(check_connection=down).get("/heal").text
     assert "Can't reach LM Studio" in html
     assert "Connect a model to run this." in html
@@ -3617,7 +3729,9 @@ def test_a_sample_is_installed_and_healed() -> None:
     request = fake.calls[0]
     assert request.spec_path == specs_dir() / "samples" / "contact-form.spec.ts"
     assert request.max_attempts == 2
-    assert "http://127.0.0.1:7860/sample-site/" in request.spec_path.read_text(encoding="utf-8")
+    assert "http://127.0.0.1:7860/sample-site/" in request.spec_path.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_an_upload_is_copied_into_the_workspace() -> None:
@@ -3626,7 +3740,9 @@ def test_an_upload_is_copied_into_the_workspace() -> None:
     response = client.post(
         "/heal",
         data={"action": "upload", "max_attempts": "3"},
-        files={"spec": ("My Test.spec.ts", b"test('x', async () => {});\n", "text/plain")},
+        files={
+            "spec": ("My Test.spec.ts", b"test('x', async () => {});\n", "text/plain")
+        },
     )
     assert response.status_code == 200
     client.app.state.runs.active() and client.app.state.runs.active().wait(5)  # type: ignore[attr-defined]
@@ -3644,7 +3760,9 @@ def test_an_upload_is_copied_into_the_workspace() -> None:
         ("latin.spec.ts", b"\xff\xfe\xfa", "isn't UTF-8"),
     ],
 )
-def test_bad_uploads_are_rejected_inline(name: str, content: bytes, message: str) -> None:
+def test_bad_uploads_are_rejected_inline(
+    name: str, content: bytes, message: str
+) -> None:
     fake = FakeHeal()
     response = make_client(heal=fake).post(
         "/heal",
@@ -3658,7 +3776,9 @@ def test_bad_uploads_are_rejected_inline(name: str, content: bytes, message: str
 
 
 def test_upload_without_a_file_is_refused() -> None:
-    response = make_client().post("/heal", data={"action": "upload", "max_attempts": "3"})
+    response = make_client().post(
+        "/heal", data={"action": "upload", "max_attempts": "3"}
+    )
     assert response.status_code == 422
     assert "Choose a .spec.ts file first." in response.text
 
@@ -3686,7 +3806,9 @@ def test_attempts_out_of_range_are_refused(attempts: str) -> None:
 
 
 def test_unknown_sample_is_refused() -> None:
-    response = make_client().post("/heal", data={"action": "sample:nope", "max_attempts": "3"})
+    response = make_client().post(
+        "/heal", data={"action": "sample:nope", "max_attempts": "3"}
+    )
     assert response.status_code == 422
     assert response.headers["HX-Retarget"] == "#sample-error"
     assert "Unknown sample" in response.text
@@ -3696,7 +3818,9 @@ def test_second_start_is_refused_with_409() -> None:
     gate = threading.Event()
     client = make_client(heal=FakeHeal(gate))
     client.post("/heal", data={"action": "sample:selector-drift", "max_attempts": "3"})
-    second = client.post("/heal", data={"action": "sample:app-bug", "max_attempts": "3"})
+    second = client.post(
+        "/heal", data={"action": "sample:app-bug", "max_attempts": "3"}
+    )
     assert second.status_code == 409
     assert second.headers["HX-Retarget"] == "#notice"
     assert "already in progress" in second.text
@@ -3742,7 +3866,9 @@ def test_a_model_that_went_down_shows_the_unreachable_card_instead_of_running() 
         return ConnectionStatus(provider=provider, base_url=base_url, reachable=False)  # type: ignore[arg-type]
 
     fake = FakeHeal()
-    save_settings(ModelSettings(provider="ollama", base_url=DEFAULT_URLS["ollama"], model="m"))
+    save_settings(
+        ModelSettings(provider="ollama", base_url=DEFAULT_URLS["ollama"], model="m")
+    )
     response = make_client(heal=fake, check_connection=down).post(
         "/heal", data={"action": "sample:selector-drift", "max_attempts": "3"}
     )
@@ -3760,8 +3886,6 @@ Expected: most tests fail with `404 Not Found` on `/heal`.
 Append to `src/workbench/validation.py`, and add `from pathlib import Path` to its imports:
 
 ```python
-
-
 MAX_SPEC_BYTES = 200 * 1024
 
 
@@ -3769,7 +3893,9 @@ def validate_spec_upload(filename: str, data: bytes) -> str:
     """The text of an uploaded spec; raises ValidationError saying what is wrong."""
     name = Path(filename or "").name or "The file"
     if not name.endswith(".spec.ts"):
-        raise ValidationError(f"{name} isn't a test file. Only .spec.ts files are supported.")
+        raise ValidationError(
+            f"{name} isn't a test file. Only .spec.ts files are supported."
+        )
     if len(data) > MAX_SPEC_BYTES:
         raise ValidationError(f"{name} is larger than 200 KB.")
     if not data.strip():
@@ -3894,7 +4020,9 @@ def busy_notice(request: Request, active: Run) -> HTMLResponse:
 
 @router.get("/heal", response_class=HTMLResponse)
 def heal_page(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse(request, "heal.html", page_context(request, "heal"))
+    return templates.TemplateResponse(
+        request, "heal.html", page_context(request, "heal")
+    )
 
 
 def _spec_for(
@@ -3911,15 +4039,23 @@ def _spec_for(
             raise _Refused("upload-error", "Choose a .spec.ts file first.")
         data = spec.file.read(MAX_SPEC_BYTES + 1)
         try:
-            return store_upload(spec.filename, validate_spec_upload(spec.filename, data))
+            return store_upload(
+                spec.filename, validate_spec_upload(spec.filename, data)
+            )
         except ValidationError as exc:
             raise _Refused("upload-error", str(exc)) from exc
     if action == "generated":
         try:
             report = load_report(generated)
         except (ValueError, FileNotFoundError) as exc:
-            raise _Refused("sample-error", "That generated test no longer exists.") from exc
-        path = specs_dir() / report.spec_name if isinstance(report, GenerateReport) else None
+            raise _Refused(
+                "sample-error", "That generated test no longer exists."
+            ) from exc
+        path = (
+            specs_dir() / report.spec_name
+            if isinstance(report, GenerateReport)
+            else None
+        )
         if path is None or not report.spec_name or not path.is_file():
             raise _Refused("sample-error", "That generated test no longer exists.")
         return path
@@ -3947,7 +4083,9 @@ def start_heal(
         return templates.TemplateResponse(request, "partials/browsers_missing.html", {})
     view = request.app.state.model.view()
     if not view.ready or view.choice is None:
-        return templates.TemplateResponse(request, "partials/unreachable.html", {"model": view})
+        return templates.TemplateResponse(
+            request, "partials/unreachable.html", {"model": view}
+        )
     try:
         path = _spec_for(request, action, spec, generated)
     except _Refused as exc:
@@ -4177,7 +4315,9 @@ test('Contact form sends a message', async ({ page }) => {
   await expect(page.getByRole('status')).toHaveText('Submitted');
 });
 """
-FIXED = ORIGINAL.replace("page.locator('#submit-btn')", "page.locator('[data-testid=\"submit\"]')")
+FIXED = ORIGINAL.replace(
+    "page.locator('#submit-btn')", "page.locator('[data-testid=\"submit\"]')"
+)
 DIFF = """--- a/contact-form.spec.ts
 +++ b/contact-form.spec.ts
 @@ -6 +6 @@
@@ -4208,15 +4348,18 @@ def analysis(
     return HealingAnalysis(
         failure_type=failure_type,
         failure_summary="The click on #submit-btn timed out.",
-        hypothesis="The button lost its id but keeps data-testid=\"submit\".",
+        hypothesis='The button lost its id but keeps data-testid="submit".',
         confidence_score=confidence,
         confidence_rationale="One button named Submit in the snapshot.",
         reasoning_steps=[
             "The click waits for #submit-btn, which is not on the page.",
             'The page snapshot at the failure has a button named "Submit".',
-            "The button still carries data-testid=\"submit\".",
+            'The button still carries data-testid="submit".',
         ],
-        root_cause_evidence=["button \"Submit\" in the page snapshot", "Timeout 3000ms exceeded"],
+        root_cause_evidence=[
+            'button "Submit" in the page snapshot',
+            "Timeout 3000ms exceeded",
+        ],
         action_taken=HealingAction(
             original_code=original,
             fixed_code=fixed,
@@ -4227,16 +4370,23 @@ def analysis(
 
 
 def exchange(
-    provider: str = "ollama", model: str = "qwen3.6:35b-mlx", valid: bool = True, error: str = ""
+    provider: str = "ollama",
+    model: str = "qwen3.6:35b-mlx",
+    valid: bool = True,
+    error: str = "",
 ) -> ModelExchange:
     return ModelExchange(
         sections=[
             PromptSection(name="Test file", chars=310),
             PromptSection(name="Error", chars=420),
-            PromptSection(name="Page snapshot at failure", chars=12_000, original_chars=18_000),
+            PromptSection(
+                name="Page snapshot at failure", chars=12_000, original_chars=18_000
+            ),
             PromptSection(name="Locator candidates", chars=180),
         ],
-        raw_response='{"failure_type": "LOCATOR_DRIFT", "confidence_score": 0.9}' if valid else "Sure! Here is the fix:",
+        raw_response='{"failure_type": "LOCATOR_DRIFT", "confidence_score": 0.9}'
+        if valid
+        else "Sure! Here is the fix:",
         valid=valid,
         validation_error=error,
         provenance=Provenance(
@@ -4262,7 +4412,12 @@ def attempt(number: int, outcome: str, **fields: Any) -> Attempt:
         "duration_ms": 9800,
     }
     if outcome == "healed":
-        values.update(repair_method="ast", rerun=run_result("passed", duration_ms=2100, video_path="/nonexistent/video.webm"))
+        values.update(
+            repair_method="ast",
+            rerun=run_result(
+                "passed", duration_ms=2100, video_path="/nonexistent/video.webm"
+            ),
+        )
     if outcome == "rerun_failed":
         values.update(repair_method="ast", rerun=run_result("failed", duration_ms=3100))
     values.update(fields)
@@ -4285,7 +4440,9 @@ def _report(name: str, status: str, **fields: Any) -> HealReport:
 
 
 def healed() -> HealReport:
-    return _report("healed", "healed", attempts=[attempt(1, "healed")], final_code=FIXED, diff=DIFF)
+    return _report(
+        "healed", "healed", attempts=[attempt(1, "healed")], final_code=FIXED, diff=DIFF
+    )
 
 
 def healed_after_retries() -> HealReport:
@@ -4306,13 +4463,20 @@ def not_healed() -> HealReport:
         attempts=[
             attempt(1, "rerun_failed"),
             attempt(2, "not_applied", repair_method=None),
-            attempt(3, "invalid_reply", analysis=None, exchange=exchange(valid=False, error="action_taken: Field required")),
+            attempt(
+                3,
+                "invalid_reply",
+                analysis=None,
+                exchange=exchange(valid=False, error="action_taken: Field required"),
+            ),
         ],
     )
 
 
 def app_defect() -> HealReport:
-    bug = analysis(FailureType.POTENTIAL_APP_DEFECT, 0.95, "", "", RepairStrategy.STRING_REPLACE)
+    bug = analysis(
+        FailureType.POTENTIAL_APP_DEFECT, 0.95, "", "", RepairStrategy.STRING_REPLACE
+    )
     return _report(
         "app-defect",
         "app_defect_suspected",
@@ -4322,11 +4486,18 @@ def app_defect() -> HealReport:
 
 
 def nothing_to_heal() -> HealReport:
-    return _report("nothing", "nothing_to_heal", initial_run=run_result("passed"), duration_ms=2300)
+    return _report(
+        "nothing", "nothing_to_heal", initial_run=run_result("passed"), duration_ms=2300
+    )
 
 
 def cancelled() -> HealReport:
-    return _report("cancelled", "cancelled", attempts=[attempt(1, "rerun_failed")], duration_ms=14_000)
+    return _report(
+        "cancelled",
+        "cancelled",
+        attempts=[attempt(1, "rerun_failed")],
+        duration_ms=14_000,
+    )
 
 
 def model_error() -> HealReport:
@@ -4338,7 +4509,9 @@ def model_error() -> HealReport:
 
 
 def demo_healed() -> HealReport:
-    demo = attempt(1, "healed", exchange=exchange(provider="demo", model="recorded-answers"))
+    demo = attempt(
+        1, "healed", exchange=exchange(provider="demo", model="recorded-answers")
+    )
     return _report("demo", "healed", attempts=[demo], final_code=FIXED, diff=DIFF)
 
 
@@ -4444,7 +4617,9 @@ def test_not_healed_lists_every_attempt() -> None:
     for title in ("Re-run failed", "Fix not applied", "Invalid model reply"):
         assert title in html
     assert ">Diff</a>" not in html
-    assert "action_taken: Field required" in _page(fx.not_healed, "?attempt=3&tab=model")
+    assert "action_taken: Field required" in _page(
+        fx.not_healed, "?attempt=3&tab=model"
+    )
 
 
 def test_app_defect_stops_without_changing_the_test() -> None:
@@ -4500,8 +4675,6 @@ Expected: failures with `404` for every report.
 Append to `src/workbench/models/web.py`:
 
 ```python
-
-
 class StepbarItem(BaseModel):
     """One step in a finished run's summary bar."""
 
@@ -4581,22 +4754,32 @@ def _stepbar(report: HealReport, attempt: Attempt | None) -> list[StepbarItem]:
         ),
         StepbarItem(
             title="Repair",
-            state="done" if attempt.repair_method else ("failed" if attempt.outcome == "not_applied" else "skipped"),
+            state="done"
+            if attempt.repair_method
+            else ("failed" if attempt.outcome == "not_applied" else "skipped"),
         ),
         StepbarItem(
             title="Verify",
-            state="done" if attempt.outcome == "healed" else ("failed" if attempt.rerun else "skipped"),
+            state="done"
+            if attempt.outcome == "healed"
+            else ("failed" if attempt.rerun else "skipped"),
             time=format_duration(attempt.rerun.duration_ms) if attempt.rerun else "",
         ),
     ]
     return items
 
 
-def heal_context(report: HealReport, *, attempt: int | None, tab: str) -> dict[str, Any]:
+def heal_context(
+    report: HealReport, *, attempt: int | None, tab: str
+) -> dict[str, Any]:
     """Everything the heal result templates need."""
     tabs = _tabs(report)
     selected = _attempt(report, attempt)
-    rows = diff_rows(report.original_code, report.final_code) if report.status == "healed" else []
+    rows = (
+        diff_rows(report.original_code, report.final_code)
+        if report.status == "healed"
+        else []
+    )
     added, removed = diff_counts(rows)
     count = len(report.attempts)
     return {
@@ -4623,7 +4806,9 @@ Add to `src/workbench/web/templating.py`, with the matching imports (`from workb
 
 ```python
 templates.env.filters["ansi"] = clean_ansi_codes
-templates.env.filters["first_line"] = lambda text: (text or "").strip().splitlines()[0] if (text or "").strip() else ""
+templates.env.filters["first_line"] = lambda text: (
+    (text or "").strip().splitlines()[0] if (text or "").strip() else ""
+)
 templates.env.globals["PROVIDER_LABELS"] = PROVIDER_LABELS
 ```
 
@@ -5061,7 +5246,9 @@ def test_rerun_video_streams_from_the_runs_folder() -> None:
     assert whole.status_code == 200
     assert whole.headers["content-type"] == "video/webm"
     assert whole.content == WEBM
-    part = client.get(f"/reports/{report.id}/video?attempt=1", headers={"Range": "bytes=0-3"})
+    part = client.get(
+        f"/reports/{report.id}/video?attempt=1", headers={"Range": "bytes=0-3"}
+    )
     assert part.status_code == 206
     assert part.content == WEBM[:4]
 
@@ -5139,7 +5326,9 @@ def _attachment(name: str) -> str:
 def report_json(report_id: str) -> FileResponse:
     _found(report_id)
     return FileResponse(
-        report_path(report_id), media_type="application/json", filename=f"{report_id}.json"
+        report_path(report_id),
+        media_type="application/json",
+        filename=f"{report_id}.json",
     )
 
 
@@ -5173,7 +5362,9 @@ def report_video(report_id: str, attempt: int = 1) -> FileResponse:
     path = Path(recorded).resolve()
     if not path.is_relative_to(runs_dir().resolve()) or not path.is_file():
         raise HTTPException(status_code=404, detail="No video for this attempt")
-    return FileResponse(path, media_type="video/webm", content_disposition_type="inline")
+    return FileResponse(
+        path, media_type="video/webm", content_disposition_type="inline"
+    )
 ```
 
 - [ ] **Step 4: Run the tests**
@@ -5233,8 +5424,6 @@ git commit -m "feat: download reports, fixed specs and re-run videos, only from 
 Append to `tests/unit/report_fixtures.py` (add `from workbench.models.generate import ContextSummary, GenerateReport` to its imports):
 
 ```python
-
-
 GENERATED = """import { test, expect } from '@playwright/test';
 
 test('A user can send the contact form', async ({ page }) => {
@@ -5333,7 +5522,14 @@ class FakeGenerate:
     def __init__(self) -> None:
         self.calls: list[GenerateRequest] = []
 
-    def __call__(self, request: GenerateRequest, *, model: Any, emit: Any = None, cancel: Any = None) -> GenerateReport:
+    def __call__(
+        self,
+        request: GenerateRequest,
+        *,
+        model: Any,
+        emit: Any = None,
+        cancel: Any = None,
+    ) -> GenerateReport:
         self.calls.append(request)
         events = EventSink("g", emit)
         events.step("context", "active", request.url)
@@ -5354,7 +5550,11 @@ def _wait(client) -> None:  # type: ignore[no-untyped-def]
 def test_generate_page_has_the_form_and_examples() -> None:
     html = make_client().get("/generate").text
     assert "Generate a test" in html
-    assert 'name="url"' in html and 'name="scenario"' in html and 'name="run_after"' in html
+    assert (
+        'name="url"' in html
+        and 'name="scenario"' in html
+        and 'name="run_after"' in html
+    )
     assert "Your test will appear here" in html
     assert 'href="/generate?example=contact-form"' in html
     assert '<a href="/generate" aria-current="page">Generate</a>' in html
@@ -5371,7 +5571,10 @@ def test_generation_starts_with_the_form_values() -> None:
     client = make_client(generate=fake)
     response = client.post(
         "/generate",
-        data={"url": "http://127.0.0.1:7860/sample-site/", "scenario": "A user can send the contact form"},
+        data={
+            "url": "http://127.0.0.1:7860/sample-site/",
+            "scenario": "A user can send the contact form",
+        },
     )
     assert response.status_code == 200 and "sse-connect=" in response.text
     _wait(client)
@@ -5385,11 +5588,21 @@ def test_generation_starts_with_the_form_values() -> None:
 @pytest.mark.parametrize(
     ("form", "target", "message"),
     [
-        ({"url": "example.com/login", "scenario": "x"}, "#url-error", "Enter a full URL, starting with http:// or https://"),
-        ({"url": "http://x/", "scenario": "   "}, "#scenario-error", "Description cannot be empty"),
+        (
+            {"url": "example.com/login", "scenario": "x"},
+            "#url-error",
+            "Enter a full URL, starting with http:// or https://",
+        ),
+        (
+            {"url": "http://x/", "scenario": "   "},
+            "#scenario-error",
+            "Description cannot be empty",
+        ),
     ],
 )
-def test_bad_input_is_refused_inline(form: dict[str, str], target: str, message: str) -> None:
+def test_bad_input_is_refused_inline(
+    form: dict[str, str], target: str, message: str
+) -> None:
     fake = FakeGenerate()
     response = make_client(generate=fake).post("/generate", data=form)
     assert response.status_code == 422
@@ -5470,11 +5683,17 @@ def test_generate_page_resumes_an_active_generation() -> None:
         return FakeGenerate()(request, **kwargs)
 
     client = make_client(generate=slow)
-    client.post("/generate", data={"url": "http://x/", "scenario": "s", "run_after": "1"})
+    client.post(
+        "/generate", data={"url": "http://x/", "scenario": "s", "run_after": "1"}
+    )
     run = client.app.state.runs.active()  # type: ignore[attr-defined]
     html = client.get("/generate").text
     assert f'sse-connect="/runs/{run.id}/events"' in html
-    assert "Generate test</button>" in html and "disabled" in html.split("Generate test</button>")[0].rsplit("<button", 1)[1]
+    assert (
+        "Generate test</button>" in html
+        and "disabled"
+        in html.split("Generate test</button>")[0].rsplit("<button", 1)[1]
+    )
     gate.set()
     run.wait(5)
 ```
@@ -5530,8 +5749,6 @@ def run_generated(
 Append to `src/workbench/web/results.py`. Add the imports `from workbench.models.generate import GenerateReport` and `from workbench.web.views import GENERATE_BADGES, locators_in`:
 
 ```python
-
-
 def generate_context(report: GenerateReport) -> dict[str, Any]:
     """Everything the generate result templates need."""
     exchange = report.exchange
@@ -5584,7 +5801,11 @@ router = APIRouter()
 # label, page under /sample-site/, scenario. Demo can only answer the first.
 EXAMPLES: dict[str, tuple[str, str, str]] = {
     "contact-form": ("Contact form", "", GENERATE_SCENARIO),
-    "checkout": ("Checkout", "checkout.html", "A shopper enters their email and places an order"),
+    "checkout": (
+        "Checkout",
+        "checkout.html",
+        "A shopper enters their email and places an order",
+    ),
 }
 GENERATE_STEP_NAMES = ("context", "model", "execute")
 
@@ -5613,7 +5834,9 @@ def start_generate(
     try:
         clean_url = validate_and_sanitize_url(url)
     except ValidationError:
-        return refuse("url-error", "Enter a full URL, starting with http:// or https://")
+        return refuse(
+            "url-error", "Enter a full URL, starting with http:// or https://"
+        )
     try:
         clean_scenario = validate_description(scenario)
     except ValidationError as exc:
@@ -5622,17 +5845,27 @@ def start_generate(
         return templates.TemplateResponse(request, "partials/browsers_missing.html", {})
     view = request.app.state.model.view()
     if not view.ready or view.choice is None:
-        return templates.TemplateResponse(request, "partials/unreachable.html", {"model": view})
+        return templates.TemplateResponse(
+            request, "partials/unreachable.html", {"model": view}
+        )
     services = request.app.state.services
     model = services.build_model(view.choice)
-    generate_request = GenerateRequest(url=clean_url, scenario=clean_scenario, run_after=bool(run_after))
+    generate_request = GenerateRequest(
+        url=clean_url, scenario=clean_scenario, run_after=bool(run_after)
+    )
 
     def job(emit: Emit, cancel: threading.Event) -> GenerateReport:
-        return services.generate(generate_request, model=model, emit=emit, cancel=cancel)
+        return services.generate(
+            generate_request, model=model, emit=emit, cancel=cancel
+        )
 
-    steps = GENERATE_STEP_NAMES if generate_request.run_after else GENERATE_STEP_NAMES[:2]
+    steps = (
+        GENERATE_STEP_NAMES if generate_request.run_after else GENERATE_STEP_NAMES[:2]
+    )
     try:
-        run = runs.start("generate", clean_scenario, job, model_label=view.model_label, steps=steps)
+        run = runs.start(
+            "generate", clean_scenario, job, model_label=view.model_label, steps=steps
+        )
     except RunInProgress as exc:
         return busy_notice(request, exc.active)
     return templates.TemplateResponse(request, "partials/run_view.html", {"run": run})
@@ -5661,12 +5894,16 @@ def run_generated_spec(request: Request, report: str = Form("")) -> HTMLResponse
 In `src/workbench/web/routes/reports.py`, import `generate_context` and render generate reports in `report_page`, before the final `return not_found(request)`:
 
 ```python
-    if isinstance(report, GenerateReport):
-        context = page_context(request, "generate")
-        context["examples"] = {}
-        context["result"] = generate_context(report)
-        context["form"] = {"url": report.url, "scenario": report.scenario, "run_after": True}
-        return templates.TemplateResponse(request, "generate.html", context)
+if isinstance(report, GenerateReport):
+    context = page_context(request, "generate")
+    context["examples"] = {}
+    context["result"] = generate_context(report)
+    context["form"] = {
+        "url": report.url,
+        "scenario": report.scenario,
+        "run_after": True,
+    }
+    return templates.TemplateResponse(request, "generate.html", context)
 ```
 
 In `src/workbench/app.py`, include `generate_routes.router` (`from workbench.web.routes import generate as generate_routes`).

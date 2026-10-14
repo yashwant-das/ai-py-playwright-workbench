@@ -353,7 +353,9 @@ def test_failed_run_keeps_error_location_and_attachments() -> None:
 
 
 def test_results_inside_describe_blocks_are_found() -> None:
-    run = parse_json_report(_report({"status": "timedOut", "duration": 30000}, nested=True))
+    run = parse_json_report(
+        _report({"status": "timedOut", "duration": 30000}, nested=True)
+    )
     assert run.status == "timed_out"
 
 
@@ -467,7 +469,9 @@ def parse_json_report(report: dict[str, Any]) -> RunResult:
         errors = report.get("errors") or []
         if errors:
             message, location = _error_text(errors[0])
-            return RunResult(status="failed", error_message=message, error_location=location)
+            return RunResult(
+                status="failed", error_message=message, error_location=location
+            )
         return RunResult(status="error", error_message="Playwright ran no tests.")
 
     errors = result.get("errors") or []
@@ -502,7 +506,9 @@ def _first_result(suites: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def _error_text(error: dict[str, Any]) -> tuple[str, str]:
-    message = clean_ansi_codes(str(error.get("message") or error.get("value") or "")).strip()
+    message = clean_ansi_codes(
+        str(error.get("message") or error.get("value") or "")
+    ).strip()
     location = error.get("location") or {}
     where = (
         f"{location['file']}:{location.get('line', 0)}:{location.get('column', 0)}"
@@ -595,8 +601,12 @@ def test_command_uses_the_workspace_config_and_the_json_reporter(
 
     (call,) = calls
     assert call.command[:4] == ["npx", "playwright", "test", str(spec.resolve())]
-    assert call.command[call.command.index("--config") + 1] == str(WORKSPACE_PLAYWRIGHT_CONFIG)
-    assert call.command[call.command.index("--output") + 1] == str(tmp_path / "run" / "test-results")
+    assert call.command[call.command.index("--config") + 1] == str(
+        WORKSPACE_PLAYWRIGHT_CONFIG
+    )
+    assert call.command[call.command.index("--output") + 1] == str(
+        tmp_path / "run" / "test-results"
+    )
     assert "--reporter=json" in call.command
     env = call.kwargs["env"]
     assert env["PLAYWRIGHT_JSON_OUTPUT_FILE"] == str(tmp_path / "run" / "report.json")
@@ -633,7 +643,9 @@ def test_missing_report_is_an_error_that_keeps_stderr(
     assert "No tests found" in result.error_message
 
 
-def test_missing_npx_is_an_error(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_missing_npx_is_an_error(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     def no_npx(*_args: Any, **_kwargs: Any) -> None:
         raise FileNotFoundError("npx")
 
@@ -781,7 +793,10 @@ def run_test(
     duration_ms = int((time.monotonic() - started) * 1000)
     report = read_json_report(report_path)
     if report is None:
-        message = clean_ansi_codes(stderr or "").strip() or "Playwright did not write a report."
+        message = (
+            clean_ansi_codes(stderr or "").strip()
+            or "Playwright did not write a report."
+        )
         return RunResult(
             status="error",
             duration_ms=duration_ms,
@@ -897,8 +912,8 @@ from workbench.config import specs_dir
 from workbench.runner import run_test
 
 FORM = (
-    '<label for=n>Name</label><input id=n>'
-    '<button data-testid=submit>Submit</button><p role=status></p>'
+    "<label for=n>Name</label><input id=n>"
+    "<button data-testid=submit>Submit</button><p role=status></p>"
 )
 HEADER = 'import { test, expect } from "@playwright/test";\n\n'
 
@@ -914,7 +929,10 @@ def _spec(name: str, body: str) -> Path:
 
 
 def test_passing_spec() -> None:
-    spec = _spec("pass.spec.ts", '  await expect(page.getByRole("button", { name: "Submit" })).toBeVisible();')
+    spec = _spec(
+        "pass.spec.ts",
+        '  await expect(page.getByRole("button", { name: "Submit" })).toBeVisible();',
+    )
     result = run_test(spec)
     assert result.passed, result.output
     assert result.error_context_path is None
@@ -945,7 +963,10 @@ def test_record_video_attaches_a_video() -> None:
 
 def test_syntax_error_spec_is_reported_as_a_failure() -> None:
     path = specs_dir() / "syntax.spec.ts"
-    path.write_text(HEADER + 'test("x", async ({ page }) => { await page.goto( });\n', encoding="utf-8")
+    path.write_text(
+        HEADER + 'test("x", async ({ page }) => { await page.goto( });\n',
+        encoding="utf-8",
+    )
     result = run_test(path)
     assert result.status == "failed", result.output
     assert result.error_message
@@ -1055,7 +1076,9 @@ from workbench.context import collector
 
 def _page(aria: str = '- button "Submit" [ref=e3]') -> MagicMock:
     page = MagicMock()
-    page.content.return_value = "<html><body><button>Submit</button><script>x()</script></body></html>"
+    page.content.return_value = (
+        "<html><body><button>Submit</button><script>x()</script></body></html>"
+    )
     page.aria_snapshot.return_value = aria
     page.console_messages.return_value = [
         SimpleNamespace(type="error", text="boom"),
@@ -1063,9 +1086,24 @@ def _page(aria: str = '- button "Submit" [ref=e3]') -> MagicMock:
     ]
     page.page_errors.return_value = [SimpleNamespace(message="kaput")]
     page.requests.return_value = [
-        SimpleNamespace(method="GET", url="http://x/a.js", failure="net::ERR_FAILED", existing_response=None),
-        SimpleNamespace(method="POST", url="http://x/orders", failure=None, existing_response=SimpleNamespace(status=500)),
-        SimpleNamespace(method="GET", url="http://x/ok", failure=None, existing_response=SimpleNamespace(status=200)),
+        SimpleNamespace(
+            method="GET",
+            url="http://x/a.js",
+            failure="net::ERR_FAILED",
+            existing_response=None,
+        ),
+        SimpleNamespace(
+            method="POST",
+            url="http://x/orders",
+            failure=None,
+            existing_response=SimpleNamespace(status=500),
+        ),
+        SimpleNamespace(
+            method="GET",
+            url="http://x/ok",
+            failure=None,
+            existing_response=SimpleNamespace(status=200),
+        ),
     ]
     return page
 
@@ -1103,7 +1141,9 @@ def test_long_snapshot_is_cut(monkeypatch: pytest.MonkeyPatch) -> None:
     assert len(snap.aria_snapshot or "") == 100
 
 
-def test_navigation_failure_returns_an_empty_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_navigation_failure_returns_an_empty_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     page = _page()
     page.goto.side_effect = RuntimeError("net::ERR_CONNECTION_REFUSED")
     browser = _browser(monkeypatch, page)
@@ -1113,7 +1153,9 @@ def test_navigation_failure_returns_an_empty_snapshot(monkeypatch: pytest.Monkey
     browser.close.assert_called_once()
 
 
-def test_browser_launch_failure_returns_an_empty_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_browser_launch_failure_returns_an_empty_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def broken() -> Any:
         raise RuntimeError("Executable doesn't exist")
 
@@ -1447,15 +1489,27 @@ from workbench.heal.repair import apply_fix
 from workbench.models.heal import REPAIR_STRATEGY_LABELS, HealingAction, RepairStrategy
 
 
-def _action(original: str, fixed: str, strategy: RepairStrategy = RepairStrategy.STRING_REPLACE) -> HealingAction:
-    return HealingAction(original_code=original, fixed_code=fixed, description="", repair_strategy=strategy)
+def _action(
+    original: str, fixed: str, strategy: RepairStrategy = RepairStrategy.STRING_REPLACE
+) -> HealingAction:
+    return HealingAction(
+        original_code=original,
+        fixed_code=fixed,
+        description="",
+        repair_strategy=strategy,
+    )
 
 
 def test_whitespace_tolerant_text_fix() -> None:
     code = "\n        // comment\n        await page.click('#wrong');\n        // next line\n        "
-    result = apply_fix(code, _action("await page.click('#wrong');", "await page.click('#right');"))
+    result = apply_fix(
+        code, _action("await page.click('#wrong');", "await page.click('#right');")
+    )
     assert result.method == "text"
-    assert result.code.strip() == "// comment\n        await page.click('#right');\n        // next line"
+    assert (
+        result.code.strip()
+        == "// comment\n        await page.click('#right');\n        // next line"
+    )
 
 
 def test_multiline_fix_keeps_indentation() -> None:
@@ -1490,24 +1544,34 @@ def test_nested_replacement_is_reindented() -> None:
 
 
 def test_missing_target_changes_nothing() -> None:
-    result = apply_fix("await page.click('#a');", _action("await page.click('#zzz');", "x"))
+    result = apply_fix(
+        "await page.click('#a');", _action("await page.click('#zzz');", "x")
+    )
     assert result.method is None
     assert result.code == "await page.click('#a');"
 
 
 def test_ast_result_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(repair, "node_available", lambda: True)
-    monkeypatch.setattr(repair, "_apply_ast_fix", lambda code, action: code.replace("#old", "#new"))
-    action = _action('page.locator("#old")', 'page.locator("#new")', RepairStrategy.SELECTOR_REPLACE)
+    monkeypatch.setattr(
+        repair, "_apply_ast_fix", lambda code, action: code.replace("#old", "#new")
+    )
+    action = _action(
+        'page.locator("#old")', 'page.locator("#new")', RepairStrategy.SELECTOR_REPLACE
+    )
     result = apply_fix('await page.locator("#old").click();', action)
     assert result.method == "ast"
     assert result.code == 'await page.locator("#new").click();'
     assert not result.ast_unavailable
 
 
-def test_missing_node_falls_back_to_text_and_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_node_falls_back_to_text_and_says_so(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setattr(repair, "node_available", lambda: False)
-    action = _action('page.locator("#old")', 'page.locator("#new")', RepairStrategy.SELECTOR_REPLACE)
+    action = _action(
+        'page.locator("#old")', 'page.locator("#new")', RepairStrategy.SELECTOR_REPLACE
+    )
     result = apply_fix('await page.locator("#old").click();', action)
     assert result.method == "text"
     assert result.ast_unavailable
@@ -1718,7 +1782,9 @@ class TestRequestOptions(unittest.TestCase):
         self.assertNotIn("response_format", create.call_args.kwargs)
 
     def test_bad_request_is_not_retried(self):
-        router, create = self._router_with_client(retry_policy=RetryPolicy(max_retries=2))
+        router, create = self._router_with_client(
+            retry_policy=RetryPolicy(max_retries=2)
+        )
         create.side_effect = _bad_request()
         with self.assertRaises(RuntimeError) as caught:
             router.complete(LLMRequest(messages=[], model="m"))
@@ -1750,8 +1816,12 @@ MESSAGES = [{"role": "user", "content": "hi"}]
 
 def _response(content: str = "{}") -> LLMResponse:
     return LLMResponse(
-        content=content, model_used="m-1", provider="lm_studio",
-        latency_ms=12, input_tokens=3, output_tokens=4,
+        content=content,
+        model_used="m-1",
+        provider="lm_studio",
+        latency_ms=12,
+        input_tokens=3,
+        output_tokens=4,
     )
 
 
@@ -2076,7 +2146,9 @@ def _heal(report_id: str = "20261003-140509-heal-contact") -> HealReport:
                 outcome="healed",
                 evidence=FailureEvidence(error_message="boom", source="error_context"),
                 exchange=ModelExchange(
-                    sections=[PromptSection(name="Test file", chars=10, original_chars=20)],
+                    sections=[
+                        PromptSection(name="Test file", chars=10, original_chars=20)
+                    ],
                     valid=True,
                 ),
                 repair_method="ast",
@@ -2114,7 +2186,9 @@ def test_list_is_newest_first() -> None:
     assert list_report_ids() == ["20261003-150000-heal-b", "20261003-140509-heal-a"]
 
 
-@pytest.mark.parametrize("bad_id", ["../../etc/passwd", "x.json", "", "20261003-140509-heal-A"])
+@pytest.mark.parametrize(
+    "bad_id", ["../../etc/passwd", "x.json", "", "20261003-140509-heal-A"]
+)
 def test_load_report_rejects_path_traversal(bad_id: str) -> None:
     with pytest.raises(ValueError):
         report_path(bad_id)
@@ -2466,7 +2540,11 @@ from pathlib import Path
 
 import pytest
 
-from workbench.heal.evidence import extract_url_from_code, gather_evidence, parse_error_context
+from workbench.heal.evidence import (
+    extract_url_from_code,
+    gather_evidence,
+    parse_error_context,
+)
 from workbench.models.artifacts import ContextSnapshot
 from workbench.models.shared import RunResult
 
@@ -2517,7 +2595,10 @@ def _never(url: str) -> ContextSnapshot:
         ("await page.goto('https://example.com/foo');", "https://example.com/foo"),
         ('await page.goto("https://example.com/bar");', "https://example.com/bar"),
         ("await page.goto(`https://example.com/baz`);", "https://example.com/baz"),
-        ('await page.goto("https://example.com/slow", { timeout: 5000 });', "https://example.com/slow"),
+        (
+            'await page.goto("https://example.com/slow", { timeout: 5000 });',
+            "https://example.com/slow",
+        ),
         ("await page.click('#btn');", None),
         ("", None),
     ],
@@ -2572,13 +2653,17 @@ def test_without_error_context_the_first_url_is_loaded() -> None:
 
 
 def test_no_context_at_all_is_flagged() -> None:
-    evidence, warnings = gather_evidence(CODE, _failed(), collect=lambda url: ContextSnapshot(url=url))
+    evidence, warnings = gather_evidence(
+        CODE, _failed(), collect=lambda url: ContextSnapshot(url=url)
+    )
     assert evidence.source == "none"
     assert warnings == ["page_context_unavailable"]
 
 
 def test_spec_without_a_url_is_flagged() -> None:
-    evidence, warnings = gather_evidence("test('x', () => {});", _failed(), collect=_never)
+    evidence, warnings = gather_evidence(
+        "test('x', () => {});", _failed(), collect=_never
+    )
     assert evidence.source == "none"
     assert warnings == ["page_context_unavailable"]
 ````
@@ -2629,7 +2714,14 @@ class FakeModel:
 
     def chat(self, messages, *, json_schema=None, temperature=0.1) -> ChatReply:
         self.calls.append({"messages": messages, "json_schema": json_schema})
-        return ChatReply(content=self.replies.pop(0), model="m-1", provider="fake", input_tokens=9, output_tokens=3, latency_ms=5)
+        return ChatReply(
+            content=self.replies.pop(0),
+            model="m-1",
+            provider="fake",
+            input_tokens=9,
+            output_tokens=3,
+            latency_ms=5,
+        )
 
 
 def _evidence(**changes: Any) -> FailureEvidence:
@@ -2649,7 +2741,10 @@ def test_sections_and_schema_are_sent() -> None:
 
     assert result is not None and result.failure_type == FailureType.LOCATOR_DRIFT
     assert [s.name for s in exchange.sections] == [
-        "Test file", "Error", "Page snapshot at failure", "Locator candidates",
+        "Test file",
+        "Error",
+        "Page snapshot at failure",
+        "Locator candidates",
     ]
     user = model.calls[0]["messages"][1]["content"]
     assert user.startswith("## Test file\n" + CODE)
@@ -2660,24 +2755,38 @@ def test_sections_and_schema_are_sent() -> None:
 
 
 def test_exchange_records_provenance_and_validity() -> None:
-    _, exchange = plan_fix(code=CODE, evidence=_evidence(), hint=HINT, model=FakeModel(analysis()))
+    _, exchange = plan_fix(
+        code=CODE, evidence=_evidence(), hint=HINT, model=FakeModel(analysis())
+    )
     assert exchange.valid
     assert exchange.raw_response == analysis()
     p = exchange.provenance
-    assert (p.provider, p.model, p.prompt_name, p.prompt_version) == ("fake", "m-1", "healer", "3")
+    assert (p.provider, p.model, p.prompt_name, p.prompt_version) == (
+        "fake",
+        "m-1",
+        "healer",
+        "3",
+    )
     assert (p.input_tokens, p.output_tokens, p.latency_ms) == (9, 3, 5)
     assert len(p.prompt_hash) == 16
 
 
 def test_fresh_page_load_is_labelled_as_such() -> None:
-    _, exchange = plan_fix(code=CODE, evidence=_evidence(source="page_load"), hint=HINT, model=FakeModel(analysis()))
+    _, exchange = plan_fix(
+        code=CODE,
+        evidence=_evidence(source="page_load"),
+        hint=HINT,
+        model=FakeModel(analysis()),
+    )
     assert "Page snapshot (fresh page load)" in [s.name for s in exchange.sections]
 
 
 def test_long_snapshot_is_truncated_and_recorded() -> None:
     huge = "- text: " + "x" * 50_000
     model = FakeModel(analysis())
-    _, exchange = plan_fix(code=CODE, evidence=_evidence(page_snapshot=huge), hint=HINT, model=model)
+    _, exchange = plan_fix(
+        code=CODE, evidence=_evidence(page_snapshot=huge), hint=HINT, model=model
+    )
     section = next(s for s in exchange.sections if s.name == "Page snapshot at failure")
     assert section.chars == LIMITS["Page snapshot at failure"]
     assert section.original_chars == len(huge)
@@ -2685,17 +2794,25 @@ def test_long_snapshot_is_truncated_and_recorded() -> None:
 
 
 def test_invalid_reply_is_recorded_not_raised() -> None:
-    result, exchange = plan_fix(code=CODE, evidence=_evidence(), hint=HINT, model=FakeModel("not json"))
+    result, exchange = plan_fix(
+        code=CODE, evidence=_evidence(), hint=HINT, model=FakeModel("not json")
+    )
     assert result is None
     assert not exchange.valid
     assert exchange.validation_error
     assert exchange.raw_response == "not json"
 
 
-@pytest.mark.parametrize(("hint_conf", "expected"), [(0.9, FailureType.TIMEOUT), (0.5, FailureType.UNKNOWN)])
-def test_confident_heuristic_replaces_an_unknown_diagnosis(hint_conf: float, expected: FailureType) -> None:
+@pytest.mark.parametrize(
+    ("hint_conf", "expected"), [(0.9, FailureType.TIMEOUT), (0.5, FailureType.UNKNOWN)]
+)
+def test_confident_heuristic_replaces_an_unknown_diagnosis(
+    hint_conf: float, expected: FailureType
+) -> None:
     hint = (FailureType.TIMEOUT, hint_conf, "reason")
-    result, _ = plan_fix(code=CODE, evidence=_evidence(), hint=hint, model=FakeModel(analysis("UNKNOWN")))
+    result, _ = plan_fix(
+        code=CODE, evidence=_evidence(), hint=hint, model=FakeModel(analysis("UNKNOWN"))
+    )
     assert result is not None and result.failure_type == expected
 ```
 
@@ -2704,12 +2821,19 @@ Create `tests/unit/test_prompts.py`:
 ```python
 """Prompt files, versions and rendered sections."""
 
-from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt, render_prompt
+from workbench.llm.prompts import (
+    get_prompt_hash,
+    get_prompt_version,
+    load_prompt,
+    render_prompt,
+)
 
 
 def test_healer_prompt_is_version_3_and_formats() -> None:
     assert get_prompt_version("healer") == "3"
-    text = load_prompt("healer").format(failure_type="TIMEOUT", confidence="1.00", reason="r")
+    text = load_prompt("healer").format(
+        failure_type="TIMEOUT", confidence="1.00", reason="r"
+    )
     assert "POTENTIAL_APP_DEFECT" in text
     assert '"failure_type"' in text  # JSON braces survived str.format
 
@@ -2721,7 +2845,10 @@ def test_prompt_hash_is_stable() -> None:
 def test_render_prompt_cuts_and_records() -> None:
     text, sections = render_prompt([("A", "abc"), ("B", "x" * 10)], {"A": 100, "B": 4})
     assert text == "## A\nabc\n\n## B\nxxxx"
-    assert [(s.name, s.chars, s.original_chars) for s in sections] == [("A", 3, None), ("B", 4, 10)]
+    assert [(s.name, s.chars, s.original_chars) for s in sections] == [
+        ("A", 3, None),
+        ("B", 4, 10),
+    ]
 ```
 
 - [ ] **Step 2: Run them to verify they fail**
@@ -2919,7 +3046,12 @@ import logging
 
 from workbench.llm.chat import ChatModel
 from workbench.llm.parsing import parse_llm_response
-from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt, render_prompt
+from workbench.llm.prompts import (
+    get_prompt_hash,
+    get_prompt_version,
+    load_prompt,
+    render_prompt,
+)
 from workbench.models.heal import FailureEvidence, HealingAnalysis
 from workbench.models.shared import FailureType, ModelExchange, Provenance
 
@@ -2954,7 +3086,10 @@ def build_sections(code: str, evidence: FailureEvidence) -> list[tuple[str, str]
         ("Test file", code),
         ("Error", error),
         (snapshot_name, evidence.page_snapshot or ""),
-        ("Locator candidates", "\n".join(f"- {c}" for c in evidence.locator_candidates)),
+        (
+            "Locator candidates",
+            "\n".join(f"- {c}" for c in evidence.locator_candidates),
+        ),
         ("Console errors", "\n".join(evidence.console_errors)),
         ("Failed requests", "\n".join(evidence.network_errors)),
     ]
@@ -3000,7 +3135,10 @@ def plan_fix(
         logger.warning("Healer reply did not match the schema: %s", exc)
         exchange.validation_error = str(exc)[:500]
         return None, exchange
-    if analysis.failure_type == FailureType.UNKNOWN and hint_confidence > HEURISTIC_OVERRIDE:
+    if (
+        analysis.failure_type == FailureType.UNKNOWN
+        and hint_confidence > HEURISTIC_OVERRIDE
+    ):
         analysis = analysis.model_copy(update={"failure_type": hint_type})
     exchange.valid = True
     return analysis, exchange
@@ -3020,7 +3158,9 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 
-def test_chromium_installed_checks_the_executable(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_chromium_installed_checks_the_executable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     exe = tmp_path / "chrome"
     playwright = MagicMock()
     playwright.__enter__.return_value.chromium.executable_path = str(exe)
@@ -3030,7 +3170,9 @@ def test_chromium_installed_checks_the_executable(monkeypatch: pytest.MonkeyPatc
     assert environment.chromium_installed()
 
 
-def test_chromium_check_survives_a_broken_install(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_chromium_check_survives_a_broken_install(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def broken() -> None:
         raise RuntimeError("driver missing")
 
@@ -3067,12 +3209,28 @@ BROKEN = (
 SNAPSHOT_FILE = '# Page snapshot\n\n```yaml\n- button "Submit" [ref=e3]\n```\n'
 
 
-def reply(failure_type: str = "LOCATOR_DRIFT", confidence: float = 0.9, original: str = 'page.locator("#submit-btn")', fixed: str = 'page.getByRole("button", { name: "Submit" })', strategy: str = "string_replace") -> str:
-    return json.dumps({
-        "failure_type": failure_type, "failure_summary": "s", "hypothesis": "h",
-        "confidence_score": confidence, "reasoning_steps": ["r"],
-        "action_taken": {"original_code": original, "fixed_code": fixed, "description": "d", "repair_strategy": strategy},
-    })
+def reply(
+    failure_type: str = "LOCATOR_DRIFT",
+    confidence: float = 0.9,
+    original: str = 'page.locator("#submit-btn")',
+    fixed: str = 'page.getByRole("button", { name: "Submit" })',
+    strategy: str = "string_replace",
+) -> str:
+    return json.dumps(
+        {
+            "failure_type": failure_type,
+            "failure_summary": "s",
+            "hypothesis": "h",
+            "confidence_score": confidence,
+            "reasoning_steps": ["r"],
+            "action_taken": {
+                "original_code": original,
+                "fixed_code": fixed,
+                "description": "d",
+                "repair_strategy": strategy,
+            },
+        }
+    )
 
 
 class FakeModel:
@@ -3096,16 +3254,36 @@ class FakeRunner:
         self.context.write_text(SNAPSHOT_FILE, encoding="utf-8")
         self.on_call = on_call
 
-    def __call__(self, spec: Path, run_dir: Path | None = None, *, record_video: bool = False, cancel: Any = None) -> RunResult:
-        self.calls.append({"spec": spec, "run_dir": run_dir, "record_video": record_video, "code": spec.read_text()})
+    def __call__(
+        self,
+        spec: Path,
+        run_dir: Path | None = None,
+        *,
+        record_video: bool = False,
+        cancel: Any = None,
+    ) -> RunResult:
+        self.calls.append(
+            {
+                "spec": spec,
+                "run_dir": run_dir,
+                "record_video": record_video,
+                "code": spec.read_text(),
+            }
+        )
         if self.on_call:
             self.on_call(len(self.calls))
         status = self.statuses.pop(0)
         if status == "passed":
-            return RunResult(status="passed", video_path="/v.webm" if record_video else None)
+            return RunResult(
+                status="passed", video_path="/v.webm" if record_video else None
+            )
         if status in ("cancelled", "error"):
             return RunResult(status=status, error_message=f"{status}!")
-        return RunResult(status="failed", error_message="TimeoutError: waiting for locator('#submit-btn')", error_context_path=str(self.context))
+        return RunResult(
+            status="failed",
+            error_message="TimeoutError: waiting for locator('#submit-btn')",
+            error_context_path=str(self.context),
+        )
 
 
 def no_page(url: str) -> ContextSnapshot:
@@ -3122,7 +3300,13 @@ def spec(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
 
 def run_heal(spec: Path, model: FakeModel, runner: FakeRunner, **kwargs: Any):
     kwargs.setdefault("browsers_ready", lambda: True)
-    return heal(HealRequest(spec_path=spec, max_attempts=kwargs.pop("max_attempts", 3)), model=model, run=runner, collect=no_page, **kwargs)
+    return heal(
+        HealRequest(spec_path=spec, max_attempts=kwargs.pop("max_attempts", 3)),
+        model=model,
+        run=runner,
+        collect=no_page,
+        **kwargs,
+    )
 
 
 def test_passing_spec_needs_no_healing(spec: Path, tmp_path: Path) -> None:
@@ -3142,7 +3326,7 @@ def test_heals_on_the_first_attempt(spec: Path, tmp_path: Path) -> None:
     assert [a.outcome for a in report.attempts] == ["healed"]
     assert 'getByRole("button", { name: "Submit" })' in spec.read_text()
     assert report.final_code == spec.read_text()
-    assert "-  await page.locator(\"#submit-btn\").click();" in report.diff
+    assert '-  await page.locator("#submit-btn").click();' in report.diff
     assert runner.calls[1]["record_video"] is True
     assert report.attempts[0].rerun.video_path == "/v.webm"  # type: ignore[union-attr]
     assert report.attempts[0].evidence.source == "error_context"  # type: ignore[union-attr]
@@ -3157,14 +3341,18 @@ def test_fix_that_cannot_be_applied_is_retried(spec: Path, tmp_path: Path) -> No
 
 
 def test_invalid_reply_is_retried(spec: Path, tmp_path: Path) -> None:
-    report = run_heal(spec, FakeModel("not json", reply()), FakeRunner(tmp_path, "failed", "passed"))
+    report = run_heal(
+        spec, FakeModel("not json", reply()), FakeRunner(tmp_path, "failed", "passed")
+    )
     assert [a.outcome for a in report.attempts] == ["invalid_reply", "healed"]
     assert report.attempts[0].exchange.valid is False  # type: ignore[union-attr]
 
 
 def test_confident_app_defect_stops_without_editing(spec: Path, tmp_path: Path) -> None:
     runner = FakeRunner(tmp_path, "failed")
-    report = run_heal(spec, FakeModel(reply("POTENTIAL_APP_DEFECT", 0.9, "", "")), runner)
+    report = run_heal(
+        spec, FakeModel(reply("POTENTIAL_APP_DEFECT", 0.9, "", "")), runner
+    )
     assert report.status == "app_defect_suspected"
     assert [a.outcome for a in report.attempts] == ["app_defect"]
     assert len(runner.calls) == 1
@@ -3172,29 +3360,52 @@ def test_confident_app_defect_stops_without_editing(spec: Path, tmp_path: Path) 
 
 
 def test_unsure_app_defect_still_tries_the_fix(spec: Path, tmp_path: Path) -> None:
-    report = run_heal(spec, FakeModel(reply("POTENTIAL_APP_DEFECT", 0.5)), FakeRunner(tmp_path, "failed", "passed"))
+    report = run_heal(
+        spec,
+        FakeModel(reply("POTENTIAL_APP_DEFECT", 0.5)),
+        FakeRunner(tmp_path, "failed", "passed"),
+    )
     assert report.status == "healed"
 
 
 def test_exhausted_attempts_restore_the_spec(spec: Path, tmp_path: Path) -> None:
     runner = FakeRunner(tmp_path, "failed", "failed", "failed")
-    report = run_heal(spec, FakeModel(reply(), reply(original='page.getByRole("button", { name: "Submit" })', fixed="page.getByText('Submit')")), runner, max_attempts=2)
+    report = run_heal(
+        spec,
+        FakeModel(
+            reply(),
+            reply(
+                original='page.getByRole("button", { name: "Submit" })',
+                fixed="page.getByText('Submit')",
+            ),
+        ),
+        runner,
+        max_attempts=2,
+    )
     assert report.status == "not_healed"
     assert [a.outcome for a in report.attempts] == ["rerun_failed", "rerun_failed"]
     assert spec.read_text() == BROKEN
     assert report.final_code == BROKEN and report.diff == ""
 
 
-def test_model_error_after_a_failed_attempt_restores_the_spec(spec: Path, tmp_path: Path) -> None:
+def test_model_error_after_a_failed_attempt_restores_the_spec(
+    spec: Path, tmp_path: Path
+) -> None:
     runner = FakeRunner(tmp_path, "failed", "failed")
-    report = run_heal(spec, FakeModel(reply(), ModelError("connection refused")), runner)
+    report = run_heal(
+        spec, FakeModel(reply(), ModelError("connection refused")), runner
+    )
     assert report.status == "error"
     assert "connection refused" in report.error_message
     assert spec.read_text() == BROKEN
 
 
-def test_cancel_during_verification_restores_the_spec(spec: Path, tmp_path: Path) -> None:
-    report = run_heal(spec, FakeModel(reply()), FakeRunner(tmp_path, "failed", "cancelled"))
+def test_cancel_during_verification_restores_the_spec(
+    spec: Path, tmp_path: Path
+) -> None:
+    report = run_heal(
+        spec, FakeModel(reply()), FakeRunner(tmp_path, "failed", "cancelled")
+    )
     assert report.status == "cancelled"
     assert [a.outcome for a in report.attempts] == ["cancelled"]
     assert spec.read_text() == BROKEN
@@ -3222,21 +3433,39 @@ def test_runner_error_is_reported(spec: Path, tmp_path: Path) -> None:
     assert report.error_message == "error!"
 
 
-def test_missing_node_is_a_warning(spec: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_missing_node_is_a_warning(
+    spec: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(repair, "node_available", lambda: False)
-    report = run_heal(spec, FakeModel(reply(strategy="selector_replace")), FakeRunner(tmp_path, "failed", "passed"))
+    report = run_heal(
+        spec,
+        FakeModel(reply(strategy="selector_replace")),
+        FakeRunner(tmp_path, "failed", "passed"),
+    )
     assert report.status == "healed"
     assert report.warnings == ["ast_unavailable"]
 
 
 def test_events_describe_the_run(spec: Path, tmp_path: Path) -> None:
     events: list[RunEvent] = []
-    run_heal(spec, FakeModel(reply()), FakeRunner(tmp_path, "failed", "passed"), emit=events.append)
+    run_heal(
+        spec,
+        FakeModel(reply()),
+        FakeRunner(tmp_path, "failed", "passed"),
+        emit=events.append,
+    )
     steps = [(e.step, e.state) for e in events if e.kind == "step"]
     assert steps == [
-        ("run", "active"), ("run", "done"), ("evidence", "active"), ("evidence", "done"),
-        ("diagnose", "active"), ("diagnose", "done"), ("repair", "active"), ("repair", "done"),
-        ("verify", "active"), ("verify", "done"),
+        ("run", "active"),
+        ("run", "done"),
+        ("evidence", "active"),
+        ("evidence", "done"),
+        ("diagnose", "active"),
+        ("diagnose", "done"),
+        ("repair", "active"),
+        ("repair", "done"),
+        ("verify", "active"),
+        ("verify", "done"),
     ]
     assert events[-1].kind == "done" and events[-1].detail == "healed"
     assert [e.seq for e in events] == list(range(1, len(events) + 1))
@@ -3330,7 +3559,9 @@ def heal(
     browsers_ready: Callable[[], bool] = chromium_installed,
 ) -> HealReport:
     """Heal ``request.spec_path`` and return the saved report."""
-    return _HealRun(request, model, emit, cancel, run, collect, browsers_ready).execute()
+    return _HealRun(
+        request, model, emit, cancel, run, collect, browsers_ready
+    ).execute()
 
 
 class _HealRun:
@@ -3436,7 +3667,9 @@ class _HealRun:
             analysis.failure_type == FailureType.POTENTIAL_APP_DEFECT
             and analysis.confidence_score >= APP_DEFECT_CONFIDENCE
         ):
-            record("app_defect", evidence=evidence, analysis=analysis, exchange=exchange)
+            record(
+                "app_defect", evidence=evidence, analysis=analysis, exchange=exchange
+            )
             return "app_defect_suspected", result
 
         self.events.step("repair", "active")
@@ -3444,8 +3677,12 @@ class _HealRun:
         if repaired.ast_unavailable:
             self.warnings.add("ast_unavailable")
         if repaired.method is None:
-            self.events.step("repair", "failed", "The code to replace is not in the file")
-            record("not_applied", evidence=evidence, analysis=analysis, exchange=exchange)
+            self.events.step(
+                "repair", "failed", "The code to replace is not in the file"
+            )
+            record(
+                "not_applied", evidence=evidence, analysis=analysis, exchange=exchange
+            )
             return None, result
         label = REPAIR_STRATEGY_LABELS[analysis.action_taken.repair_strategy]
         self.events.step("repair", "done", f"{label} ({repaired.method})")
@@ -3538,7 +3775,12 @@ Then remove what only they used:
 
 from .artifacts import ContextSnapshot
 from .events import RunEvent
-from .generate import ContextSummary, GenerateReport, GenerationDecision, GenerationResult
+from .generate import (
+    ContextSummary,
+    GenerateReport,
+    GenerationDecision,
+    GenerationResult,
+)
 from .heal import (
     Attempt,
     FailureEvidence,
@@ -3683,7 +3925,7 @@ from workbench.reports import load_report
 
 URL = "http://127.0.0.1:4173/"
 SPEC = (
-    "```typescript\nimport { test, expect } from \"@playwright/test\";\n\n"
+    '```typescript\nimport { test, expect } from "@playwright/test";\n\n'
     'test("submit", async ({ page }) => {\n  await page.goto("http://127.0.0.1:4173/");\n});\n```'
 )
 
@@ -3713,7 +3955,9 @@ def runner(status: str = "passed"):
 
     def run(spec: Path, run_dir: Path | None = None, **_: Any) -> RunResult:
         calls.append(spec)
-        return RunResult(status=status, error_message="" if status == "passed" else "boom")
+        return RunResult(
+            status=status, error_message="" if status == "passed" else "boom"
+        )
 
     return run, calls
 
@@ -3723,10 +3967,14 @@ def _workspace(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     monkeypatch.setenv("WORKBENCH_WORKSPACE", str(tmp_path))
 
 
-def go(model: FakeModel, run: Any, request: GenerateRequest | None = None, **kwargs: Any):
+def go(
+    model: FakeModel, run: Any, request: GenerateRequest | None = None, **kwargs: Any
+):
     kwargs.setdefault("browsers_ready", lambda: True)
     kwargs.setdefault("collect", page)
-    request = request or GenerateRequest(url=URL, scenario="A visitor submits the contact form")
+    request = request or GenerateRequest(
+        url=URL, scenario="A visitor submits the contact form"
+    )
     return generate(request, model=model, run=run, **kwargs)
 
 
@@ -3739,11 +3987,20 @@ def test_generates_writes_and_runs(tmp_path: Path) -> None:
     spec = tmp_path / "specs" / "a-visitor-submits-the-contact-form.spec.ts"
     assert report.spec_name == spec.name
     assert calls == [spec]
-    assert spec.read_text().startswith('import { test, expect } from "@playwright/test";')
+    assert spec.read_text().startswith(
+        'import { test, expect } from "@playwright/test";'
+    )
     assert "```" not in report.code
-    assert [s.name for s in report.exchange.sections] == ["Target URL", "Scenario", "Page snapshot", "Locator candidates"]  # type: ignore[union-attr]
+    assert [s.name for s in report.exchange.sections] == [
+        "Target URL",
+        "Scenario",
+        "Page snapshot",
+        "Locator candidates",
+    ]  # type: ignore[union-attr]
     assert report.exchange.provenance.prompt_version == "3"  # type: ignore[union-attr]
-    assert report.context.locator_candidates == ["getByRole('button', { name: 'Submit' })"]  # type: ignore[union-attr]
+    assert report.context.locator_candidates == [
+        "getByRole('button', { name: 'Submit' })"
+    ]  # type: ignore[union-attr]
     assert "## Page snapshot\n- textbox" in model.messages[1]["content"]
     assert load_report(report.id).status == "passed"
 
@@ -3755,7 +4012,9 @@ def test_failed_run_is_reported() -> None:
 
 def test_not_run_when_asked() -> None:
     run, calls = runner()
-    report = go(FakeModel(), run, GenerateRequest(url=URL, scenario="login", run_after=False))
+    report = go(
+        FakeModel(), run, GenerateRequest(url=URL, scenario="login", run_after=False)
+    )
     assert report.status == "not_run"
     assert calls == []
 
@@ -3769,9 +4028,16 @@ def test_same_scenario_twice_gets_a_new_file(tmp_path: Path) -> None:
 
 def test_invalid_url_is_rejected_before_any_work() -> None:
     run, calls = runner()
+
     def no_page(url: str) -> ContextSnapshot:
         raise AssertionError("should not load")
-    report = go(FakeModel(), run, GenerateRequest(url="example.com", scenario="x"), collect=no_page)
+
+    report = go(
+        FakeModel(),
+        run,
+        GenerateRequest(url="example.com", scenario="x"),
+        collect=no_page,
+    )
     assert report.status == "error"
     assert "Invalid URL" in report.error_message
     assert calls == []
@@ -3828,8 +4094,12 @@ def test_events_describe_the_run() -> None:
     go(FakeModel(), run, emit=events.append)
     steps = [(e.step, e.state) for e in events if e.kind == "step"]
     assert steps == [
-        ("context", "active"), ("context", "done"), ("model", "active"), ("model", "done"),
-        ("execute", "active"), ("execute", "done"),
+        ("context", "active"),
+        ("context", "done"),
+        ("model", "active"),
+        ("model", "done"),
+        ("execute", "active"),
+        ("execute", "done"),
     ]
     assert events[-1].detail == "passed"
 ```
@@ -3906,12 +4176,26 @@ from workbench.heal.evidence import Collect
 from workbench.ids import new_run_id, slugify
 from workbench.llm.chat import ChatModel, ModelError
 from workbench.llm.parsing import extract_code_block
-from workbench.llm.prompts import get_prompt_hash, get_prompt_version, load_prompt, render_prompt
-from workbench.models.generate import ContextSummary, GenerateReport, GenerateStatus, GenerationResult
+from workbench.llm.prompts import (
+    get_prompt_hash,
+    get_prompt_version,
+    load_prompt,
+    render_prompt,
+)
+from workbench.models.generate import (
+    ContextSummary,
+    GenerateReport,
+    GenerateStatus,
+    GenerationResult,
+)
 from workbench.models.shared import ModelExchange, Provenance, RunResult
 from workbench.reports import save_report
 from workbench.runner import run_test
-from workbench.validation import ValidationError, validate_and_sanitize_url, validate_description
+from workbench.validation import (
+    ValidationError,
+    validate_and_sanitize_url,
+    validate_description,
+)
 
 Run = Callable[..., RunResult]
 
@@ -4096,7 +4380,10 @@ def test_generated_spec_passes_in_a_real_browser(site, fake_llm):
     assert 'button "Submit"' in prompts[-1]
     assert report.status == "passed", report.model_dump_json(indent=2)
     assert site in report.code
-    assert report.exchange is not None and report.exchange.provenance.provider == "lm_studio"
+    assert (
+        report.exchange is not None
+        and report.exchange.provenance.provider == "lm_studio"
+    )
 ```
 
 - [ ] **Step 7: Run every suite**
@@ -4164,11 +4451,21 @@ WRONG_EXPECTATION = DRIFTED.replace(
 
 
 def _analysis(failure_type: str, original: str = "", fixed: str = "") -> str:
-    return json.dumps({
-        "failure_type": failure_type, "failure_summary": "s", "hypothesis": "h",
-        "confidence_score": 0.9, "reasoning_steps": ["r"],
-        "action_taken": {"original_code": original, "fixed_code": fixed, "description": "d", "repair_strategy": "selector_replace"},
-    })
+    return json.dumps(
+        {
+            "failure_type": failure_type,
+            "failure_summary": "s",
+            "hypothesis": "h",
+            "confidence_score": 0.9,
+            "reasoning_steps": ["r"],
+            "action_taken": {
+                "original_code": original,
+                "fixed_code": fixed,
+                "description": "d",
+                "repair_strategy": "selector_replace",
+            },
+        }
+    )
 
 
 class ScriptedModel:
@@ -4188,11 +4485,13 @@ def _spec(name: str, code: str) -> Path:
 
 
 def test_evidence_is_the_page_at_the_moment_of_failure(site: str) -> None:
-    model = ScriptedModel(_analysis(
-        "LOCATOR_DRIFT",
-        'page.locator("#submit-btn")',
-        'page.getByRole("button", { name: "Submit" })',
-    ))
+    model = ScriptedModel(
+        _analysis(
+            "LOCATOR_DRIFT",
+            'page.locator("#submit-btn")',
+            'page.getByRole("button", { name: "Submit" })',
+        )
+    )
     report = heal(HealRequest(spec_path=_spec("drift.spec.ts", DRIFTED)), model=model)
 
     assert report.status == "healed", report.model_dump_json(indent=2)
@@ -4208,7 +4507,10 @@ def test_evidence_is_the_page_at_the_moment_of_failure(site: str) -> None:
 
 def test_suspected_app_bug_leaves_the_test_alone(site: str) -> None:
     spec = _spec("order.spec.ts", WRONG_EXPECTATION)
-    report = heal(HealRequest(spec_path=spec), model=ScriptedModel(_analysis("POTENTIAL_APP_DEFECT")))
+    report = heal(
+        HealRequest(spec_path=spec),
+        model=ScriptedModel(_analysis("POTENTIAL_APP_DEFECT")),
+    )
 
     assert report.status == "app_defect_suspected"
     assert [a.outcome for a in report.attempts] == ["app_defect"]

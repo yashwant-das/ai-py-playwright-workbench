@@ -338,7 +338,9 @@ def main() -> None:
         shown_ms = times[index + 1] - times[index]
         with Image.open(path) as image:
             height = round(image.height * WIDTH / image.width)
-            frame = image.convert("RGB").resize((WIDTH, height), Image.Resampling.LANCZOS)
+            frame = image.convert("RGB").resize(
+                (WIDTH, height), Image.Resampling.LANCZOS
+            )
         if frames and frame.tobytes() == frames[-1].tobytes():
             # Nothing moved: show the last frame for longer instead of storing it again.
             durations[-1] = min(durations[-1] + shown_ms, MAX_FRAME_MS)
