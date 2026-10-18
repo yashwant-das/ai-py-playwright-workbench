@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Document session-based, multi-page generation as future scope, retaining the
+  current architecture and leaving exploration budgets for a future design.
+
 - Generate offers three public practice scenarios with form presets and clear
   local-model requirements. Demo keeps its bundled Contact form example.
 - The Generate form and README explain starting-page snapshot limits, and the
