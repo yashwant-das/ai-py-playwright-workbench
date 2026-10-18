@@ -53,3 +53,14 @@ class StepbarItem(BaseModel):
     title: str
     state: Literal["done", "failed", "skipped"]
     time: str = ""
+
+
+class GenerateExample(BaseModel):
+    """A public practice-site scenario offered by the Generate page."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    url: str
+    scenario: str
+    description: str

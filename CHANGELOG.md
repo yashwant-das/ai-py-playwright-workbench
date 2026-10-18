@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Generate offers three public practice scenarios with form presets and clear
+  local-model requirements. Demo keeps its bundled Contact form example.
+- The Generate form and README explain starting-page snapshot limits, and the
+  README includes verified example scenarios and labels Checkout's expected failure.
+
 ### Changed
 
 - Playwright is 1.64.0 in both the Python package and npm.

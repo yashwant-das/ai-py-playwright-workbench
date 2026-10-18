@@ -36,6 +36,8 @@ Nothing is queued. v2 is complete; ideas for later are below.
 
 ## Done
 
+- Generate: public practice example cards for account lockout, customer invoice data and checkbox preferences; starting-page scope guidance in the form and README; Demo availability and expected checkout failure explained.
+
 | Item | Phase | Plan |
 | --- | --- | --- |
 | Figma file brought in line with the app: two samples, the likely-app-bug state, the Re-run video tab, the popover footnote and four contrast values | 4 | [Phase 4](docs/superpowers/plans/2026-10-04-v2-phase-4-web-ui.md) |

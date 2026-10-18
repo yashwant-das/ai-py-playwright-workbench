@@ -2,6 +2,12 @@
 
 A local web app that generates Playwright tests and heals failing ones with a local LLM. It reads the page as it was when the test failed, repairs the code with a syntax-tree edit, re-runs the test to prove the fix, and refuses to patch a test when the app itself looks broken.
 
+**Scope:** a small, auditable healing showcase with a focused test generator.
+Generate inspects the starting page once; it does not explore your scenario
+before writing the test. Checks on visible form controls and page content are
+the best fit. Multi-page journeys and controls revealed after interaction may
+use guessed locators, even with a capable model.
+
 [![CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml/badge.svg)](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
@@ -36,7 +42,7 @@ flowchart LR
 - **A suspected app bug stops the heal.** If the model is confident that the app is broken, the test is not edited.
 - **Nothing is hidden.** The Model I/O view shows each section sent to the model with its size, the raw reply, and whether it passed validation.
 
-Generate works the same way in one pass: the page's accessibility snapshot and locator candidates go to the model with your scenario, the model writes a spec, and the spec is run. [docs/architecture.md](docs/architecture.md) has the details.
+Generate uses a separate, single-pass flow: the page's accessibility snapshot and locator candidates go to the model with your scenario, the model writes a spec, and the spec is run. [docs/architecture.md](docs/architecture.md) has the details.
 
 ## Quickstart
 
@@ -66,10 +72,37 @@ You need Python 3.13 with [uv](https://docs.astral.sh/uv/), Node.js 24, and a de
 
 - **Models.** The pill at the top right shows the model in use; click it to change it. Start [LM Studio](https://lmstudio.ai/) (`http://localhost:1234/v1`) or [Ollama](https://ollama.com/) (`http://localhost:11434/v1`), pick the provider, choose a model and save. A server that is already running is found on start, and its first listed model is used. Demo needs no server and covers the two samples and the "Contact form" example.
 - **Heal.** Try the two samples: **Selector drift** heals, and **App bug** stops with "likely app bug" and leaves the test alone. To heal your own test, drop one `.spec.ts` file (200 KB at most) on the upload area. A copy is healed; your file is never changed.
-- **Generate.** Enter a URL and a scenario, or click the example. If the generated test fails, "Heal this test" sends it to Heal.
+- **Generate.** Enter a URL and a focused scenario, or choose an example to fill both fields. Public practice examples require LM Studio or Ollama and internet access; Demo supports the bundled Contact form. If the generated test fails, "Heal this test" sends it to Heal. Generation does not automatically revise a failed test.
 - **Output.** Everything is written under `workspace/`, which git ignores: specs, Playwright's output and videos, one JSON report per run, and the saved model choice. Delete the folder to start fresh.
 - **Limits.** One run at a time. A model call is given 300 seconds; Cancel stops a run at once. There is no history page yet: a saved report can be reopened at `/reports/<id>`.
 - **Security.** The app listens on 127.0.0.1 only and refuses requests from other sites. Tests you upload or generate are code that runs on your machine, so heal only files you trust. See [SECURITY.md](SECURITY.md).
+
+## Try Generate
+
+Start with **Contact form** under Bundled examples for a local example that
+works with Demo. **Checkout** is deliberately broken: expecting an order to
+succeed demonstrates a failed test and the handoff to Heal.
+
+With LM Studio or Ollama selected, the Generate page also offers these public
+practice scenarios. Choose **Use example**, review the populated URL and
+scenario, then press **Generate test**. Choosing an example never starts a run.
+
+| Example / target URL | Scenario | Expected check |
+| --- | --- | --- |
+| **Locked-out account** · [Sauce Demo](https://www.saucedemo.com/) | Attempt to sign in with username locked_out_user and password secret_sauce. Verify the error says Sorry, this user has been locked out. Do not navigate beyond the login page. | The test passes by verifying the account-lockout error. |
+| **Customer invoice data** · [The Internet](https://the-internet.herokuapp.com/tables) | In the first data table, find the row for Jason Doe. Verify that his email is `jdoe@hotmail.com` and his amount due is 100 dollars. | The customer's email and amount due match. |
+| **Checkbox preferences** · [The Internet](https://the-internet.herokuapp.com/checkboxes) | Check both checkboxes and verify both are checked. Then uncheck both and verify neither is checked. | Both checked and unchecked states are verified. |
+
+These scenarios were generated with `qwen3.6:35b-mlx` on 18 October 2026; each
+unedited test passed twice in Chromium. This is a verified starting point, not a
+guarantee: external sites and model output can change. Demo does not generate
+these public examples. Use **100 dollars**, rather than a currency symbol, in
+scenario text: current input validation rejects dollar signs and semicolons.
+
+For example, searching Wikipedia and selecting an article requires later-page
+or suggestion-list context that Generate does not collect. A single-page app
+can have the same limitation when interactions reveal new controls. Heal can
+inspect a failed run's evidence, but it does not turn Generate into an explorer.
 
 ## Screenshots
 
