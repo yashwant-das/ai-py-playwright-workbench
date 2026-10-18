@@ -3,7 +3,29 @@
 <section class="card empty" aria-labelledby="idle-title">
   <span class="empty__icon">{{ icon("code", 18) }}</span>
   <h1 class="t-section" id="idle-title">Your test will appear here</h1>
-  <p class="t-small">Enter a URL and describe the flow. The page's accessibility tree and locator candidates are collected first, then the model writes the spec.</p>
+  <p class="t-small">Try the bundled Contact form, choose a public practice scenario below, or describe a focused check on your own page.</p>
+</section>
+<section class="stack" aria-labelledby="practice-title">
+  <div class="stack stack--tight">
+    <h2 class="t-section" id="practice-title">Practice examples</h2>
+    <p class="t-small t-muted">Public practice sites require a local model and internet access. These scenarios passed with Qwen 35B; model output and external sites can change.</p>
+  </div>
+  {% for key, example in public_examples.items() %}
+  <article class="card stack stack--tight" aria-labelledby="example-{{ key }}">
+    <div class="row">
+      <h3 class="t-section" id="example-{{ key }}">{{ example.title }}</h3>
+      <span class="pill pill--neutral ml-auto">Local model required</span>
+    </div>
+    <p class="t-small t-muted">{{ example.description }}</p>
+    <p class="t-small">{{ example.scenario }}</p>
+    {% if model.provider != "demo" %}
+    <a class="btn btn--secondary" href="/generate?example={{ key }}" aria-label="Use {{ example.title }} example">Use example</a>
+    {% else %}
+    <button class="btn btn--secondary" type="button" disabled>Choose LM Studio or Ollama to use</button>
+    {% endif %}
+  </article>
+  {% endfor %}
+  <p class="t-small t-muted">Choosing an example fills the form. It does not start a run. Demo replays only the bundled Contact form example.</p>
 </section>
 {% include "partials/last_run.html" %}
 </div>

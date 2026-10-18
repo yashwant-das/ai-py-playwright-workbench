@@ -9,6 +9,7 @@ from workbench.config import specs_dir
 from workbench.events import Emit
 from workbench.generate import GenerateRequest
 from workbench.models.generate import GenerateReport
+from workbench.models.web import GenerateExample
 from workbench.runs import RunInProgress, RunRegistry
 from workbench.samples import GENERATE_SCENARIO
 from workbench.validation import (
@@ -34,6 +35,36 @@ EXAMPLES: dict[str, tuple[str, str, str]] = {
         "A shopper enters their email and places an order",
     ),
 }
+PUBLIC_EXAMPLES: dict[str, GenerateExample] = {
+    "locked-account": GenerateExample(
+        title="Locked-out account",
+        url="https://www.saucedemo.com/",
+        description="Sauce Demo · Verify that a locked account cannot sign in.",
+        scenario=(
+            "Attempt to sign in with username locked_out_user and password secret_sauce. "
+            "Verify the error says Sorry, this user has been locked out. "
+            "Do not navigate beyond the login page."
+        ),
+    ),
+    "customer-data": GenerateExample(
+        title="Customer invoice data",
+        url="https://the-internet.herokuapp.com/tables",
+        description="The Internet · Check a customer's email and amount due in a table.",
+        scenario=(
+            "In the first data table, find the row for Jason Doe. "
+            "Verify that his email is jdoe@hotmail.com and his amount due is 100 dollars."
+        ),
+    ),
+    "checkboxes": GenerateExample(
+        title="Checkbox preferences",
+        url="https://the-internet.herokuapp.com/checkboxes",
+        description="The Internet · Change preferences and verify their checked states.",
+        scenario=(
+            "Check both checkboxes and verify both are checked. "
+            "Then uncheck both and verify neither is checked."
+        ),
+    ),
+}
 # Demo replays recorded answers, and only has one for this example.
 DEMO_EXAMPLES = ("contact-form",)
 GENERATE_STEP_NAMES = ("context", "model", "execute")
@@ -47,10 +78,18 @@ def generate_page(request: Request, example: str = "") -> HTMLResponse:
     if context["model"].provider == "demo":
         offered = {key: EXAMPLES[key] for key in DEMO_EXAMPLES}
     context["examples"] = offered
+    context["public_examples"] = PUBLIC_EXAMPLES
     if example in offered:
         _, page, scenario = offered[example]
         url = f"{request.app.state.base_url}/sample-site/{page}"
         context["form"] = {"url": url, "scenario": scenario, "run_after": True}
+    elif example in PUBLIC_EXAMPLES and context["model"].provider != "demo":
+        public = PUBLIC_EXAMPLES[example]
+        context["form"] = {
+            "url": public.url,
+            "scenario": public.scenario,
+            "run_after": True,
+        }
     return templates.TemplateResponse(request, "generate.html", context)
 
 

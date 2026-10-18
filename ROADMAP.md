@@ -15,6 +15,8 @@ Nothing is queued. v2 is complete; ideas for later are below.
 
 ## Later
 
+- Generate: replace starting-page-only collection with session-based exploration that gathers evidence from pages and controls reached during a scenario. Reuse the existing pipeline and ChatModel interface, and extend GenerateReport with the observed journey rather than introducing a separate agent subsystem. Action limits, retry budgets and cancellation behavior require a future design; this is deferred scope, not a current capability.
+
 - Stream Playwright's own output into the live log; today the log is built from pipeline events, because the runner reads the JSON report after the run.
 - A run history page listing past reports (reports are already saved and linkable).
 - CI integration: a GitHub Action that heals failing specs and opens a pull request, or flags a suspected app bug.
@@ -35,6 +37,8 @@ Nothing is queued. v2 is complete; ideas for later are below.
 - Give reports a typed model-failure kind instead of matching message text.
 
 ## Done
+
+- Generate: public practice example cards for account lockout, customer invoice data and checkbox preferences; starting-page scope guidance in the form and README; Demo availability and expected checkout failure explained.
 
 | Item | Phase | Plan |
 | --- | --- | --- |

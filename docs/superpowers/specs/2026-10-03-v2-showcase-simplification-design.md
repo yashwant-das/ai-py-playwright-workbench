@@ -116,6 +116,26 @@ All of these are designed in the Figma file. The app must implement each one.
 | Banners | Playwright browsers missing (blocking) · Page context unavailable · Repair used text replacement |
 | Input errors | Invalid URL · Not a spec file · File too large |
 
+### Generate guidance and examples (amended 2026-10-18)
+
+Keep the project a small, auditable healing showcase. Generate collects only
+its starting page; explain this beside Scenario and near the README's opening.
+Later pages and controls revealed after interaction are not inspected. This
+amendment adds guidance and examples, not autonomous exploration or retries.
+
+Keep the bundled Contact form as the Demo example. Label bundled Checkout as
+an expected app failure. On the Generate idle screen, show public practice
+cards for Sauce Demo's locked-out account and The Internet's customer table
+and checkbox checks. Cards display the scenario, source site, and local-model
+requirement. Use example fills URL and Scenario without starting a run. Under
+Demo, show the cards with disabled actions and guidance to choose LM Studio or
+Ollama; public example query parameters must not prefill unsupported Demo runs.
+
+Keep the README scenarios identical to the form presets. Explain external-site
+and model variability and retain the bundled example as the local alternative.
+Automated UI tests verify prefilling without visiting third-party sites; live
+model validation is separate from deterministic CI.
+
 ### 5.3 Figma changes to make during the UI phase
 
 1. Popover footnote: "Defaults come from .env" becomes "Saved on this machine".

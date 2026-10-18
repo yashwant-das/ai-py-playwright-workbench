@@ -95,6 +95,12 @@ each section's size and whether it was cut.
 3. **Run (optional).** The spec is written to `workspace/specs/` and run. A
    failed run can be sent to Heal with one click.
 
+The generator does not explore later pages or inspect controls revealed after
+interaction. The Generate form explains this limitation and offers practice-site
+presets. Public presets require a local model; Demo only offers its recorded
+Contact form. Presets populate the form without starting work. The bundled
+Checkout example intentionally demonstrates an app failure.
+
 ## What a run leaves behind
 
 Everything is under `workspace/` (git-ignored):

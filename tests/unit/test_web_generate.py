@@ -401,3 +401,54 @@ def test_every_generate_result_offers_the_report_download() -> None:
     passed = fx.generate_passed()
     save_report(passed)
     assert "Download spec" in make_client().get(f"/reports/{passed.id}").text
+
+
+def test_generate_explains_snapshot_scope_and_public_example_requirements() -> None:
+    html = make_client().get("/generate").text
+    assert "starting page once" in html
+    assert "Later pages and controls revealed after interaction" in html
+    assert "Locked-out account" in html
+    assert "Customer invoice data" in html
+    assert "Checkbox preferences" in html
+    assert "Local model required" in html
+    assert 'href="/generate?example=locked-account"' not in html
+
+
+@pytest.mark.parametrize(
+    ("key", "url", "scenario"),
+    [
+        (
+            "locked-account",
+            "https://www.saucedemo.com/",
+            "Attempt to sign in with username locked_out_user and password secret_sauce.",
+        ),
+        (
+            "customer-data",
+            "https://the-internet.herokuapp.com/tables",
+            "In the first data table, find the row for Jason Doe.",
+        ),
+        (
+            "checkboxes",
+            "https://the-internet.herokuapp.com/checkboxes",
+            "Check both checkboxes and verify both are checked.",
+        ),
+    ],
+)
+def test_public_examples_prefill_without_starting_a_run(
+    key: str, url: str, scenario: str
+) -> None:
+    save_settings(
+        ModelSettings(
+            provider="ollama", base_url="http://localhost:11434/v1", model="m"
+        )
+    )
+    client = make_client()
+    html = client.get(f"/generate?example={key}").text
+    assert f'value="{url}"' in html
+    assert scenario in html
+    assert client.app.state.runs.active() is None
+
+
+def test_demo_cannot_prefill_a_public_example() -> None:
+    html = make_client().get("/generate?example=locked-account").text
+    assert 'value="https://www.saucedemo.com/"' not in html

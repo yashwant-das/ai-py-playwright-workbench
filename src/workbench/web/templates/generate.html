@@ -6,7 +6,7 @@
 {% set locked = busy or not model.ready or not browsers_ok %}
 <div class="stack stack--tight">
   <h1 class="t-page">Generate a test</h1>
-  <p class="t-muted">Describe a user flow. The page opens in Chromium and its accessibility tree steers the model toward role-based locators.</p>
+  <p class="t-muted">Write a focused test from the controls and content on your starting page.</p>
 </div>
 <form class="stack stack--loose" hx-post="/generate" hx-target="#main" hx-disabled-elt="find button[type=submit]">
   <div class="field">
@@ -16,7 +16,8 @@
   </div>
   <div class="field">
     <label class="field__label" for="scenario">Scenario</label>
-    <textarea class="textarea" id="scenario" name="scenario" aria-describedby="scenario-error">{{ form.scenario or '' }}</textarea>
+    <textarea class="textarea" id="scenario" name="scenario" aria-describedby="scenario-help scenario-error">{{ form.scenario or '' }}</textarea>
+    <p class="t-small t-muted" id="scenario-help">Generate inspects the starting page once. Later pages and controls revealed after interaction are not inspected. Multi-page flows may use guessed locators.</p>
     <p class="field__error" id="scenario-error" role="alert"></p>
   </div>
   <label class="check"><input type="checkbox" name="run_after" value="1"{% if form.get("run_after", True) %} checked{% endif %}> Run the test after generating</label>
@@ -25,8 +26,9 @@
 </form>
 {% if examples %}
 <div class="stack stack--tight">
-  <h2 class="t-caps">Examples</h2>
+  <h2 class="t-caps">Bundled examples</h2>
   <div class="row">{% for key, example in examples.items() %}<a class="chip chip--example" href="/generate?example={{ key }}">{{ example[0] }}</a>{% endfor %}</div>
+  <p class="t-small t-muted">Contact form works with Demo. {% if "checkout" in examples %}Checkout is an expected failure: the sample's order service is broken.{% endif %}</p>
 </div>
 {% endif %}
 <p class="sidebar__foot t-small t-faint">If a generated test fails, open it in Heal with one click.</p>
