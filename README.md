@@ -72,10 +72,6 @@ These scripted runs do not establish compatibility with a particular real model.
 
 ## Documentation
 
-Profile: `complete`, adopting [repo-standards at c00f280](https://github.com/yashwant-das/repo-standards/tree/c00f280a94c5289aba795d240aaa963e7c886ed2).
-[Adoption status and evidence](docs/development.md#standards-adoption) distinguish
-local checks from published adoption and merge enforcement.
-
 - [Development](docs/development.md): setup, checks, conventions and adoption evidence.
 - [Architecture](docs/architecture.md): components, execution flow, boundaries and reports.
 - [Decisions](docs/decisions.md): rationale and the comparison with Playwright Test Agents.

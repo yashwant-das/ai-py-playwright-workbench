@@ -21,6 +21,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Keep standards profiles and rollout status in contributor documentation rather
+  than the README introduction to project guides.
+
 - Align staged prompt exclusions and extensionless config checks with CI;
   strictly validate JSON while accepting JSONC, and handle unstaged deletions
   during full text checks.
