@@ -178,3 +178,32 @@ The UI, the downloads and the tests all read this one object.
 | UI | `tests/ui/` | The whole app in Chromium, driven by Playwright Test with the Demo model, with axe accessibility checks on every state. |
 
 How to run them is in [development.md](development.md).
+
+## Project structure
+
+```text
+├── src/workbench/
+│   ├── heal/        # the heal loop: evidence, planner, repair, classifier
+│   ├── generate/    # page context in, spec out
+│   ├── context/     # accessibility snapshot, console, page errors, requests
+│   ├── llm/         # ChatModel, the OpenAI-compatible client, Demo
+│   ├── web/         # routes, templates, styles, the request guard
+│   ├── models/      # Pydantic contracts: reports, events, model output
+│   ├── prompts/     # prompt files and their version manifest
+│   ├── runner.py    # runs one spec and reads Playwright's JSON report
+│   └── runs.py      # one background run at a time
+├── samples/         # the sample site, sample specs and Demo recordings
+├── tests/           # unit, integration and UI suites
+└── docs/            # architecture, decisions, development
+```
+
+The full module map is in [AGENTS.md](AGENTS.md).
+
+## Tooling and versions
+
+Python owns the web app, model calls and context collection; Node owns Playwright
+Test and syntax-tree repair. Each manifest remains at the repository root. See
+[pyproject.toml](../pyproject.toml) and [package.json](../package.json) for direct
+dependencies, and [uv.lock](../uv.lock) and [package-lock.json](../package-lock.json)
+for resolved versions. Browser binaries come from the locked Playwright package.
+Vendored HTMX and its SSE extension live in `src/workbench/web/static/vendor/`.

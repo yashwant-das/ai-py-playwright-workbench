@@ -9,12 +9,12 @@ Setting up, running the checks, and the conventions the code follows.
 You need Python 3.13 with [uv](https://docs.astral.sh/uv/), and Node.js 24.
 
 ```bash
-uv sync
+uv sync --locked --group dev
 npm ci
 npx playwright install chromium
 ```
 
-`uv sync` also installs the development tools. `npm ci` installs Playwright
+`uv sync --locked --group dev` installs the development tools. `npm ci` installs Playwright
 Test, which the app itself uses to run specs, and sets up the pre-commit hook.
 
 ## Run the app
@@ -113,3 +113,22 @@ committing them.
 3. Run every gate above.
 4. Merge to `main`, tag the commit `v<version>`, and publish a GitHub release
    with that section of the changelog.
+
+## Standards adoption
+
+Profile: `complete`. Target: [repo-standards c00f280a94c5289aba795d240aaa963e7c886ed2](https://github.com/yashwant-das/repo-standards/tree/c00f280a94c5289aba795d240aaa963e7c886ed2),
+audited 2026-10-22 against `main` at `6cb85ca`. This branch proposes adoption;
+publication and required-check enforcement are separate from local verification.
+
+| Area | Status | Evidence or next action |
+| --- | --- | --- |
+| Documentation | in progress | README and four maintained guides organized; content, links and lint to verify |
+| Structure/dependencies | in progress | Existing src layout, two root manifests, locks, Python 3.13 and Node 24 retained; registry and compatibility review underway |
+| Hooks/CI | in progress | Retain Husky; align staged/full checks, locked installs and workflow safety |
+| Publication | pending | Open an adoption PR after verification; owner reviews before merge |
+| Required-check enforcement | pending | Audit settings and prepare exact check names for owner review |
+
+Pending work is not an approved exception. Runtime-baseline changes and any
+exception require owner review; no such change is included in documentation
+adoption. Verification results and dependency decisions are recorded here as
+technical adoption proceeds.

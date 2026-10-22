@@ -18,6 +18,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Adopt the complete documentation profile with a pinned shared-standards reference,
+  a shorter entry point, focused generation examples and a historical-plan index.
+
 - Playwright is 1.64.0 in both the Python package and npm.
 - `AGENTS.md` no longer describes v2 as work in progress on a branch.
 - The Figma file matches the app again: two samples, the likely-app-bug state,

@@ -6,7 +6,7 @@ covered by tests.
 ## Set up
 
 ```bash
-uv sync
+uv sync --locked --group dev
 npm ci
 npx playwright install chromium
 ```

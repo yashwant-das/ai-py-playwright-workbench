@@ -7,7 +7,8 @@ the same commit as the work it describes.
 
 ## Now
 
-Nothing is in progress.
+Repository standards adoption: documentation, reproducible installs, staged checks
+and CI alignment. See [adoption status](docs/development.md#standards-adoption).
 
 ## Next
 

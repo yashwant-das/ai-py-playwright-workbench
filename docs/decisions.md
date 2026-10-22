@@ -78,3 +78,22 @@ per collector were slower and could each see a different page.
 Both supported servers expose the OpenAI API, so `openai.OpenAI(base_url=…)`
 is all the abstraction needed. A general routing library would add a large
 dependency for providers this project does not use.
+
+## Why it exists
+
+Playwright tests break as a UI changes. Most breaks are mechanical: a selector drifted, or a wait is too short. Some are not: the product is broken, and "healing" the test would hide the bug. This project is a small pipeline that tells the two apart and shows its work. Every run leaves a report with what the model saw, what it decided and why, and whether the fix held up when the test ran again. It works with local models through LM Studio or Ollama, and a scripted Demo model lets anyone try it without one.
+
+## How this compares to Playwright Test Agents
+
+Playwright ships its own [Test Agents](https://playwright.dev/docs/test-agents): a planner, a generator and a healer. They solve a wider problem in a different way.
+
+| | This workbench | Playwright Test Agents |
+| --- | --- | --- |
+| What it is | A standalone local web app with its own pipeline | Agent definitions ("collections of instructions and MCP tools") added with `npx playwright init-agents` and run from an AI tool such as VS Code, Claude Code, Codex or OpenCode |
+| Model | A local model through LM Studio or Ollama | The model your AI tool uses |
+| Scope | Generate one spec from a URL and a scenario; heal one failing spec | Explore an app and write a test plan, turn the plan into tests, and repair failing tests across a suite |
+| How a fix is made | One schema-validated diagnosis per attempt, applied as a constrained edit, then verified by a re-run | The healer replays the failing steps, inspects the current UI, suggests a patch and re-runs until the test passes or guardrails stop the loop |
+| When the app looks broken | Stops and leaves the test unchanged | The test is skipped |
+| What you can inspect afterwards | A report per run: the evidence, the diagnosis and its confidence, the diff, a video of the re-run, and exactly what the model was sent and answered | The conversation and the edits in your AI tool |
+
+Use Test Agents to build and maintain a real suite with a capable model. This project is for seeing how a healing pipeline can be made small, local and auditable.
