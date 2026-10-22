@@ -7,7 +7,13 @@ the same commit as the work it describes.
 
 ## Now
 
-Nothing is in progress.
+Owner review: keep the README focused on the project; standards profiles and
+rollout evidence remain in contributor documentation.
+
+Repository standards adoption is ready for PR review: documentation, compatible
+locks, staged checks and CI alignment are verified locally. Hosted CI, merge
+protection and upstream security decisions remain separate; see
+[adoption status](docs/development.md#standards-adoption).
 
 ## Next
 

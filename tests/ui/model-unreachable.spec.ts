@@ -11,7 +11,9 @@ test('a saved model that is down blocks runs and offers the demo', async ({ page
   await expect(page.getByRole('button', { name: /Change the model/ })).toContainText(
     'Not connected'
   );
-  await expect(page.getByRole('button', { name: 'Heal the Selector drift sample' })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Heal sample test: Selector drift' })
+  ).toBeDisabled();
   await expectNoSeriousViolations(page);
 
   await page.goto('/generate');

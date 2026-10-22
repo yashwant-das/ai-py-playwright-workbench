@@ -49,5 +49,5 @@ vulnerable dependencies.
 - CodeQL scans Python, TypeScript and the GitHub Actions workflows on pull
   requests to `main` and weekly.
 - Ruff runs the flake8-bandit (`S`) security rules in CI.
-- Dependabot opens grouped update pull requests monthly for uv, npm and GitHub
+- Dependabot opens grouped update pull requests weekly for uv, npm and GitHub
   Actions; security updates open as soon as they are published.

@@ -15,15 +15,17 @@ test('idle: the samples and the upload are offered', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Change the model/ })).toContainText(
     'scripted answers'
   );
-  await expect(page.getByRole('button', { name: 'Heal the Selector drift sample' })).toBeEnabled();
-  await expect(page.getByRole('button', { name: 'Heal the App bug sample' })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Heal sample test: Selector drift' })
+  ).toBeEnabled();
+  await expect(page.getByRole('button', { name: 'Heal sample test: App bug' })).toBeEnabled();
   await expect(page.getByRole('button', { name: 'Heal uploaded file' })).toBeEnabled();
   await expectNoSeriousViolations(page);
 });
 
 test('selector drift: live steps, then a healed test with its evidence', async ({ page }) => {
   await page.goto('/heal');
-  await page.getByRole('button', { name: 'Heal the Selector drift sample' }).click();
+  await page.getByRole('button', { name: 'Heal sample test: Selector drift' }).click();
 
   // Running
   await expect(statusPill(page)).toHaveText('Healing');
@@ -35,7 +37,7 @@ test('selector drift: live steps, then a healed test with its evidence', async (
     'Verify',
   ]);
   await expect(page.getByRole('button', { name: 'Cancel' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Heal the App bug sample' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Heal sample test: App bug' })).toBeDisabled();
   await expect(page.getByRole('log')).not.toBeEmpty();
   await expectNoSeriousViolations(page);
 
@@ -86,7 +88,7 @@ test('selector drift: live steps, then a healed test with its evidence', async (
 
 test('app bug: the heal stops and leaves the test alone', async ({ page }) => {
   await page.goto('/heal');
-  await page.getByRole('button', { name: 'Heal the App bug sample' }).click();
+  await page.getByRole('button', { name: 'Heal sample test: App bug' }).click();
 
   await expectResult(page, 'Likely app bug');
   await expect(page.getByRole('heading', { name: 'checkout.spec.ts' })).toBeVisible();
@@ -125,7 +127,7 @@ test('an uploaded test that already passes has nothing to heal', async ({ page, 
 
 test('cancel stops a run and keeps the test unchanged', async ({ page }) => {
   await page.goto('/heal');
-  await page.getByRole('button', { name: 'Heal the Selector drift sample' }).click();
+  await page.getByRole('button', { name: 'Heal sample test: Selector drift' }).click();
   await page.getByRole('button', { name: 'Cancel' }).click();
 
   await expectResult(page, 'Cancelled');

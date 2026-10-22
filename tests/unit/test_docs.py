@@ -46,6 +46,8 @@ DOCS = [
     "docs/architecture.md",
     "docs/decisions.md",
     "docs/development.md",
+    "docs/generation.md",
+    "docs/superpowers/README.md",
 ]
 _FENCE = re.compile(r"^(`{3,})[^\n]*\n.*?^\1[ \t]*$", re.MULTILINE | re.DOTALL)
 _LINK = re.compile(r"!?\[[^\]]*\]\(<?([^)\s>]+)>?[^)]*\)")
@@ -74,32 +76,28 @@ def test_npm_commands_in_the_docs_exist(name: str) -> None:
 
 
 README_SECTIONS = [
-    "## Why it exists",
-    "## How it works",
     "## Quickstart",
-    "## Using the app",
-    "## Screenshots",
-    "## How this compares to Playwright Test Agents",
-    "## Tests and quality gates",
-    "## Tech stack",
-    "## Project structure",
+    "## Usage",
+    "## Verification",
     "## Documentation",
     "## License",
 ]
 
 
-def test_readme_has_the_showcase_sections_in_order() -> None:
+def test_readme_has_the_standard_sections_in_order() -> None:
     readme = _read("README.md")
     positions = [readme.find(f"\n{heading}\n") for heading in README_SECTIONS]
     assert -1 not in positions
     assert positions == sorted(positions)
 
 
-def test_readme_shows_the_gif_before_the_first_section_and_every_screenshot() -> None:
+def test_readme_shows_the_gif_and_links_to_the_example_screenshots() -> None:
     readme = _read("README.md")
     assert "docs/assets/demo.gif" in readme.split("\n## ")[0]
+    assert "docs/generation.md" in readme
+    examples = _read("docs/generation.md")
     for name in SCREENSHOTS:
-        assert f"docs/assets/{name}" in readme
+        assert f"assets/{name}" in examples
 
 
 def test_readme_says_the_recording_uses_the_demo_model() -> None:
@@ -120,9 +118,9 @@ def test_contributing_lists_every_check_ci_runs() -> None:
 
 def test_security_policy_describes_how_the_app_protects_itself() -> None:
     text = _read("SECURITY.md")
-    for phrase in ("127.0.0.1", "`Host`", "`Origin`", "monthly"):
+    for phrase in ("127.0.0.1", "`Host`", "`Origin`", "weekly"):
         assert phrase in text
-    assert "weekly update" not in text
+    assert "monthly" not in text
 
 
 def test_agent_guide_points_at_the_documents() -> None:

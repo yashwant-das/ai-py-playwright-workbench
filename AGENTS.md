@@ -4,6 +4,15 @@ Instructions for AI assistants (Claude, Codex and others) working in this
 repository. Keep this file accurate: update it in the same commit as any change
 to the layout, commands or conventions.
 
+## Shared standards
+
+Use the `complete` documentation profile and read the affected guides in
+[repo-standards at c00f280a94c5289aba795d240aaa963e7c886ed2](https://github.com/yashwant-das/repo-standards/tree/c00f280a94c5289aba795d240aaa963e7c886ed2)
+before changing documentation, structure, dependencies or CI. Follow explicit
+user instructions first and retain deliberate runtime baselines. Record pending
+work and any owner-authorized exceptions in
+[development](docs/development.md#standards-adoption).
+
 ## What this project is
 
 A local web app that generates Playwright tests and heals failing ones with
@@ -57,7 +66,7 @@ playwright.ui.config.ts         the UI suite's config
 ## Commands
 
 ```bash
-uv sync --group dev && npm ci && npx playwright install chromium
+uv sync --locked --group dev && npm ci && npx playwright install chromium
 uv run workbench                           # start the app on http://127.0.0.1:7860
 uv run python -m pytest                    # unit tests
 uv run python -m pytest tests/integration  # integration tests
@@ -91,4 +100,4 @@ npm run type-check                         # TypeScript
 
 - Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`).
 - Update `ROADMAP.md` and `CHANGELOG.md` in the same commit as the work.
-- Run the unit tests, ruff, mypy and `npm run lint` before committing; the Husky hook formats staged files.
+- Run the unit tests, ruff, mypy and `npm run lint` before committing; the Husky hook checks staged files without modifying them.
