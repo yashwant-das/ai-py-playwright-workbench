@@ -27,7 +27,7 @@ def test_linters_skip_runtime_output() -> None:
         encoding="utf-8"
     )
     assert "'workspace/'" in eslint
-    assert '"workspace"' in markdownlint
+    assert '"workspace/**"' in markdownlint
 
 
 WORKFLOWS = PROJECT_ROOT / ".github" / "workflows"
@@ -54,11 +54,11 @@ def test_workflow_actions_are_pinned_to_commits() -> None:
     assert unpinned == []
 
 
-def test_dependabot_checks_three_ecosystems_monthly() -> None:
+def test_dependabot_checks_three_ecosystems_weekly() -> None:
     text = (PROJECT_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
     ecosystems = re.findall(r"package-ecosystem: ([\w-]+)", text)
     assert ecosystems == ["uv", "npm", "github-actions"]
-    assert re.findall(r"interval: (\w+)", text) == ["monthly"] * 3
+    assert re.findall(r"interval: (\w+)", text) == ["weekly"] * 3
 
 
 def test_ci_reports_coverage_in_the_job_summary_only() -> None:

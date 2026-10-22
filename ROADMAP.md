@@ -7,8 +7,10 @@ the same commit as the work it describes.
 
 ## Now
 
-Repository standards adoption: documentation, reproducible installs, staged checks
-and CI alignment. See [adoption status](docs/development.md#standards-adoption).
+Repository standards adoption is ready for PR review: documentation, compatible
+locks, staged checks and CI alignment are verified locally. Hosted CI, merge
+protection and upstream security decisions remain separate; see
+[adoption status](docs/development.md#standards-adoption).
 
 ## Next
 

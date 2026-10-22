@@ -27,7 +27,10 @@ npm run lint                               # ESLint, Prettier, Ruff, mypy (stric
 npm run type-check                         # TypeScript
 ```
 
-The Husky pre-commit hook formats and lints staged files for you.
+The Husky pre-commit hook checks staged files without changing or restaging them.
+Fix failures, restage the intended files and retry; never bypass a failed hook
+without explicit owner authorization. `npm run lint:staged` runs it manually.
+`npm run test:tooling` verifies the text checker without external services.
 
 ## Conventions
 

@@ -16,7 +16,7 @@ test('empty: the form, the one example Demo can answer, and an empty result area
   await expect(page.getByRole('link', { name: 'Checkout' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Generate test' })).toBeEnabled();
   await expect(page.getByRole('heading', { name: 'Locked-out account' })).toBeVisible();
-  await expect(page.getByRole('link', { name: /Use .* example/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /Use example:/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Choose LM Studio or Ollama to use' })).toHaveCount(
     3
   );

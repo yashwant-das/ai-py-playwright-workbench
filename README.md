@@ -59,6 +59,7 @@ Run from the repository root after setup:
 ```bash
 npm run lint                             # code, formatting, Python types and Markdown
 npm run type-check                       # TypeScript
+npm run test:tooling                     # offline text-checker behavior
 uv run python -m pytest --cov             # offline unit tests; 85% coverage minimum
 uv run python -m pytest tests/integration # Chromium, local sample site and scripted models
 npm run test:ui                          # whole app in Chromium, Demo model and axe

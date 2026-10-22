@@ -197,7 +197,7 @@ How to run them is in [development.md](development.md).
 └── docs/            # architecture, decisions, development
 ```
 
-The full module map is in [AGENTS.md](AGENTS.md).
+The full module map is in [AGENTS.md](../AGENTS.md).
 
 ## Tooling and versions
 

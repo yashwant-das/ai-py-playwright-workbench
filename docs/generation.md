@@ -34,7 +34,7 @@ inspect a failed run's evidence, but it does not turn Generate into an explorer.
 
 | | |
 | --- | --- |
-| ![A healed test: the diff, the diagnosis with its confidence and evidence, and the verification result](docs/assets/heal-healed.png) | ![The Model I/O view: the sections sent to the model with their sizes, and the validated reply](docs/assets/heal-model-io.png) |
+| ![A healed test: the diff, the diagnosis with its confidence and evidence, and the verification result](assets/heal-healed.png) | ![The Model I/O view: the sections sent to the model with their sizes, and the validated reply](assets/heal-model-io.png) |
 | **Healed.** The diff, the diagnosis and the proof. | **Model I/O.** What was sent and what came back. |
-| ![A heal that stopped: the banner says likely app bug and the test was not changed](docs/assets/heal-app-bug.png) | ![A generated test that passed, with the page context the model was given](docs/assets/generate-passed.png) |
+| ![A heal that stopped: the banner says likely app bug and the test was not changed](assets/heal-app-bug.png) | ![A generated test that passed, with the page context the model was given](assets/generate-passed.png) |
 | **Likely app bug.** The test is left alone. | **Generate.** A new spec, run straight away. |

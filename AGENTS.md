@@ -100,4 +100,4 @@ npm run type-check                         # TypeScript
 
 - Conventional Commits (`feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`).
 - Update `ROADMAP.md` and `CHANGELOG.md` in the same commit as the work.
-- Run the unit tests, ruff, mypy and `npm run lint` before committing; the Husky hook formats staged files.
+- Run the unit tests, ruff, mypy and `npm run lint` before committing; the Husky hook checks staged files without modifying them.

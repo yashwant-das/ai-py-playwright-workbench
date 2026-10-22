@@ -1,5 +1,8 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+<!-- Release entries deliberately repeat Added/Changed headings. -->
+
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
@@ -17,6 +20,17 @@ All notable changes to this project are documented here. The format follows
   README includes verified example scenarios and labels Checkout's expected failure.
 
 ### Changed
+
+- Use weekly dependency updates, locked and cached Python CI installs, short CI
+  artifact retention and a bounded CodeQL job.
+- Keep Husky, run staged linters in check mode with the full Ruff rule set, and
+  add shared text/config checks with behavior tests.
+- Lint maintained Markdown with the shared baseline; exclude historical records
+  and treat prompt templates as application assets.
+- Refresh compatible dependencies, retain the shared Playwright 1.64.0 binding
+  set, and use Node-aware TypeScript resolution with explicit Node types.
+- Match model, sample and example accessible names to their visible labels,
+  satisfying the updated axe check without changing visible button text.
 
 - Adopt the complete documentation profile with a pinned shared-standards reference,
   a shorter entry point, focused generation examples and a historical-plan index.

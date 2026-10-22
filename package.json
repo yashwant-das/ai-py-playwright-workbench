@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "Generates Playwright tests and heals failing ones with local LLMs",
   "scripts": {
-    "test": "npm run test:unit",
+    "test": "npm run test:tooling && npm run test:unit",
     "test:unit": "uv run python -m pytest",
     "test:integration": "uv run python -m pytest tests/integration --junitxml=reports/integration-pytest.xml",
     "test:ui": "playwright test --config playwright.ui.config.ts",
@@ -11,27 +11,36 @@
     "type-check": "tsc --noEmit",
     "prepare": "husky",
     "husky": "husky",
-    "lint": "npm run lint:js && npm run lint:format && npm run lint:py && npm run lint:types && npm run lint:md",
+    "lint": "npm run lint:js && npm run lint:format && npm run lint:py && npm run lint:types && npm run lint:md && npm run lint:text",
     "format": "npm run format:js && npm run format:py",
     "lint:js": "eslint .",
-    "lint:format": "prettier --check \"**/*.{js,cjs,ts}\"",
+    "lint:format": "prettier --check \"**/*.{js,cjs,ts,json,jsonc,yml,yaml}\" .prettierrc",
     "lint:py": "uv run ruff check . && uv run ruff format --check .",
     "lint:types": "uv run mypy",
-    "lint:md": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
+    "lint:md": "markdownlint-cli2 \"*.md\" \"docs/**/*.md\" \".github/**/*.md\"",
     "format:js": "prettier --write .",
-    "format:py": "uv run ruff format . && uv run ruff check --select I --fix ."
+    "format:py": "uv run ruff format . && uv run ruff check --select I --fix .",
+    "lint:text": "node tooling/check-text.cjs",
+    "lint:staged": "lint-staged",
+    "test:tooling": "node --test tests/tooling/*.test.cjs"
   },
   "lint-staged": {
     "*.{js,cjs,ts}": [
-      "prettier --write",
-      "eslint --fix"
+      "prettier --check",
+      "eslint"
     ],
     "*.py": [
-      "uv run ruff format",
-      "uv run ruff check --select I --fix"
+      "uv run ruff check",
+      "uv run ruff format --check"
     ],
     "*.md": [
       "markdownlint-cli2"
+    ],
+    "*.{json,jsonc,yml,yaml}": [
+      "prettier --check"
+    ],
+    "*": [
+      "node tooling/check-text.cjs"
     ]
   },
   "keywords": [
@@ -49,21 +58,19 @@
   },
   "type": "commonjs",
   "devDependencies": {
-    "@axe-core/playwright": "^4.13.0",
-    "@eslint/js": "^9.39.2",
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "1.64.0",
-    "@types/node": "^26.6.5",
-    "@typescript-eslint/eslint-plugin": "^8.71.1",
-    "@typescript-eslint/parser": "^8.71.1",
-    "eslint": "^9.39.2",
+    "@types/node": "^24.19.2",
+    "eslint": "^10.13.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-playwright": "^2.12.1",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "markdownlint-cli2": "^0.23.3",
+    "markdownlint-cli2": "^0.24.0",
     "prettier": "^3.9.10",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.71.1"
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.72.0"
   },
   "dependencies": {
     "playwright": "1.64.0",

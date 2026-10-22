@@ -11,7 +11,9 @@ test("a connected model shows its name and lists the server's chat models", asyn
   await expect(pill).toContainText('fake-model');
   await expect(pill).toContainText('LM Studio');
   await expect(page.getByText('asks fake-model · LM Studio for a fix')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Heal the Selector drift sample' })).toBeEnabled();
+  await expect(
+    page.getByRole('button', { name: 'Heal sample test: Selector drift' })
+  ).toBeEnabled();
 
   const menu = await openModelMenu(page);
   await expect(menu.getByText('Connected', { exact: true })).toBeVisible();
@@ -52,8 +54,8 @@ const publicExamples = [
 for (const example of publicExamples) {
   test(`public example fills the form without running: ${example.title}`, async ({ page }) => {
     await page.goto('/generate');
-    await expect(page.getByRole('link', { name: `Use ${example.title} example` })).toBeVisible();
-    await page.getByRole('link', { name: `Use ${example.title} example` }).click();
+    await expect(page.getByRole('link', { name: `Use example: ${example.title}` })).toBeVisible();
+    await page.getByRole('link', { name: `Use example: ${example.title}` }).click();
     await expect(page.getByLabel('Target URL')).toHaveValue(example.url);
     await expect(page.getByLabel('Scenario')).toHaveValue(new RegExp(example.scenario));
     await expect(page.getByRole('heading', { name: 'Your test will appear here' })).toBeVisible();

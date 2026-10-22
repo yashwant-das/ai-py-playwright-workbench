@@ -19,7 +19,7 @@
     <p class="t-small t-muted">{{ example.description }}</p>
     <p class="t-small">{{ example.scenario }}</p>
     {% if model.provider != "demo" %}
-    <a class="btn btn--secondary" href="/generate?example={{ key }}" aria-label="Use {{ example.title }} example">Use example</a>
+    <a class="btn btn--secondary" href="/generate?example={{ key }}" aria-label="Use example: {{ example.title }}">Use example</a>
     {% else %}
     <button class="btn btn--secondary" type="button" disabled>Choose LM Studio or Ollama to use</button>
     {% endif %}
