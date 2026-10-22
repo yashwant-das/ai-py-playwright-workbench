@@ -73,3 +73,53 @@ test('reports all invalid files in one invocation', () => {
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('strict JSON rejects comments and trailing commas without rejecting JSONC', () => {
+  for (const content of ['{\n  // JSONC only\n  "value": 1\n}\n', '{"value": 1,}\n']) {
+    const result = check('manifest.json', content);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /invalid JSON/);
+  }
+  const jsonc = check('config.jsonc', '{\n  // JSONC is allowed.\n  "value": 1,\n}\n');
+  assert.equal(jsonc.status, 0, jsonc.stderr);
+  const json = check('manifest.json', '{"value": 1}\n');
+  assert.equal(json.status, 0, json.stderr);
+});
+
+test('strict JSON cannot bypass syntax checks through null or invalid UTF-8 bytes', () => {
+  for (const content of [Buffer.from([123, 0, 125, 10]), Buffer.from([123, 255, 125, 10])]) {
+    const result = check('manifest.json', content);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /invalid JSON/);
+  }
+});
+
+test('full mode skips unstaged deletions and still checks remaining and untracked files', () => {
+  const directory = mkdtempSync(path.join(tmpdir(), 'workbench-full-text-'));
+  try {
+    const deleted = path.join(directory, 'deleted.txt');
+    const remaining = path.join(directory, 'remaining.txt');
+    writeFileSync(deleted, 'valid\n');
+    writeFileSync(remaining, 'valid\n');
+    for (const args of [
+      ['init', '-q'],
+      ['add', '.'],
+    ]) {
+      const result = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+    }
+    rmSync(deleted);
+    const valid = spawnSync(process.execPath, [checker], { cwd: directory, encoding: 'utf8' });
+    assert.equal(valid.status, 0, valid.stderr);
+
+    writeFileSync(remaining, 'bad \n');
+    writeFileSync(path.join(directory, 'untracked.json'), '{"value": }\n');
+    const invalid = spawnSync(process.execPath, [checker], { cwd: directory, encoding: 'utf8' });
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /remaining.txt.*trailing whitespace/);
+    assert.match(invalid.stderr, /untracked.json.*invalid JSON/);
+    assert.doesNotMatch(invalid.stderr, /ENOENT/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});

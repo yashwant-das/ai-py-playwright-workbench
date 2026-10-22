@@ -21,6 +21,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Align staged prompt exclusions and extensionless config checks with CI;
+  strictly validate JSON while accepting JSONC, and handle unstaged deletions
+  during full text checks.
+
 - Use weekly dependency updates, locked and cached Python CI installs, short CI
   artifact retention and a bounded CodeQL job.
 - Keep Husky, run staged linters in check mode with the full Ruff rule set, and

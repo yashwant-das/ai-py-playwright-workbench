@@ -3,7 +3,8 @@ const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 
 const files = process.argv.slice(2);
-if (files.length === 0) {
+const fullMode = files.length === 0;
+if (fullMode) {
   files.push(
     ...execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], {
       encoding: 'utf8',
@@ -22,18 +23,34 @@ for (const file of new Set(files)) {
   ) {
     continue;
   }
-  const bytes = readFileSync(file);
-  if (bytes.includes(0)) continue;
-  let text;
-  try {
-    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  } catch {
-    continue; // Binary assets do not have text whitespace conventions.
-  }
   const report = (line, message) => {
     console.error(`${file}:${line}: ${message}`);
     failed = true;
   };
+  let bytes;
+  try {
+    bytes = readFileSync(file);
+  } catch (error) {
+    // git's index still lists an unstaged deletion; it is not working-tree content.
+    if (fullMode && error.code === 'ENOENT') continue;
+    throw error;
+  }
+  const strictJson = /\.json$/i.test(file);
+  if (!strictJson && bytes.includes(0)) continue;
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    if (strictJson) report(1, 'invalid JSON: expected UTF-8 text');
+    continue; // Binary assets do not have text whitespace conventions.
+  }
+  if (strictJson) {
+    try {
+      JSON.parse(text);
+    } catch {
+      report(1, 'invalid JSON syntax');
+    }
+  }
   const lines = text.split(/\r?\n/);
   if (text && !text.endsWith('\n')) report(lines.length, 'missing final newline');
   lines.forEach((line, index) => {

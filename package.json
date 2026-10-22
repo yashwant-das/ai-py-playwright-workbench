@@ -41,6 +41,9 @@
     ],
     "*": [
       "node tooling/check-text.cjs"
+    ],
+    ".prettierrc": [
+      "prettier --check"
     ]
   },
   "keywords": [

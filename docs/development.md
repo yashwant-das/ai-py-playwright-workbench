@@ -86,8 +86,10 @@ Prompt Markdown is executable application data, not setup documentation, and is
 reviewed through prompt versioning and tests. The text checker also preserves
 historical records and vendored libraries. Prettier's existing exclusions retain
 intentional broken fixtures, sample specs, vendored assets and generated output.
-Intentional Markdown hard breaks remain valid. Config checks parse JSON/JSONC
-and YAML with Prettier, using each format's actual syntax.
+Intentional Markdown hard breaks remain valid. The shared text checker strictly parses `.json` with `JSON.parse`; Prettier checks
+JSONC and YAML syntax and configuration formatting, including `.prettierrc`.
+Prompt templates are excluded in the shared Markdown configuration so staged
+checks and CI use the same documentation boundary.
 
 CodeQL scans Python, TypeScript and workflows on PRs and weekly. Dependabot
 proposes grouped minor/patch updates weekly for uv and npm, and weekly action
@@ -226,8 +228,9 @@ npm 11.19.0:
   strict mypy checks 62 package files; Markdown lint checks 12 maintained files.
 - `uv run python -m pytest --cov`: 579 tests and two subtests pass, 95.55%
   combined line/branch coverage against the unchanged 85% threshold.
-- `npm run test:tooling`: all five behavior tests pass, after observing them fail
-  before the text checker existed.
+- `npm run test:tooling`: all eight behavior tests pass. The original five failed
+  before implementation; strict-JSON and full-mode regressions failed against
+  the original helper before the review fix pass.
 - `uv run python -m pytest tests/integration`: all 17 tests pass with real Chromium
   and scripted models, including generation, healing, cancellation and shutdown.
 - `npm run test:ui`: all 39 tests pass with axe 4.14.0. The accessible-name
@@ -235,9 +238,18 @@ npm 11.19.0:
 
 Actual Husky commits in a disposable Git repository accepted valid Markdown
 (including hard breaks) and JSONC, and rejected invalid Markdown, trailing
-whitespace, malformed JSON/YAML and undefined JavaScript calls. All seven probes
-matched the expected commit result; no real repository hook was bypassed.
-Clean-install results are added after the final run.
+whitespace, malformed JSON/YAML, comments in strict JSON, malformed `.prettierrc`
+and undefined JavaScript calls. Prompt data remained exempt from documentation
+lint. A partially staged Markdown commit preserved its unstaged changes and
+committed only the staged content. All eleven probes matched their expected
+result; no real repository hook was bypassed.
+A fresh clone at `4569fcd` passed `npm ci`, `uv sync --locked --group dev`,
+`npm test`, `npm run lint` and `npm run type-check` without tracked changes.
+The final review fix pass passed the complete `npm test`, `npm run lint` and
+`npm run type-check` suites, plus direct prompt-CLI checks and the eleven hook
+probes above. Independent review findings (prompt scope, strict JSON, staged
+extensionless config and full-mode deletion handling) are addressed without
+suppressing checks.
 Hosted CI and CodeQL results belong to the PR; local checks do not replace them.
 Scripted browser runs do not prove behavior with a live LM Studio or Ollama model;
 no change to the live-provider contract is proposed here.
