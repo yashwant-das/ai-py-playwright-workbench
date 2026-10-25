@@ -24,6 +24,8 @@ All notable changes to this project are documented here. The format follows
 - Restore the README showcase with a root architecture diagram, concrete
   capabilities, structure/stack summaries and explicit Demo/verification scope;
   add a run-lifecycle sequence and pin the revised shared standards.
+- Clarify that text repair can use exact or indentation-tolerant matching,
+  and retain explicit limits on badge and live-model verification.
 
 - Keep standards profiles and rollout status in contributor documentation rather
   than the README introduction to project guides.

@@ -291,3 +291,12 @@ three diagrams (root architecture, component map and run lifecycle) rendered
 with Mermaid12.2.0 in Chromium and were visually inspected. Existing Demo media
 were retained; the healed-result PNG was inspected and remains labelled Demo.
 No new test suite or repository rendering tool was added.
+
+The pinned standards URL returned HTTP200. Representative Shields.io requests
+returned HTTP403 from this host; live badge rendering is therefore unverified
+here, although the URLs use the standard Shields.io endpoint syntax. A fresh
+independent content review found no P1/P2 issues. Its fallback-wording correction
+was applied: text replacement can use exact or indentation-tolerant matching.
+The reviewer’s component-map inspection question was resolved by viewing that
+rendered image too, completing the visual check of all three diagrams. No
+runtime behavior or pending owner decision was changed by these corrections.

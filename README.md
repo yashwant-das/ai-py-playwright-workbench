@@ -1,6 +1,6 @@
 # ai-py-playwright-workbench
 
-A local web app that generates Playwright tests and repairs failing ones with a local LLM. Heal uses failing-run evidence, applies a syntax-tree edit or exact text replacement, and keeps a repair only after a passing re-run. A confident model diagnosis of an application defect stops repair.
+A local web app that generates Playwright tests and repairs failing ones with a local LLM. Heal uses failing-run evidence, applies a syntax-tree edit or text replacement, and keeps a repair only after a passing re-run. A confident model diagnosis of an application defect stops repair.
 
 **Scope:** a guarded healing loop and a focused test generator.
 Generate inspects the starting page once; it does not explore your scenario
@@ -27,7 +27,7 @@ makes the proposed change, its diagnosis and its verification visible together:
   is collected only when the failing run left none.
 - Model analysis is validated with Pydantic. A suspected app defect with confidence
   at least 0.7 stops Heal before editing; it is a model-based guard, not proof of a bug.
-- Named repair strategies use a TypeScript AST where possible, with exact text
+- Named repair strategies use a TypeScript AST where possible, with text
   replacement as a fallback. The original spec is restored unless Heal succeeds.
 - Generate collects the starting page once, asks for a focused spec and optionally
   runs it. A failed generated spec can be sent to Heal explicitly.
@@ -81,7 +81,7 @@ workspace/                     ignored specs, browser artifacts, reports and set
 | Live progress | HTMX 2.0.11; SSE extension 2.2.4 | Vendored browser assets; streamed HTML updates without a frontend build |
 | Browser tests | Playwright 1.64.0; TypeScript 6.0.3 | Matching Python/Node bindings, Chromium evidence and runnable specs |
 | Model calls | OpenAI SDK 2.54.0; Pydantic 2.14.1 | OpenAI-compatible local endpoints and validated model output |
-| Repair | ts-morph 28.0.0 | TypeScript AST changes with an exact-text fallback |
+| Repair | ts-morph 28.0.0 | TypeScript AST changes with a text-replacement fallback |
 | Quality gates | pytest 9.1.1; Ruff 0.17.1; mypy 2.4.0 | Offline unit checks, formatting and strict Python types |
 | UI verification | Playwright Test 1.64.0; axe 4.14.0 | Whole-app behavior and accessibility in Chromium |
 

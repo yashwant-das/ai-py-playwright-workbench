@@ -101,7 +101,7 @@ raised.
 | Evidence | `heal/evidence.py` reads Playwright's `error-context.md` from the failing run: the page snapshot at the moment of failure. Only if it is missing is the spec's first URL opened in a fresh browser. | Never. |
 | Diagnose | `heal/classifier.py` gives a hint from the error text. `heal/planner.py` sends the test, the error and the evidence to the model, asks for JSON matching the `HealingAnalysis` schema, and validates the reply with Pydantic. | The model cannot be reached (`error`). An invalid reply ends only this attempt. |
 | Guard | If the diagnosis is `POTENTIAL_APP_DEFECT` with confidence 0.7 or more, the heal stops. | Always, with `app_defect_suspected`. The test is not edited. |
-| Repair | `heal/repair.py` applies the fix. Named strategies (`selector_replace`, `timeout_adjust`, `role_argument`, `import_add`, `assertion_swap`) edit the TypeScript syntax tree through `heal/ast_repair.js` (ts-morph). `string_replace`, and any strategy that cannot be applied to the tree, is an exact text replacement. | Never. If the code to replace is not in the file, the attempt ends as `not_applied`. |
+| Repair | `heal/repair.py` applies the fix. Named strategies (`selector_replace`, `timeout_adjust`, `role_argument`, `import_add`, `assertion_swap`) edit the TypeScript syntax tree through `heal/ast_repair.js` (ts-morph). `string_replace`, and any strategy that cannot be applied to the tree, uses text replacement with exact or indentation-tolerant matching. | Never. If the code to replace is not in the file, the attempt ends as `not_applied`. |
 | Verify | The spec is run again, recorded as a video with each action captioned. | It passes (`healed`). |
 
 A failed attempt starts the next one from the latest failure, up to the chosen
