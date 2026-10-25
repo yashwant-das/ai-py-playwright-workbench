@@ -40,6 +40,35 @@ The module map, with one line per file, is in [AGENTS.md](../AGENTS.md).
 
 ## What happens during a run
 
+```mermaid
+sequenceDiagram
+    participant UI as Browser UI
+    participant Web as Routes / RunRegistry
+    participant Pipeline as Heal / Generate worker
+    participant Tools as Model / Playwright
+    participant Reports as JSON report store
+    UI->>Web: POST validated Heal or Generate input
+    Web->>Pipeline: Start one background run
+    Web-->>UI: Redirect with run id
+    UI->>Web: Open server-sent event stream
+    loop Pipeline steps
+        Pipeline->>Tools: Request analysis, collect context or run a spec
+        Tools-->>Pipeline: Return output or failure
+        Pipeline-->>Web: Emit numbered progress event
+        Web-->>UI: Stream HTML fragment
+        opt User cancels
+            UI->>Web: POST cancel
+            Web->>Pipeline: Set cancellation flag
+        end
+    end
+    Pipeline->>Reports: Save validated result and model exchange
+    Pipeline-->>Web: Finish with report id
+    Web-->>UI: Send result navigation
+    UI->>Web: GET saved report
+    Web->>Reports: Load report
+    Web-->>UI: Render result, diff and downloads
+```
+
 1. The browser posts the form (`POST /heal` or `POST /generate`). The request
    guard has already checked the `Host` and `Origin` headers.
 2. The route validates the input, builds the model from the saved choice, and

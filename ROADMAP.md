@@ -7,6 +7,10 @@ the same commit as the work it describes.
 
 ## Now
 
+The README showcase and architecture lifecycle diagrams have been reworked for
+the revised shared standards. Demo media, generation limits and local versus
+live-model verification remain explicit; see [development](docs/development.md#standards-adoption).
+
 Owner review: keep the README focused on the project; standards profiles and
 rollout evidence remain in contributor documentation.
 

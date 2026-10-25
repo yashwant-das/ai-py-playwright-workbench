@@ -159,7 +159,7 @@ committing them.
 
 ## Standards adoption
 
-Profile: `complete`. Target: [repo-standards c00f280a94c5289aba795d240aaa963e7c886ed2](https://github.com/yashwant-das/repo-standards/tree/c00f280a94c5289aba795d240aaa963e7c886ed2),
+Profile: `complete`. Target: [repo-standards 073f51ff68ec050f6b3372c46bc3bd4e721a5342](https://github.com/yashwant-das/repo-standards/tree/073f51ff68ec050f6b3372c46bc3bd4e721a5342),
 audited 2026-10-22 against `main` at `6cb85ca`. This branch proposes adoption;
 publication and required-check enforcement are separate from local verification.
 
@@ -253,3 +253,41 @@ suppressing checks.
 Hosted CI and CodeQL results belong to the PR; local checks do not replace them.
 Scripted browser runs do not prove behavior with a live LM Studio or Ollama model;
 no change to the live-provider contract is proposed here.
+
+### Showcase standards rework (2026-10-25)
+
+The current `complete` profile is pinned to merged standards revision
+`073f51ff68ec050f6b3372c46bc3bd4e721a5342` in AGENTS.md and this guide. The root
+README now includes concrete mechanisms, a Heal/Generate architecture diagram,
+structure/stack summaries and report locations while preserving the Demo GIF,
+its replay disclosure, runnable setup and starting-page generation limits. The
+architecture guide adds a request/run/event/report lifecycle sequence. CLAUDE.md
+is a one-line Markdown pointer to AGENTS.md, with no duplicated instructions.
+The existing `.python-version` and `.nvmrc` already select Python 3.13 and Node.js 24.
+No application, prompt, dependency, hook or workflow implementation is changed.
+
+At prior head `4b47a7c`, hosted lint/types, unit/coverage, integration, UI and
+all three CodeQL language jobs succeeded. These results do not establish the
+new head’s status or compatibility with an actual LM Studio/Ollama model. The
+previously recorded dependency advisory and merge-protection decisions remain
+open for owner review; no exception has been silently authorized.
+
+Metadata audit: the current description exceeds the new 110-character limit.
+Proposed description for owner review:
+`Generates and heals Playwright tests with FastAPI, LM Studio and Ollama (proof of concept)`.
+Proposed topic set, grouped by category/language/tools/technique:
+`ai-testing`, `python`, `playwright`, `fastapi`, `ollama`, `lm-studio`,
+`self-healing-tests`, `test-generation`.
+This replaces the second category `llm` with the app’s web framework and stays
+within eight topics. Native GitHub topic display order is not evidence of policy
+ordering. No repository description, topic or account-setting changes were made.
+
+Validation for this rework: the full 579-test offline suite and two subtests
+passed with 95.55% coverage (85% threshold retained); all eight tooling tests,
+Ruff lint/format, strict mypy, ESLint/Prettier, TypeScript and Markdown checks
+passed. Existing doc-link and npm-command tests continue to pass without a new
+layout validator. All maintained local file links and anchors resolve. The
+three diagrams (root architecture, component map and run lifecycle) rendered
+with Mermaid12.2.0 in Chromium and were visually inspected. Existing Demo media
+were retained; the healed-result PNG was inspected and remains labelled Demo.
+No new test suite or repository rendering tool was added.

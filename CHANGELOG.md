@@ -21,6 +21,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Restore the README showcase with a root architecture diagram, concrete
+  capabilities, structure/stack summaries and explicit Demo/verification scope;
+  add a run-lifecycle sequence and pin the revised shared standards.
+
 - Keep standards profiles and rollout status in contributor documentation rather
   than the README introduction to project guides.
 

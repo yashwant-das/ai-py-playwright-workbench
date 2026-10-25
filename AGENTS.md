@@ -7,11 +7,15 @@ to the layout, commands or conventions.
 ## Shared standards
 
 Use the `complete` documentation profile and read the affected guides in
-[repo-standards at c00f280a94c5289aba795d240aaa963e7c886ed2](https://github.com/yashwant-das/repo-standards/tree/c00f280a94c5289aba795d240aaa963e7c886ed2)
+[repo-standards at 073f51ff68ec050f6b3372c46bc3bd4e721a5342](https://github.com/yashwant-das/repo-standards/tree/073f51ff68ec050f6b3372c46bc3bd4e721a5342)
 before changing documentation, structure, dependencies or CI. Follow explicit
 user instructions first and retain deliberate runtime baselines. Record pending
 work and any owner-authorized exceptions in
 [development](docs/development.md#standards-adoption).
+
+Keep the root README’s badges, concrete capabilities, Mermaid diagram and
+structure/stack summary accurate. Keep detailed setup and rollout evidence in
+the guides; the Demo media must remain clearly labelled as recorded answers.
 
 ## What this project is
 
