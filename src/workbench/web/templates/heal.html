@@ -17,7 +17,7 @@
     <div class="stack stack--tight">
       <p class="row t-label">{{ icon("file", 14) }} {{ sample.title }} <span class="t-mono t-faint">{{ sample.spec_file }}</span></p>
       <p class="t-small t-muted">{{ sample.description }}</p>
-      <button class="btn btn--primary btn--block" type="submit" name="action" value="sample:{{ sample.name }}"{% if locked %} disabled{% endif %} aria-label="Heal the {{ sample.title }} sample">Heal sample test</button>
+      <button class="btn btn--primary btn--block" type="submit" name="action" value="sample:{{ sample.name }}"{% if locked %} disabled{% endif %} aria-label="Heal sample test: {{ sample.title }}">Heal sample test</button>
     </div>
     {% endfor %}
     {% if not model.ready %}<p class="t-small t-faint">Connect a model to run this.</p>{% endif %}

@@ -39,7 +39,7 @@ test('the heal GIF and the heal screenshots', async ({ page }) => {
   mkdirSync(FRAMES, { recursive: true });
   await page.goto('/heal');
   await expect(page.getByRole('heading', { name: 'Pick a sample or upload a spec' })).toBeVisible();
-  const sample = page.getByRole('button', { name: 'Heal the Selector drift sample' });
+  const sample = page.getByRole('button', { name: 'Heal sample test: Selector drift' });
 
   const camera = film(page);
   await page.waitForTimeout(1200);
@@ -61,7 +61,7 @@ test('the heal GIF and the heal screenshots', async ({ page }) => {
 
 test('the app-bug screenshot', async ({ page }) => {
   await page.goto('/heal');
-  await page.getByRole('button', { name: 'Heal the App bug sample' }).click();
+  await page.getByRole('button', { name: 'Heal sample test: App bug' }).click();
   await expectResult(page, 'Likely app bug');
   await page.screenshot({ path: path.join(ASSETS, 'heal-app-bug.png') });
 });

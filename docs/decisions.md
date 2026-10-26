@@ -15,13 +15,13 @@ The second lists decisions made while building it. The last section keeps the
 | D4 | Providers: LM Studio, Ollama and Demo | Both local servers speak the OpenAI API, so one client covers both. Demo replays recorded answers, so the app works without a model. |
 | D5 | Evidence comes from Playwright's `error-context.md` and the failing run's own output folder | Playwright already snapshots the page at the moment of failure. Re-opening the start page described the wrong state for any multi-step test. |
 | D6 | `page.aria_snapshot(mode="ai")` and Playwright's own console, page-error and request collections | Public, maintained APIs replace custom CDP code and listeners. `mode="ai"` is the format Playwright itself writes into `error-context.md`, so Generate and Heal show the model the same thing. |
-| D7 | Ask the model for JSON-schema output, then validate with Pydantic | It makes "structured output" true. If a server rejects the schema, the call is retried once without it and validation still applies. |
+| D7 | Request JSON-schema output for Heal and validate the analysis with Pydantic | A rejected schema request is retried once without it; analysis validation still applies. Generate instead extracts code and validates non-empty text. |
 | D8 | The app-defect guard | A `POTENTIAL_APP_DEFECT` diagnosis with confidence 0.7 or more stops the heal without editing the test. One rule, and it answers the main criticism of self-healing: hiding real bugs. |
-| D9 | Keep this project's own engine; compare it with Playwright Test Agents in the README | Test Agents are instructions and MCP tools run inside a coding assistant. This project is a standalone pipeline for local models with constrained, auditable fixes. Replacing the engine would leave nothing to show. |
+| D9 | Keep this project's own engine; compare it with Playwright Test Agents below | Test Agents are instructions and MCP tools run inside a coding assistant. This project is a standalone pipeline for local models with constrained, auditable fixes. Replacing the engine would leave nothing to show. |
 | D10 | The package is `workbench` under `src/` | `from src.healing import …` used `src` as a package name. A proper src layout fixes imports and packaging. |
 | D11 | All runtime output goes to one git-ignored `workspace/` folder | It replaces five scattered output folders. |
-| D12 | pytest-style tests in `tests/unit`, `tests/integration` and `tests/ui` | Clear levels: nothing external, real browser, whole app. |
-| D13 | Python 3.13, Playwright 1.64.0 (Python and npm pinned to the same version), Node 24 | Current, supported versions. Matching pins keep the Python library and the test runner on the same browser builds. |
+| D12 | Python pytest suites in `tests/unit` and `tests/integration`; TypeScript Playwright Test in `tests/ui` | Clear levels: nothing external, real browser, whole app. |
+| D13 | Python 3.13 and Node 24; matching Python/npm Playwright pins | Preserve the runtime baselines. Matching Playwright versions keep context collection and test execution on the same browser build; current versions are in the locks. |
 | D14 | The runner reads Playwright's JSON report, not terminal output | The report gives each test's status, error and location, and the exact paths of its screenshot and `error-context.md`. It replaces parsing stdout and searching for files. |
 | D15 | Verification re-runs are recorded as video with each action captioned | Visible proof that the fix works. Only verification runs are recorded, to keep the workspace small. |
 
@@ -29,7 +29,7 @@ The second lists decisions made while building it. The last section keeps the
 
 | Decision | Why |
 | --- | --- |
-| The app checks `Host` and `Origin` on every request | A local app still receives requests from pages open in the same browser. Without the check, another site could have posted a spec and had it run. |
+| Check `Host` on every request and origin information for state changes | A local app still receives requests from pages open in the same browser. Without the check, another site could have posted a spec and had it run. |
 | A model call can be abandoned | A local model can take minutes. Cancel returns at once by leaving the call to finish on its own thread; the run ends as cancelled. |
 | Starting a run redirects to the same page with the run's id | The page then renders the run from the server's state: start buttons are locked, and a run that finishes before the reload is still shown. |
 | A finished run redirects to its report page | The live view and a later visit render the same saved report, so there is one way to show a result. |
@@ -52,11 +52,11 @@ support together.
 ### ts-morph for syntax-tree repair, in a Node subprocess
 
 A fix such as "replace this locator" is applied to the TypeScript syntax tree,
-so formatting and everything around the change are untouched. ts-morph is
+so supported edits target syntax nodes rather than replacing the whole file. ts-morph is
 built on the TypeScript compiler, and Node is already required by Playwright.
 Python sends the source and the change on stdin and reads the result on
 stdout; a crash or timeout in the script cannot take the pipeline down, and
-the fix then falls back to an exact text replacement. Regular expressions
+the fix then falls back to exact or indentation-tolerant text replacement. Regular expressions
 (too fragile) and tree-sitter (reads trees well, awkward for edits) were
 rejected.
 
@@ -65,7 +65,8 @@ rejected.
 The prompts live in `src/workbench/prompts/*.md`, not in Python strings, so a
 prompt change is a readable diff. `manifest.json` holds a version for each
 prompt, bumped by hand when its content changes; a content hash is computed at
-run time. Every report records the prompt's name, version and hash.
+run time. Each captured model exchange records the prompt's name, version and
+hash; a run that fails before an exchange exists has no prompt provenance.
 
 ### One browser session per context collection
 
@@ -78,3 +79,22 @@ per collector were slower and could each see a different page.
 Both supported servers expose the OpenAI API, so `openai.OpenAI(base_url=…)`
 is all the abstraction needed. A general routing library would add a large
 dependency for providers this project does not use.
+
+## Why it exists
+
+Playwright tests break as a UI changes. Most breaks are mechanical: a selector drifted, or a wait is too short. Some are not: the product is broken, and "healing" the test would hide the bug. This pipeline asks a model to distinguish the two, stops on a confident defect diagnosis and keeps a repair only after a passing re-run. Reports show the available evidence, model exchanges and verification results; the diagnosis can still be wrong. It works with local models through LM Studio or Ollama, and a scripted Demo model lets anyone try it without one.
+
+## How this compares to Playwright Test Agents
+
+Playwright ships its own [Test Agents](https://playwright.dev/docs/test-agents): a planner, a generator and a healer. They solve a wider problem in a different way.
+
+| | This workbench | Playwright Test Agents |
+| --- | --- | --- |
+| What it is | A standalone local web app with its own pipeline | Agent definitions ("collections of instructions and MCP tools") added with `npx playwright init-agents` and run from an AI tool such as VS Code, Claude Code, Codex or OpenCode |
+| Model | A local model through LM Studio or Ollama | The model your AI tool uses |
+| Scope | Generate one spec from a URL and a scenario; heal one failing spec | Explore an app and write a test plan, turn the plan into tests, and repair failing tests across a suite |
+| How a fix is made | One schema-validated diagnosis per attempt, applied as a constrained edit, then verified by a re-run | The healer replays the failing steps, inspects the current UI, suggests a patch and re-runs until the test passes or guardrails stop the loop |
+| When the app looks broken | Stops on a model defect diagnosis at confidence ≥ 0.7 and restores the original test | The healer may skip the test if it believes functionality is broken |
+| What you can inspect afterwards | A report per run: the evidence, the diagnosis and its confidence, the diff, a video of the re-run, and exactly what the model was sent and answered | The conversation and the edits in your AI tool |
+
+Use Test Agents to build and maintain a real suite with a capable model. This project is for seeing how a healing pipeline can be made small, local and auditable.

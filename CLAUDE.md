@@ -1,1 +1,1 @@
-@AGENTS.md
+# [Repository instructions](AGENTS.md)

@@ -1,5 +1,8 @@
 # Changelog
 
+<!-- markdownlint-disable MD024 -->
+<!-- Release entries deliberately repeat Added/Changed headings. -->
+
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses
 [Semantic Versioning](https://semver.org/).
@@ -13,10 +16,25 @@ All notable changes to this project are documented here. The format follows
 
 - Generate offers three public practice scenarios with form presets and clear
   local-model requirements. Demo keeps its bundled Contact form example.
-- The Generate form and README explain starting-page snapshot limits, and the
-  README includes verified example scenarios and labels Checkout's expected failure.
+- The Generate form and README explain starting-page snapshot limits; the
+  generation guide records example evidence and Checkout's expected failure.
 
 ### Changed
+
+- Use Playwright Workbench as the README title, matching the existing app
+  name; repository URLs and package identifiers remain unchanged.
+- Adopt the shared documentation profile: README showcase and architecture
+  diagrams, focused guides and clearly indexed historical records. Format the
+  project tree, correct behavior claims and consolidate stale rollout notes.
+- Refresh compatible locked dependencies while preserving runtime baselines
+  and matching Playwright bindings; use Node-aware TypeScript resolution.
+- Retain Husky with check-only staged linting, shared text/config checks and
+  eight tooling tests; align staged exclusions with CI and validate strict
+  JSON, JSONC and extensionless configuration files.
+- Use weekly dependency updates, locked/cached Python CI installs, pinned
+  actions, bounded jobs and short artifact retention.
+- Match accessible names to visible model, sample and example labels for axe
+  without changing button text or disabling accessibility rules.
 
 - Playwright is 1.64.0 in both the Python package and npm.
 - `AGENTS.md` no longer describes v2 as work in progress on a branch.

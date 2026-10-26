@@ -17,7 +17,9 @@ test('a fresh workspace has no model and says how to get one', async ({ page, ap
   await expect(page.getByRole('button', { name: /Change the model/ })).toContainText(
     'Not connected'
   );
-  await expect(page.getByRole('button', { name: 'Heal the Selector drift sample' })).toBeDisabled();
+  await expect(
+    page.getByRole('button', { name: 'Heal sample test: Selector drift' })
+  ).toBeDisabled();
   await expect(page.getByText('Connect a model to run this.')).toBeVisible();
   await expectNoSeriousViolations(page);
 });
@@ -59,7 +61,7 @@ test('choosing Demo heals the selector-drift sample', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Change the model/ })).toContainText(
     'scripted answers'
   );
-  await page.getByRole('button', { name: 'Heal the Selector drift sample' }).click();
+  await page.getByRole('button', { name: 'Heal sample test: Selector drift' }).click();
 
   await expectResult(page, 'Healed');
   await expect(page.getByRole('heading', { name: 'contact-form.spec.ts' })).toBeVisible();

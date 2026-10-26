@@ -4,7 +4,7 @@ import { expectNoSeriousViolations } from './support/axe';
 test.use({ appOptions: { model: 'demo', browsers: false } });
 
 const PAGES = [
-  { path: '/heal', start: 'Heal the Selector drift sample' },
+  { path: '/heal', start: 'Heal sample test: Selector drift' },
   { path: '/generate', start: 'Generate test' },
 ];
 
