@@ -16,37 +16,23 @@ All notable changes to this project are documented here. The format follows
 
 - Generate offers three public practice scenarios with form presets and clear
   local-model requirements. Demo keeps its bundled Contact form example.
-- The Generate form and README explain starting-page snapshot limits, and the
-  README includes verified example scenarios and labels Checkout's expected failure.
+- The Generate form and README explain starting-page snapshot limits; the
+  generation guide records example evidence and Checkout's expected failure.
 
 ### Changed
 
-- Restore the README showcase with a root architecture diagram, concrete
-  capabilities, structure/stack summaries and explicit Demo/verification scope;
-  add a run-lifecycle sequence and pin the revised shared standards.
-- Clarify that text repair can use exact or indentation-tolerant matching,
-  and retain explicit limits on badge and live-model verification.
-
-- Keep standards profiles and rollout status in contributor documentation rather
-  than the README introduction to project guides.
-
-- Align staged prompt exclusions and extensionless config checks with CI;
-  strictly validate JSON while accepting JSONC, and handle unstaged deletions
-  during full text checks.
-
-- Use weekly dependency updates, locked and cached Python CI installs, short CI
-  artifact retention and a bounded CodeQL job.
-- Keep Husky, run staged linters in check mode with the full Ruff rule set, and
-  add shared text/config checks with behavior tests.
-- Lint maintained Markdown with the shared baseline; exclude historical records
-  and treat prompt templates as application assets.
-- Refresh compatible dependencies, retain the shared Playwright 1.64.0 binding
-  set, and use Node-aware TypeScript resolution with explicit Node types.
-- Match model, sample and example accessible names to their visible labels,
-  satisfying the updated axe check without changing visible button text.
-
-- Adopt the complete documentation profile with a pinned shared-standards reference,
-  a shorter entry point, focused generation examples and a historical-plan index.
+- Adopt the shared documentation profile: README showcase and architecture
+  diagrams, focused guides and clearly indexed historical records. Format the
+  project tree, correct behavior claims and consolidate stale rollout notes.
+- Refresh compatible locked dependencies while preserving runtime baselines
+  and matching Playwright bindings; use Node-aware TypeScript resolution.
+- Retain Husky with check-only staged linting, shared text/config checks and
+  eight tooling tests; align staged exclusions with CI and validate strict
+  JSON, JSONC and extensionless configuration files.
+- Use weekly dependency updates, locked/cached Python CI installs, pinned
+  actions, bounded jobs and short artifact retention.
+- Match accessible names to visible model, sample and example labels for axe
+  without changing button text or disabling accessibility rules.
 
 - Playwright is 1.64.0 in both the Python package and npm.
 - `AGENTS.md` no longer describes v2 as work in progress on a branch.

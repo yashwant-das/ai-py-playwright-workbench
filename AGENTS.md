@@ -20,52 +20,34 @@ the guides; the Demo media must remain clearly labelled as recorded answers.
 ## What this project is
 
 A local web app that generates Playwright tests and heals failing ones with
-local LLMs (LM Studio or Ollama). Version 2.0 is released and lives on `main`:
+local LLMs (LM Studio or Ollama), plus a recorded Demo provider.
 
-- Design: [v2 spec](docs/superpowers/specs/2026-10-03-v2-showcase-simplification-design.md)
-- Progress: [ROADMAP.md](ROADMAP.md)
-- Plans: [docs/superpowers/plans/](docs/superpowers/plans/)
-- Docs: [architecture](docs/architecture.md), [decisions](docs/decisions.md), [development](docs/development.md)
-
-Read the spec before changing behaviour. If a change is not in the spec, add it
-to `ROADMAP.md` under "Later" instead of building it.
+Use [architecture](docs/architecture.md), [decisions](docs/decisions.md) and
+[development](docs/development.md) for current behavior and commands.
+[ROADMAP.md](ROADMAP.md) tracks deferred work. The
+[v2 design and implementation plans](docs/superpowers/README.md) are historical
+context; they do not override current code, maintained guides or owner requests.
+Keep unrequested features on the roadmap rather than expanding the scope.
 
 ## Layout
 
-```text
-src/workbench/          the Python package
-├── config.py           every path; workspace_dir() / runs_dir() / reports_dir() / specs_dir()
-├── __main__.py         launcher: `uv run workbench` serves http://127.0.0.1:7860 and opens it
-├── app.py              create_app(services): the FastAPI app factory
-├── runs.py             RunRegistry: one background run at a time, with replayable events
-├── web/                routes/, templates/, static/ (tokens.css, app.css, fonts, vendored htmx), views, SSE, guard.py (Host and Origin checks)
-├── ids.py              run ids and slugs
-├── runner.py           runs one spec; result from Playwright's JSON report
-├── playwright_report.py  JSON report → RunResult
-├── environment.py      Node.js and Chromium checks
-├── events.py           EventSink: numbered progress events
-├── reports.py          save / load / list run reports
-├── heal/               pipeline.py (heal), evidence, planner, repair (+ ast_repair.js), classifier
-├── generate/           pipeline.py (generate)
-├── context/            page context: aria snapshot, console, page errors, requests
-├── llm/                chat.py (ChatModel), client.py (LM Studio, Ollama), demo.py, providers.py, cancellable.py (a model call a cancel can abandon), parsing, prompts
-├── settings.py         the saved model choice: workspace/settings.json
-├── samples.py          the bundled samples; install_sample()
-├── models/             Pydantic contracts: reports, events, model output, what the templates show (web.py)
-├── prompts/            prompt files and manifest.json
-├── validation.py       input checks
-└── text.py             clean_ansi_codes()
-samples/site/           sample web app the samples run against
-samples/specs/          sample specs with a {{BASE_URL}} placeholder
-samples/recordings/     the Demo provider's recorded answers
-tests/unit/             default pytest run: no model, no browser, no network
-tests/integration/      real Chromium + scripted or fake OpenAI-compatible model
-tests/ui/               Playwright Test (TypeScript) against the real app with Demo; serve.py starts it
-docs/                   architecture.md, decisions.md, development.md; assets/ holds the README's GIF and screenshots
-workspace/              runtime output (git-ignored): specs/, runs/, reports/, settings.json
-playwright.workspace.config.ts  the config the runner uses for every spec
-playwright.ui.config.ts         the UI suite's config
-```
+The [README tree](README.md#project-structure) summarizes directories.
+Key modules for implementation work:
+
+| Module under `src/workbench/` | Responsibility |
+| --- | --- |
+| `config.py`, `__main__.py`, `app.py` | Paths, local launcher and FastAPI app factory |
+| `runs.py`, `events.py` | Single background run and numbered progress events |
+| `runner.py`, `playwright_report.py`, `environment.py` | Playwright execution, JSON results and prerequisites |
+| `heal/`, `generate/`, `context/` | Pipelines, repair strategies and browser evidence |
+| `llm/`, `models/`, `prompts/` | Model clients, validated contracts and versioned prompts |
+| `web/` | Routes, services, templates, static assets and Host/Origin guard |
+| `reports.py`, `settings.py`, `samples.py` | Report storage, saved model choice and bundled samples |
+| `ids.py`, `validation.py`, `text.py` | Identifiers, input validation and text utilities |
+
+`playwright.workspace.config.ts` configures specs run by the app;
+`playwright.ui.config.ts` configures UI tests and
+`playwright.capture.config.ts` configures Demo-media capture.
 
 ## Commands
 
@@ -78,20 +60,20 @@ npm run test:ui                            # UI tests: real app, Chromium, Demo 
 npm run docs:capture                       # rebuild the README's GIF and screenshots
 uv run ruff check . && uv run ruff format .
 uv run mypy
-npm run lint                               # ESLint, Prettier, Ruff, mypy (strict), markdownlint
+npm run lint                               # code, format, Python types, Markdown and text checks
 npm run type-check                         # TypeScript
 ```
 
 ## Rules
 
-- All LLM output is parsed into a Pydantic model (`workbench.llm.parsing.parse_llm_response`), never `json.loads` alone.
+- Heal analysis is parsed with `workbench.llm.parsing.parse_llm_response` into a Pydantic model. Generate extracts code and validates it with `GenerationResult`; this checks non-empty text, not TypeScript syntax or test semantics.
 - New data shapes are Pydantic models in `workbench/models/`.
 - Paths come from `workbench.config`.
 - Talk to models only through `workbench.llm.chat.ChatModel`.
 - `heal()` must leave the spec unchanged unless the status is `healed`.
 - Prompt changes go in `src/workbench/prompts/` and bump the version in `src/workbench/prompts/manifest.json`.
 - Subprocesses use argument lists, never `shell=True`.
-- Tests never need a live model, browser or network unless they live in `tests/integration/`.
+- Unit tests and tooling checks need no live model, browser or network. Browser work belongs in `tests/integration/` or `tests/ui/`; both use controlled models.
 - Pipelines take their collaborators as arguments (`model`, `run`, `collect`, `browsers_ready`). Unit tests pass fakes; do not patch module globals.
 - `tests/unit/test_layout.py` fails if anything imports the pre-v2 layout (`src.*`, `schemas.*`, benchmarks, Gradio, the tracer), the 1.0 router or `dotenv`.
 - No environment variables configure the app. The model choice lives in `workspace/settings.json`; `WORKBENCH_WORKSPACE` and `WORKBENCH_PORT` exist for tests and CI only.

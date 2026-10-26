@@ -60,16 +60,26 @@ run lifecycle, repair guard and external boundaries.
 ### Project structure
 
 ```text
-src/workbench/
-  heal/, generate/, context/    repair and generation pipelines, page evidence
-  llm/, models/, prompts/       model clients, validated contracts and versioned prompts
-  web/                         routes, templates, styles and request guard
-  runner.py, runs.py            Playwright subprocess and single-run/event lifecycle
-samples/                       controlled site, specs and Demo recordings
-tests/                         unit, Chromium integration and UI/axe checks
-tooling/                       shared text/config checks
-docs/                          maintained guides, Demo media and historical records
-workspace/                     ignored specs, browser artifacts, reports and settings
+ai-py-playwright-workbench/
+├── src/workbench/         # Python application
+│   ├── heal/              # diagnosis, repair and verification
+│   ├── generate/          # starting-page context to spec
+│   ├── context/           # browser evidence collection
+│   ├── llm/               # local model clients and Demo replay
+│   ├── models/            # validated data contracts
+│   ├── prompts/           # versioned model instructions
+│   ├── web/               # routes, templates, styles and request guard
+│   ├── runner.py          # Playwright subprocess
+│   └── runs.py            # background runs and event lifecycle
+├── samples/               # controlled site, specs and Demo recordings
+├── tests/
+│   ├── unit/              # offline Python checks
+│   ├── integration/       # Chromium and scripted models
+│   ├── ui/                # whole-app browser and axe checks
+│   └── tooling/           # text/config checker behavior
+├── tooling/               # shared text/config checks
+├── docs/                  # guides, Demo media and historical records
+└── workspace/             # generated runtime output; git-ignored
 ```
 
 ### Tech stack

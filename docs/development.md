@@ -113,8 +113,9 @@ for owner approval. No check is bypassed or marked required by this document.
 
 ## Conventions
 
-- **Data shapes** are Pydantic models in `src/workbench/models/`. Model output
-  is always parsed with `parse_llm_response()`, never `json.loads` alone.
+- **Data shapes** are Pydantic models in `src/workbench/models/`. Heal analysis
+  uses `parse_llm_response()`; Generate validates extracted code as non-empty
+  with `GenerationResult`. That validation does not prove the code is a test.
 - **Paths** come from `workbench.config`.
 - **Models** are reached only through `ChatModel`.
 - **Pipelines** take their collaborators as arguments; tests pass fakes.
@@ -131,9 +132,9 @@ for owner approval. No check is bypassed or marked required by this document.
 2. Raise that prompt's `version` in `src/workbench/prompts/manifest.json`.
 3. Run the unit and integration tests.
 
-The content hash is computed at run time. Each report records the prompt's
-name, version and hash, so a result can always be traced to the prompt that
-produced it. If the change alters what the Demo model should answer, update
+The content hash is computed at run time. Each captured model exchange records
+the prompt's name, version and hash. Reports with no completed exchange have no
+prompt provenance. If the change alters what the Demo model should answer, update
 the recording in `samples/recordings/` too.
 
 ## Refreshing the README's GIF and screenshots
@@ -160,16 +161,17 @@ committing them.
 ## Standards adoption
 
 Profile: `complete`. Target: [repo-standards 073f51ff68ec050f6b3372c46bc3bd4e721a5342](https://github.com/yashwant-das/repo-standards/tree/073f51ff68ec050f6b3372c46bc3bd4e721a5342),
-audited 2026-10-22 against `main` at `6cb85ca`. This branch proposes adoption;
+initially audited 2026-10-22 against `main` at `6cb85ca`, with documentation
+reviewed again on 2026-10-26. This branch proposes adoption;
 publication and required-check enforcement are separate from local verification.
 
 | Area | Status | Evidence or next action |
 | --- | --- | --- |
 | Documentation | verified locally | README, four maintained guides and historical index pass content/link tests and Markdown lint |
 | Structure/dependencies | verified locally | Retained layout/baselines, refreshed compatible locks; full unit, type and browser suites pass; security constraints below require review |
-| Hooks/CI | verified locally | Check-only Husky gates, matching CI rules, locked installs, weekly updates, caching, timeouts and short retention; hosted CI pending |
-| Publication | pending | Open an adoption PR after verification; owner reviews before merge |
-| Required-check enforcement | pending | Audit settings and prepare exact check names for owner review |
+| Hooks/CI | verified locally | Check-only Husky gates and hardened workflows; hosted checks passed at `1ae9055` (see evidence below) |
+| Publication | pending | [PR #26](https://github.com/yashwant-das/ai-py-playwright-workbench/pull/26) is open; owner review and merge pending |
+| Required-check enforcement | pending | 2026-10-22 audit and proposed check names above; applying settings requires owner approval |
 
 ### Compatibility review
 
@@ -183,7 +185,7 @@ Registry metadata was checked on 2026-10-22. Resolved versions live in
   offers 1.64.1 while the Python registry offers 1.64.0; this project deliberately
   tests one identical binding set. Review when both bindings support the next
   common stable release. This is stricter than the shared default.
-- Use OpenAI 2.54.0, the newest stable 2.x release. Candidate 3.36.1 changed the
+- Use OpenAI 2.54.0, the newest stable 2.x release at the audit date. Candidate 3.36.1 changed the
   injected HTTP client's type and URL exception class; the invalid-port test and
   strict mypy rejected it. A separate transport migration must preserve those
   contracts before adopting 3.x. Owner: Yashwant Das; review on that migration
@@ -197,11 +199,13 @@ Registry metadata was checked on 2026-10-22. Resolved versions live in
 
 ### Pending security and owner decisions
 
-`npm audit` reports eight affected development-tool packages from two upstream
-advisories (five high, three low), through the required Markdown linter:
+The 2026-10-22 `npm audit` reported eight affected development-tool packages
+(five high, three low) from two advisories through the Markdown linter. This
+is dated evidence, not a fresh advisory assessment:
 
 - [braces stack exhaustion](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm):
-  latest stable braces 3.0.3 remains affected; no patched release is available.
+  the audited graph used affected braces 3.0.3; no patched stable release
+  was available at the audit date.
 - [KaTeX trust bypass](https://github.com/advisories/GHSA-238p-pmpm-9mq7):
   patched 0.18.2 exists, but micromark-extension-math requires `^0.16.0`.
   Overriding that range is an unverified compatibility change.
@@ -254,49 +258,42 @@ Hosted CI and CodeQL results belong to the PR; local checks do not replace them.
 Scripted browser runs do not prove behavior with a live LM Studio or Ollama model;
 no change to the live-provider contract is proposed here.
 
-### Showcase standards rework (2026-10-25)
+### Documentation review and hosted evidence
 
-The current `complete` profile is pinned to merged standards revision
-`073f51ff68ec050f6b3372c46bc3bd4e721a5342` in AGENTS.md and this guide. The root
-README now includes concrete mechanisms, a Heal/Generate architecture diagram,
-structure/stack summaries and report locations while preserving the Demo GIF,
-its replay disclosure, runnable setup and starting-page generation limits. The
-architecture guide adds a request/run/event/report lifecycle sequence. CLAUDE.md
-is a one-line Markdown pointer to AGENTS.md, with no duplicated instructions.
-The existing `.python-version` and `.nvmrc` already select Python 3.13 and Node.js 24.
-No application, prompt, dependency, hook or workflow implementation is changed.
+The 2026-10-25 showcase rework at `1ae9055` changed seven Markdown files.
+It retained Demo media, starting-page generation limits and executable behavior.
+The 579-test unit suite and two subtests passed with 95.55% coverage; all eight
+tooling tests, lint/format, strict mypy, TypeScript and Markdown checks passed.
+All three Mermaid diagrams rendered in Chromium with Mermaid 12.2.0 and were
+visually inspected. Local file/anchor links resolved. The pinned standards URL
+returned HTTP 200; Shields.io returned HTTP 403 from the verification host, so
+live badge rendering remains unverified there.
 
-At prior head `4b47a7c`, hosted lint/types, unit/coverage, integration, UI and
-all three CodeQL language jobs succeeded. These results do not establish the
-new head’s status or compatibility with an actual LM Studio/Ollama model. The
-previously recorded dependency advisory and merge-protection decisions remain
-open for owner review; no exception has been silently authorized.
+On 2026-10-26, [PR #26 CI](https://github.com/yashwant-das/ai-py-playwright-workbench/actions/runs/40196074521)
+was confirmed successful at `1ae9055`: lint/types, unit/coverage, controlled
+Chromium integration and UI/axe. All three language analyses and the aggregate
+[CodeQL check](https://github.com/yashwant-das/ai-py-playwright-workbench/runs/121177170126)
+also passed. These results apply to that revision; later documentation commits
+require their own checks. Demo/fake-model runs do not establish live
+LM Studio/Ollama compatibility.
 
-Metadata audit: the current description exceeds the new 110-character limit.
-Proposed description for owner review:
+The 2026-10-26 content review corrected the structure map, Heal versus Generate
+validation, report mutability and request-guard wording. Repeated rollout notes
+and completed phase tables were condensed; historical records and release
+entries were retained. No executable code or quality gate changed. Full
+`npm run lint` and `uv run python -m pytest --cov` passed (579 tests, two
+subtests, 95.55% coverage). All 63 maintained relative links/anchors resolved,
+and the revised tree was rendered and visually checked in Chromium. Browser
+suites were not rerun locally for this documentation-only change.
+
+### Repository metadata proposal
+
+The 2026-10-25 audit found that the description exceeded 110 characters.
+Proposed replacement (90 characters):
 `Generates and heals Playwright tests with FastAPI, LM Studio and Ollama (proof of concept)`.
-Proposed topic set, grouped by category/language/tools/technique:
+Proposed eight topics:
 `ai-testing`, `python`, `playwright`, `fastapi`, `ollama`, `lm-studio`,
 `self-healing-tests`, `test-generation`.
-This replaces the second category `llm` with the app’s web framework and stays
-within eight topics. Native GitHub topic display order is not evidence of policy
-ordering. No repository description, topic or account-setting changes were made.
 
-Validation for this rework: the full 579-test offline suite and two subtests
-passed with 95.55% coverage (85% threshold retained); all eight tooling tests,
-Ruff lint/format, strict mypy, ESLint/Prettier, TypeScript and Markdown checks
-passed. Existing doc-link and npm-command tests continue to pass without a new
-layout validator. All maintained local file links and anchors resolve. The
-three diagrams (root architecture, component map and run lifecycle) rendered
-with Mermaid12.2.0 in Chromium and were visually inspected. Existing Demo media
-were retained; the healed-result PNG was inspected and remains labelled Demo.
-No new test suite or repository rendering tool was added.
-
-The pinned standards URL returned HTTP200. Representative Shields.io requests
-returned HTTP403 from this host; live badge rendering is therefore unverified
-here, although the URLs use the standard Shields.io endpoint syntax. A fresh
-independent content review found no P1/P2 issues. Its fallback-wording correction
-was applied: text replacement can use exact or indentation-tolerant matching.
-The reviewer’s component-map inspection question was resolved by viewing that
-rendered image too, completing the visual check of all three diagrams. No
-runtime behavior or pending owner decision was changed by these corrections.
+Description/topic changes remain pending owner review. No repository metadata
+or account settings were changed by this adoption.

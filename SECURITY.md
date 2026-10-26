@@ -31,9 +31,11 @@ How the app protects itself:
 - It listens on `127.0.0.1` only.
 - It answers only requests whose `Host` header is `127.0.0.1` or `localhost`,
   so a page that rebinds its DNS name to your machine is refused.
-- It refuses any request that changes something (starting a run, saving the
-  model, cancelling) unless its `Origin` is the app itself. A page open in the
-  same browser therefore cannot post a spec and have it run.
+- State-changing requests must have a matching `Origin` when that header is
+  present. Without `Origin`, the guard accepts local tools unless Fetch Metadata
+  identifies a cross-site browser request. This blocks another website from
+  posting a spec through the browser; it is not authentication against local
+  processes.
 - An upload must be a single `.spec.ts` file of at most 200 KB. It is copied
   into the workspace under a cleaned-up name; your original file is never
   touched.
