@@ -1,4 +1,4 @@
-# ai-py-playwright-workbench
+# Playwright Workbench
 
 A local web app that generates Playwright tests and repairs failing ones with a local LLM. Heal uses failing-run evidence, applies a syntax-tree edit or text replacement, and keeps a repair only after a passing re-run. A confident model diagnosis of an application defect stops repair.
 

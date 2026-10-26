@@ -6,7 +6,8 @@ Current work and deferred ideas. The completed redesign is recorded in the
 ## Now
 
 Review [PR #26](https://github.com/yashwant-das/ai-py-playwright-workbench/pull/26):
-repository standards adoption and documentation cleanup. Check results and
+repository standards adoption, documentation cleanup and the Playwright
+Workbench display title. Check results and
 outstanding owner decisions are in the
 [development guide](docs/development.md#standards-adoption).
 

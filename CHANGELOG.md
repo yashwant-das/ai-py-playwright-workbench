@@ -21,6 +21,8 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Use Playwright Workbench as the README title, matching the existing app
+  name; repository URLs and package identifiers remain unchanged.
 - Adopt the shared documentation profile: README showcase and architecture
   diagrams, focused guides and clearly indexed historical records. Format the
   project tree, correct behavior claims and consolidate stale rollout notes.
